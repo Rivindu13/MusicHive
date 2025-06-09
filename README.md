@@ -38,6 +38,7 @@ It connects musicians, bands, and event planners through a centralized system, s
 
 ## 🧪 How to Run Locally
 
+```bash
 # 1. Clone the repository
 git clone https://github.com/yourusername/MusicHive.git
 cd MusicHive
