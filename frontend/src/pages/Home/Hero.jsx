@@ -2,8 +2,11 @@
 import React from "react";
 import heroImage from "../../assets/hero-bg.png";
 import Reveal from "../../components/Reveal";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  
   return (
     <section
       id="home"
@@ -26,7 +29,7 @@ const Hero = () => {
           </p>
 
           <div className="hero-buttons">
-            <button className="btn btn-gradient btn-animate btn-cta">
+            <button className="btn btn-gradient btn-animate btn-cta" onClick={() => navigate("/signup")}>
               Start Your Journey
             </button>
             <button className="btn btn-outline btn-animate">

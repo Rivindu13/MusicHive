@@ -1,33 +1,52 @@
 import React from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import Hero from "./pages/Home/Hero";
 import BuiltForEveryone from "./pages/Home/BuiltForEveryone";
 import HowItWorks from "./pages/Home/HowItWorks";
 import Security from "./pages/Home/Security";
 import ContactSection from "./pages/Home/ContactSection";
+import GradientWrapper from "./components/GradientWrapper";
 import Footer from "./components/Footer";
-import GradientWrapper from "./components/GradientWrapper"; // <-- ADD THIS
+import Signup from "./pages/SignUp/Signup";
+
 import "./App.css";
 
 function App() {
+  const location = useLocation();
+
+  // hide header/footer on signup page
+  const hideLayout = location.pathname.startsWith("/signup");
+
   return (
     <>
-      <Navbar />
-      <Hero />
+      {!hideLayout && <Navbar />}
 
-      {/* === RAINBOW FRAME #1 === */}
-      <GradientWrapper className="no-bottom-border">
-        <BuiltForEveryone />
-        <HowItWorks />
-        <Security />
-      </GradientWrapper>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <Hero />
 
-      {/* === RAINBOW FRAME #2 === */}
-      <GradientWrapper>
-        <ContactSection />
-      </GradientWrapper>
+              <GradientWrapper className="no-bottom-border">
+                <BuiltForEveryone />
+                <HowItWorks />
+                <Security />
+              </GradientWrapper>
 
-      <Footer />
+              <GradientWrapper>
+                <ContactSection />
+              </GradientWrapper>
+            </>
+          }
+        />
+
+        <Route path="/signup" element={<Signup />} />
+      </Routes>
+
+      {!hideLayout && <Footer />}
     </>
   );
 }
