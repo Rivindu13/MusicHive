@@ -1,8 +1,10 @@
 // src/components/ContactSection.jsx
 import React from "react";
 import Reveal from "../../components/Reveal";
+import { useNavigate } from "react-router-dom";
 
 const ContactSection = () => {
+  const navigate = useNavigate();
   return (
     <section className="contact" id="contact">
     <Reveal>
@@ -29,7 +31,7 @@ const ContactSection = () => {
         <div className="contact-cta rainbow-box">
           <h2>Ready to Make <br /> Music Magic? </h2>
           <p>Join MusicHive Today</p>
-          <button className="btn btn-gradient btn-animate">
+          <button className="btn btn-gradient btn-animate" onClick={() => navigate("/signup")}>
             Get Started Now
           </button>
         </div>

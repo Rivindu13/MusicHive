@@ -10,6 +10,8 @@ import ContactSection from "./pages/Home/ContactSection";
 import GradientWrapper from "./components/GradientWrapper";
 import Footer from "./components/Footer";
 import Signup from "./pages/SignUp/Signup";
+import Login from "./pages/Login/Login";
+
 
 import "./App.css";
 
@@ -17,7 +19,10 @@ function App() {
   const location = useLocation();
 
   // hide header/footer on signup page
-  const hideLayout = location.pathname.startsWith("/signup");
+  const hideLayout =
+  location.pathname.startsWith("/signup") ||
+  location.pathname.startsWith("/login");
+
 
   return (
     <>
@@ -44,6 +49,8 @@ function App() {
         />
 
         <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+
       </Routes>
 
       {!hideLayout && <Footer />}
