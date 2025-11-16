@@ -26,8 +26,8 @@ const ContactSection = () => {
           </form>
         </div>
 
-        <div className="contact-cta">
-          <h2>Ready to Make Music Magic?</h2>
+        <div className="contact-cta rainbow-box">
+          <h2>Ready to Make <br /> Music Magic? </h2>
           <p>Join MusicHive Today</p>
           <button className="btn btn-gradient btn-animate">
             Get Started Now
