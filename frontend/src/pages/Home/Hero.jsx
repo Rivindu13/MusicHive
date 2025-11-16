@@ -1,7 +1,7 @@
 // Hero.jsx
 import React from "react";
-import heroImage from "../assets/hero-bg.png";
-import Reveal from "./Reveal";
+import heroImage from "../../assets/hero-bg.png";
+import Reveal from "../../components/Reveal";
 
 const Hero = () => {
   return (

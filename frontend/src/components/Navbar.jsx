@@ -1,13 +1,15 @@
 // src/components/Navbar.jsx
 import React from "react";
+import logo from "../assets/logo.png";
+
 
 const Navbar = () => {
   return (
     <header className="navbar">
       <div className="navbar-left">
-        <span className="logo-icon">🎵</span>
-        <span className="logo-text">MusicHive</span>
+        <img src={logo} alt="MusicHive Logo" className="navbar-logo" />
       </div>
+
 
       <nav className="navbar-links">
         <a href="#home">Home</a>

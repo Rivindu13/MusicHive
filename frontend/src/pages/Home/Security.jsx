@@ -1,6 +1,6 @@
 // src/components/Security.jsx
 import React from "react";
-import Reveal from "./Reveal";
+import Reveal from "../../components/Reveal";
 
 const Security = () => {
   const handleCardMove = (e) => {

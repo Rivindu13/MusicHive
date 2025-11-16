@@ -1,10 +1,10 @@
 import React from "react";
 import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import BuiltForEveryone from "./components/BuiltForEveryone";
-import HowItWorks from "./components/HowItWorks";
-import Security from "./components/Security";
-import ContactSection from "./components/ContactSection";
+import Hero from "./pages/Home/Hero";
+import BuiltForEveryone from "./pages/Home/BuiltForEveryone";
+import HowItWorks from "./pages/Home/HowItWorks";
+import Security from "./pages/Home/Security";
+import ContactSection from "./pages/Home/ContactSection";
 import Footer from "./components/Footer";
 import GradientWrapper from "./components/GradientWrapper"; // <-- ADD THIS
 import "./App.css";

@@ -10,7 +10,8 @@ const Reveal = ({ children, className = "", delay = 0, ...rest }) => {
       ([entry]) => {
         if (entry.isIntersecting) {
           setVisible(true);
-          observer.unobserve(entry.target); // animate only once
+        } else {
+          setVisible(false); // hides again when scrolling out
         }
       },
       { threshold: 0.15 }

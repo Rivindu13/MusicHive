@@ -1,6 +1,6 @@
 // src/components/ContactSection.jsx
 import React from "react";
-import Reveal from "./Reveal";
+import Reveal from "../../components/Reveal";
 
 const ContactSection = () => {
   return (

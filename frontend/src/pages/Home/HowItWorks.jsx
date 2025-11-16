@@ -1,6 +1,6 @@
 // src/components/HowItWorks.jsx
 import React from "react";
-import Reveal from "./Reveal";
+import Reveal from "../../components/Reveal";
 
 const HowItWorks = () => {
   const handleCardMove = (e) => {
