@@ -212,7 +212,9 @@ const Signup = () => {
       ================================= */}
       {step === 2 && (
         <Reveal>
-          <div className="login-card">
+          <div className="login-card-wrapper">
+          <div className="login-card"></div>
+          <div className="login-card2">
             <h2>Create Your Account</h2>
             <p className="login-sub">Almost there! Fill your details.</p>
 
@@ -260,7 +262,14 @@ const Signup = () => {
             <div className="login-divider">or continue with</div>
 
             <div className="login-social">
-              <FaGoogle className="social google" onClick={handleGoogleSignup} />
+              <button className="google-login-btn" onClick={handleGoogleSignup}>
+                <img
+                  src="https://www.svgrepo.com/show/475656/google-color.svg"
+                  alt="Google"
+                  className="google-icon"
+                />
+                Continue with Google
+              </button>
             </div>
 
 
@@ -271,6 +280,7 @@ const Signup = () => {
             >
               ← Back
             </a>
+          </div>
           </div>
         </Reveal>
       )}

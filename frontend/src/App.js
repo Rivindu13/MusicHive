@@ -11,9 +11,11 @@ import GradientWrapper from "./components/GradientWrapper";
 import Footer from "./components/Footer";
 import Signup from "./pages/SignUp/Signup";
 import Login from "./pages/Login/Login";
-
+import ArtistDashboard from "./pages/Artist/ArtistDashboardPage.jsx";
+import MyChords from "./pages/Artist/MyChords";
 
 import "./App.css";
+
 
 function App() {
   const location = useLocation();
@@ -21,8 +23,8 @@ function App() {
   // hide header/footer on signup page
   const hideLayout =
   location.pathname.startsWith("/signup") ||
-  location.pathname.startsWith("/login");
-
+  location.pathname.startsWith("/login") ||
+  location.pathname.startsWith("/artist");
 
   return (
     <>
@@ -50,6 +52,8 @@ function App() {
 
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/artist/dashboard" element={<ArtistDashboard />} />
+        <Route path="/artist/chords" element={<MyChords />} />
 
       </Routes>
 

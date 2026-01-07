@@ -6,6 +6,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import userRoutes from "./routes/userRoutes.js";
+import chordRoutes from "./routes/chordRoutes.js";
+
 
 const app = express();
 
@@ -19,5 +21,7 @@ mongoose
   .catch((err) => console.error("MongoDB Error:", err));
 
 app.use("/api/users", userRoutes);
+app.use("/api/chords", chordRoutes);
+
 
 app.listen(5000, () => console.log("Backend running on port 5000"));

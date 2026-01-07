@@ -1,0 +1,465 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root{
+  --bg-0:#070712;
+  --bg-1:#0b0a1a;
+  --bg-2:#17123b;
+  --panel:#2a2a45;
+  --panel2:#2f2f4c;
+
+  --text:#ffffff;
+  --muted: rgba(255,255,255,.62);
+  --muted2: rgba(255,255,255,.38);
+
+  --teal:#22d3c9;
+  --teal2:#39e6d7;
+  --purple:#8b5cf6;
+  --purple2:#6d28d9;
+
+  --shadow: 0 20px 60px rgba(0,0,0,.55);
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--text);
+  background: radial-gradient(1200px 900px at 55% 25%, #2b2a78 0%, #1b1546 35%, #0c0b1a 70%, #06060f 100%);
+}
+
+.artistDash{
+  min-height:100vh;
+  display:flex;
+}
+
+/* ===== Sidebar ===== */
+.artistDash__sidebar{
+  width:320px;
+  background: linear-gradient(180deg, rgba(10,10,23,.92) 0%, rgba(8,8,18,.95) 100%);
+  border-right:1px solid rgba(255,255,255,.06);
+  padding:34px 18px 22px 18px;
+  position:relative;
+}
+
+.artistDash__brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:6px 8px 18px 8px;
+}
+
+.artistDash__brandIcon{
+  font-size:22px;
+  color: rgba(138,92,246,.85);
+  transform: translateY(-1px);
+}
+
+.artistDash__brandText{
+  font-size:22px;
+  font-weight:600;
+  letter-spacing:.2px;
+  background: linear-gradient(90deg, rgba(130,88,255,1), rgba(40,230,215,1));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.artistDash__nav{
+  margin-top:22px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:0 8px;
+}
+
+.artistDash__navItem{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 14px;
+  border-radius:12px;
+  color: rgba(255,255,255,.68);
+  text-decoration:none;
+  font-weight:500;
+  position:relative;
+}
+
+.artistDash__navIcon{
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  opacity:.9;
+}
+
+.artistDash__navItem:hover{
+  background: rgba(255,255,255,.04);
+}
+
+.artistDash__navItem--active{
+  color: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.04);
+}
+
+.artistDash__navItem--active::before{
+  content:"";
+  position:absolute;
+  left:-18px;
+  top:10px;
+  bottom:10px;
+  width:3px;
+  border-radius:8px;
+  background: rgba(255,255,255,.92);
+}
+
+.artistDash__sideBottom{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:78px;
+  padding:0 26px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.artistDash__sideAction{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 10px;
+  border-radius:12px;
+  color: rgba(255,255,255,.78);
+  text-decoration:none;
+  font-weight:500;
+}
+
+.artistDash__sideAction:hover{
+  background: rgba(255,255,255,.04);
+}
+
+/* ===== Main ===== */
+.artistDash__main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding: 20px 42px 18px 42px;
+}
+
+/* Top bar */
+.artistDash__topbar{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:22px;
+  padding-top:2px;
+}
+
+.artistDash__iconBtn{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.12);
+  color: rgba(255,255,255,.9);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+.artistDash__iconBtn svg{ width:22px; height:22px; }
+
+.artistDash__user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.artistDash__avatarWrap{
+  position:relative;
+  width:46px;
+  height:46px;
+}
+
+.artistDash__avatar{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  background-color: rgba(255,255,255,.88);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+
+.artistDash__onlineDot{
+  position:absolute;
+  right:1px;
+  top:1px;
+  width:12px;
+  height:12px;
+  background:#19d36a;
+  border-radius:50%;
+  border:2px solid rgba(10,10,23,.92);
+}
+
+.artistDash__userName{
+  font-weight:600;
+  color: rgba(255,255,255,.92);
+}
+
+/* Welcome */
+.artistDash__welcome {
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+.artistDash__welcomeRow{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.artistDash__title{
+  margin:0;
+  font-size:42px;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+.artistDash__titleLine{
+  height:4px;
+  flex:0 0 280px;
+  border-radius:10px;
+  background: rgba(255,255,255,.92);
+  transform: translateY(6px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+}
+
+.artistDash__subtitle{
+  margin-top: 6px;    /* tighter spacing */
+  margin-bottom: 0;
+  font-size:18px;
+  color: rgba(255,255,255,.55);
+}
+
+/* Content area */
+.artistDash__content{
+  margin-top:0px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  transform: translateY(-140px);
+}
+
+/* Glass cards */
+.glassCard{
+  border-radius:18px;
+  padding:20px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.glassCard--requests{
+  padding:18px 18px 16px 18px;
+}
+
+.glassCard__header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+  padding:6px 6px 2px 6px;
+}
+
+.glassCard__headerLeft{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.glassCard__headerIcon{
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  opacity:.9;
+}
+
+.glassCard__headerIcon svg{ width:20px; height:20px; }
+
+.glassCard__headerTitle{
+  font-size:22px;
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+.glassCard__badge{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  background: rgba(34,211,201,.85);
+  color:#072424;
+  display:grid;
+  place-items:center;
+  font-size:12px;
+  font-weight:800;
+  transform: translateY(1px);
+}
+
+.glassCard__viewAll{
+  color: rgba(34,211,201,.9);
+  text-decoration:none;
+  font-weight:600;
+  padding-right:6px;
+}
+
+.glassCard__list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* Request rows */
+.requestRow{
+  width:100%;
+  border-radius:16px;
+  padding:14px 14px;
+  background: rgba(12,12,22,.28);
+  border: 1px solid rgba(255,255,255,.06);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.requestRow__left{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  min-width: 420px;
+}
+
+.requestRow__avatar{
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  background: rgba(255,255,255,.88);
+  opacity:.9;
+}
+
+.requestRow__texts{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.requestRow__title{
+  font-weight:800;
+  font-size:20px;
+}
+
+.requestRow__sub{
+  color: rgba(255,255,255,.65);
+  font-size:14px;
+}
+
+.requestRow__right{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.requestRow__priceWrap{
+  text-align:right;
+  min-width:120px;
+}
+
+.requestRow__price{
+  color: rgba(34,211,201,.95);
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+.requestRow__time{
+  font-size:12px;
+  color: rgba(255,255,255,.38);
+  margin-top:4px;
+}
+
+.requestRow__actions{
+  display:flex;
+  gap:12px;
+}
+
+.btn{
+  border:0;
+  padding:8px 16px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-size:14px;
+  color:white;
+  box-shadow: 0 10px 22px rgba(0,0,0,.35);
+}
+
+.btn--accept{
+  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
+}
+
+.btn--decline{
+  background: rgba(90,90,90,.55);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+/* Upcoming bookings box */
+.glassCard--upcoming{
+  padding:18px;
+  min-height: 420px;
+}
+
+.upcomingBody{
+  height: 340px;
+  border-radius:16px;
+  background: rgba(0,0,0,.12);
+  border: 1px solid rgba(255,255,255,.05);
+  margin-top:10px;
+}
+
+/* Footer */
+.artistDash__footer{
+  margin-top:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 0 4px 0;
+  color: rgba(255,255,255,.62);
+  font-size:13px;
+}
+
+.artistDash__footerLinks{
+  display:flex;
+  gap:36px;
+}
+
+.artistDash__footerLinks a{
+  color: rgba(255,255,255,.62);
+  text-decoration:none;
+}
+
+.artistDash__footerLinks a:hover{
+  color: rgba(255,255,255,.82);
+}
+
+/* Small screens */
+@media (max-width: 1100px){
+  .artistDash__sidebar{ width:280px; }
+  .artistDash__main{ padding:24px 24px 14px 24px; }
+  .requestRow{ flex-direction:column; align-items:flex-start; gap:10px; }
+  .requestRow__left{ min-width:auto; }
+  .requestRow__right{ width:100%; justify-content:space-between; }
+}

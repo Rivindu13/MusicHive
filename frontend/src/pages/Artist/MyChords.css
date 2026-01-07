@@ -1,0 +1,470 @@
+.chordsPage{ min-height:100vh; display:flex; color:#fff; }
+
+/* ===== Sidebar ===== */
+.chordsPage__sidebar{
+  width:320px;
+  background: linear-gradient(180deg, rgba(10,10,23,.92) 0%, rgba(8,8,18,.95) 100%);
+  border-right:1px solid rgba(255,255,255,.06);
+  padding:34px 18px 22px 18px;
+  position:relative;
+}
+
+.chordsPage__brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 18px 8px; }
+.chordsPage__brandIcon{ font-size:22px; color: rgba(138,92,246,.85); }
+.chordsPage__brandText{
+  font-size:22px; font-weight:600;
+  background: linear-gradient(90deg, rgba(130,88,255,1), rgba(40,230,215,1));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+.chordsPage__nav{ margin-top:22px; display:flex; flex-direction:column; gap:8px; padding:0 8px; }
+.chordsPage__navItem{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 14px; border-radius:12px;
+  color: rgba(255,255,255,.68); text-decoration:none; font-weight:500;
+  background: transparent;
+}
+.chordsPage__navIcon{ width:22px; height:22px; display:grid; place-items:center; opacity:.9; }
+.chordsPage__navItem:hover{ background: rgba(255,255,255,.04); }
+.chordsPage__navItem--active{ color: rgba(255,255,255,.92); background: rgba(255,255,255,.04); }
+
+.chordsPage__sideBottom{
+  position:absolute; left:0; right:0; bottom:78px;
+  padding:0 26px; display:flex; flex-direction:column; gap:14px;
+}
+.chordsPage__sideAction{
+  display:flex; align-items:center; gap:12px; padding:10px 10px;
+  border-radius:12px; color: rgba(255,255,255,.78); text-decoration:none;
+}
+.chordsPage__sideAction:hover{ background: rgba(255,255,255,.04); }
+
+/* ===== Main ===== */
+.chordsPage__main{
+  flex:1; display:flex; flex-direction:column;
+  padding: 20px 42px 18px 42px;
+}
+
+.chordsPage__topbar{
+  display:flex; justify-content:flex-end; align-items:center; gap:22px;
+  padding-top:2px;
+}
+
+.chordsPage__iconBtn{
+  width:42px; height:42px; border-radius:50%;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.12);
+  color: rgba(255,255,255,.9);
+  display:grid; place-items:center; cursor:pointer;
+}
+
+.chordsPage__user{ display:flex; align-items:center; gap:10px; }
+.chordsPage__avatarWrap{ position:relative; width:46px; height:46px; }
+.chordsPage__avatar{
+  width:46px; height:46px; border-radius:50%;
+  background-color: rgba(255,255,255,.88);
+  background-size: cover; background-position:center; background-repeat:no-repeat;
+}
+.chordsPage__onlineDot{
+  position:absolute; right:1px; top:1px; width:12px; height:12px;
+  background:#19d36a; border-radius:50%;
+  border:2px solid rgba(10,10,23,.92);
+}
+.chordsPage__userName{ font-weight:600; color: rgba(255,255,255,.92); }
+
+/* ===== Header ===== */
+.chordsPage__header{
+  margin-top: 34px;
+  display:flex;
+  flex-direction:column;
+  gap: 16px;
+}
+
+/* Row 1: title left, upload right */
+.chordsHeader__row1{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 18px;
+}
+
+/* Row 2: search left, genre right */
+.chordsHeader__row2{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 16px;
+}
+
+/* Make search take space nicely */
+.searchBox--wide{
+  flex: 1;
+  max-width: 520px;
+}
+
+/* Keep dropdown a fixed nice width */
+.genreSelect{
+  min-width: 180px;
+}
+.chordsPage__title{
+  margin:0;
+  font-size:48px;
+  font-weight:800;
+}
+
+/* ✅ actions in row */
+.chordsPage__actionsRow{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+/* Upload button */
+.uploadPillBtn{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 16px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.20);
+  background: linear-gradient(90deg, rgba(34,211,201,.25), rgba(139,92,246,.25));
+  cursor:pointer;
+  font-weight:800;
+  color:#fff;
+}
+.uploadPillBtn svg{ width:18px; height:18px; opacity:.95; }
+.uploadPillBtn:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* ✅ Search box */
+.searchBox{
+  position:relative;
+  width: 260px;
+  max-width: 60vw;
+}
+.searchBox input{
+  width:100%;
+  padding:12px 14px 12px 40px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgb(252, 252, 252);
+  color:#000000;
+  font-weight:600;
+  outline:none;
+}
+.searchBox input::placeholder{ color: rgba(0, 0, 0, 0.55); }
+.searchIcon{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  opacity:.8;
+  color:rgba(0, 0, 0, 0.55);
+}
+
+/* ✅ Genre dropdown readability fix */
+.genreSelect{
+  padding:12px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.22);  /* darker */
+  color:#fff;
+  font-weight:800;
+  outline:none;
+  cursor:pointer;
+  min-width: 160px;
+}
+
+/* 🔥 This fixes the option text being unreadable */
+.genreSelect option{
+  background: #0b0a1a;
+  color: #ffffff;
+}
+
+/* ===== Grid ===== */
+.chordsGrid{
+  margin-top: 26px;
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.chordCard{
+  border-radius:18px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.chordCard:hover{
+  transform: translateY(-3px);
+  border-color: rgba(255,255,255,.18);
+}
+
+.chordCard img{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+  display:block;
+}
+
+.chordMeta{ padding:12px 12px 14px 12px; }
+.chordTitle{ font-weight:900; }
+.chordGenre{ margin-top:4px; color: rgba(255,255,255,.60); font-size:13px; }
+
+/* ✅ Better empty state */
+.emptyStateCard{
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  padding: 26px;
+  border-radius: 18px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap: 10px;
+}
+
+.emptyIcon{
+  width:54px;
+  height:54px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.18);
+  display:grid;
+  place-items:center;
+}
+.emptyIcon svg{ width:24px; height:24px; opacity:.9; }
+
+.emptyTitle{
+  font-size:18px;
+  font-weight:900;
+}
+
+.emptyText{
+  max-width: 520px;
+  color: rgba(255,255,255,.72);
+  line-height: 1.5;
+}
+
+.emptyCTA{
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border:1px solid rgba(255,255,255,.20);
+  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+.emptyCTA:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* ===== Footer ===== */
+.chordsPage__footer{
+  margin-top:auto;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0 4px 0;
+  color: rgba(255,255,255,.62);
+  font-size:13px;
+}
+.chordsPage__footerLinks{ display:flex; gap:36px; }
+.chordsPage__footerLinks a{ color: rgba(255,255,255,.62); text-decoration:none; }
+.chordsPage__footerLinks a:hover{ color: rgba(255,255,255,.82); }
+
+/* ===== Modal (keep your existing if you already have, else these help) ===== */
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 50;
+  padding: 18px;
+}
+
+.modalCard{
+  width: 520px;
+  max-width: 94vw;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(20,20,40,.92);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 30px 80px rgba(0,0,0,.55);
+  overflow: hidden;
+}
+
+.modalHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: 16px 16px 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.modalTitle{ font-weight:900; font-size: 18px; }
+.modalClose{
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  color:#fff;
+  cursor:pointer;
+}
+.modalClose:disabled{ opacity:.6; cursor:not-allowed; }
+
+.modalBody{ padding: 16px; display:flex; flex-direction:column; gap: 14px; }
+
+.filePick{ display:flex; align-items:center; gap: 12px; }
+.filePickBtn{
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.18);
+  font-weight:800;
+  cursor:pointer;
+}
+.filePickName{ color: rgba(255,255,255,.70); font-size: 13px; }
+
+.field{ display:flex; flex-direction:column; gap: 6px; }
+.field label{ color: rgba(255,255,255,.75); font-weight:700; font-size: 13px; }
+.field input, .field select{
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.20);
+  color:#fff;
+  outline:none;
+  font-weight:600;
+}
+.field select option{
+  background: #0b0a1a;
+  color:#fff;
+}
+
+.modalFooter{
+  display:flex;
+  justify-content:flex-end;
+  gap: 10px;
+  padding: 12px 16px 16px 16px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.secondaryBtn, .primaryBtn{
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  font-weight:900;
+  cursor:pointer;
+  color:#fff;
+}
+.secondaryBtn{ background: rgba(255,255,255,.08); }
+.primaryBtn{
+  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
+  border: none;
+}
+.secondaryBtn:disabled, .primaryBtn:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* Responsive */
+@media (max-width: 900px){
+  .chordsPage__main{ padding: 18px 18px 18px 18px; }
+  .chordsPage__header{ flex-direction:column; align-items:flex-start; }
+  .chordsPage__actionsRow{ justify-content:flex-start; }
+  .searchBox{ width: 100%; }
+}
+
+/* Delete button on cards */
+.deleteChordBtn{
+  margin-top:10px;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,0,0,.10);
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+.deleteChordBtn svg{ width:16px; height:16px; }
+.deleteChordBtn:hover{ background: rgba(255,0,0,.18); }
+.deleteChordBtn:disabled{ opacity:.6; cursor:not-allowed; }
+
+.deleteChordBtn--danger{
+  max-width: 220px;
+}
+
+/* Make chord cards feel clickable */
+.chordCard{ cursor:pointer; }
+.chordCard:focus{ outline: 2px solid rgba(34,211,201,.45); outline-offset: 2px; }
+
+/* Preview modal */
+.previewCard{
+  width: 860px;
+  max-width: 95vw;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(20,20,40,.92);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 30px 80px rgba(0,0,0,.55);
+  overflow: hidden;
+  position: relative;
+}
+
+.previewClose{
+  position:absolute;
+  right: 12px;
+  top: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.20);
+  color:#fff;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+}
+
+.previewImgWrap{
+  width:100%;
+  background: rgba(0,0,0,.18);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding: 14px;
+}
+
+.previewImgWrap img{
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 14px;
+  object-fit: contain;
+  display:block;
+}
+
+.previewMeta{
+  padding: 16px;
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  align-items:flex-start;
+}
+
+.previewTitle{
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.previewGenre{
+  color: rgba(255,255,255,.70);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
