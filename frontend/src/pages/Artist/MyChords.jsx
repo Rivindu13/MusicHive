@@ -23,7 +23,7 @@ import {
   FiX,
 } from "react-icons/fi";
 
-import "./MyChords.css";
+import "./styles/MyChords.css";
 
 export default function MyChords() {
   const location = useLocation();
@@ -51,9 +51,50 @@ export default function MyChords() {
   // ✅ Preview modal state
   const [previewChord, setPreviewChord] = useState(null);
 
-  // ✅ Deleting state (to disable buttons while deleting)
+  // ✅ Deleting state
   const [deletingId, setDeletingId] = useState(null);
 
+  // ===== helpers: rating/ reviews =====
+  const getReviews = (chord) => Array.isArray(chord?.reviews) ? chord.reviews : [];
+  const getReviewCount = (chord) => getReviews(chord).length;
+
+  const getAvgRating = (chord) => {
+    const reviews = getReviews(chord);
+    if (!reviews.length) return 0;
+    const sum = reviews.reduce((a, r) => a + (Number(r.rating) || 0), 0);
+    return Math.round((sum / reviews.length) * 10) / 10; // 1 decimal
+  };
+
+  const renderStars = (rating, size = 16) => {
+    // simple filled star logic (no halves): 4.6 => 4 filled + number shown
+    const filled = Math.floor(rating);
+    return (
+      <div className="starsRow" aria-label={`Rating ${rating} out of 5`}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <FiStar
+            key={i}
+            size={size}
+            className={i < filled ? "star star--filled" : "star star--empty"}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const formatDate = (iso) => {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  // ===== fetch chords =====
   const fetchChords = async () => {
     if (!uid) return;
     const res = await fetch(`http://localhost:5000/api/chords/artist/${uid}`);
@@ -159,14 +200,12 @@ export default function MyChords() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to delete chord");
 
-      // 2) delete from Firebase Storage (recommended)
-      // Works in most cases with a download URL.
+      // 2) delete from Firebase Storage
       if (chord.imageUrl) {
         const imgRef = ref(storage, chord.imageUrl);
         await deleteObject(imgRef);
       }
 
-      // close preview if we deleted the one being previewed
       if (previewChord?._id === chord._id) setPreviewChord(null);
 
       await fetchChords();
@@ -176,6 +215,14 @@ export default function MyChords() {
       setDeletingId(null);
     }
   };
+
+  // keep previewChord fresh if chords list updates
+  useEffect(() => {
+    if (!previewChord?._id) return;
+    const latest = chords.find((c) => c._id === previewChord._id);
+    if (latest) setPreviewChord(latest);
+    // eslint-disable-next-line
+  }, [chords]);
 
   return (
     <div className="chordsPage">
@@ -202,7 +249,7 @@ export default function MyChords() {
             <span>My Chords</span>
           </Link>
 
-          <a className="chordsPage__navItem" href="#">
+          <a className="chordsPage__navItem" href="/artist/reviews">
             <span className="chordsPage__navIcon"><FiStar /></span>
             <span>Reviews</span>
           </a>
@@ -243,42 +290,41 @@ export default function MyChords() {
 
         {/* Header */}
         <div className="chordsPage__header">
-            {/* Row 1 */}
-            <div className="chordsHeader__row1">
-                <h1 className="chordsPage__title">My Chords</h1>
+          {/* Row 1 */}
+          <div className="chordsHeader__row1">
+            <h1 className="chordsPage__title">My Chords</h1>
 
-                <button className="uploadPillBtn" onClick={openUpload} disabled={uploading}>
-                <FiUpload />
-                <span>{uploading ? "Uploading..." : "Upload Chords"}</span>
-                </button>
+            <button className="uploadPillBtn" onClick={openUpload} disabled={uploading}>
+              <FiUpload />
+              <span>{uploading ? "Uploading..." : "Upload Chords"}</span>
+            </button>
+          </div>
+
+          {/* Row 2 */}
+          <div className="chordsHeader__row2">
+            <div className="searchBox searchBox--wide">
+              <FiSearch className="searchIcon" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search your chords..."
+                aria-label="Search chords"
+              />
             </div>
 
-            {/* Row 2 */}
-            <div className="chordsHeader__row2">
-                <div className="searchBox searchBox--wide">
-                <FiSearch className="searchIcon" />
-                <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search your chords..."
-                    aria-label="Search chords"
-                />
-                </div>
-
-                <select
-                className="genreSelect"
-                value={genre}
-                onChange={(e) => setGenre(e.target.value)}
-                >
-                <option>All Genres</option>
-                <option>Pop</option>
-                <option>Rock</option>
-                <option>Classical</option>
-                <option>Jazz</option>
-                </select>
-            </div>
-            </div>
-
+            <select
+              className="genreSelect"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+            >
+              <option>All Genres</option>
+              <option>Pop</option>
+              <option>Rock</option>
+              <option>Classical</option>
+              <option>Jazz</option>
+            </select>
+          </div>
+        </div>
 
         {/* Grid */}
         <div className="chordsGrid">
@@ -297,38 +343,58 @@ export default function MyChords() {
               </button>
             </div>
           ) : (
-            filtered.map((c) => (
-              <div
-                className="chordCard"
-                key={c._id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openPreview(c)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") openPreview(c);
-                }}
-              >
-                <img src={c.imageUrl} alt={c.title || "Chord"} />
-                <div className="chordMeta">
-                  <div className="chordTitle">{c.title || "Untitled"}</div>
-                  <div className="chordGenre">{c.genre}</div>
+            filtered.map((c) => {
+              const avg = getAvgRating(c);
+              const count = getReviewCount(c);
 
-                  {/* Delete button (stop click so it doesn't open preview) */}
-                  <button
-                    className="deleteChordBtn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteChord(c);
-                    }}
-                    disabled={deletingId === c._id}
-                    title="Delete chord"
-                  >
-                    <FiTrash2 />
-                    <span>{deletingId === c._id ? "Deleting..." : "Delete"}</span>
-                  </button>
+              return (
+                <div
+                  className="chordCard"
+                  key={c._id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openPreview(c)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") openPreview(c);
+                  }}
+                >
+                  <img src={c.imageUrl} alt={c.title || "Chord"} />
+
+                  <div className="chordMeta">
+                    <div className="chordTitle">{c.title || "Untitled"}</div>
+
+                    {/* rating summary on card */}
+                    <div className="cardRatingRow">
+                      {count === 0 ? (
+                        <span className="noReviewsText">No reviews yet</span>
+                      ) : (
+                        <>
+                          {renderStars(avg, 14)}
+                          <span className="ratingNumber">{avg.toFixed(1)}</span>
+                          <span className="reviewCountText">({count} {count === 1 ? "review" : "reviews"})</span>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="chordGenre">{c.genre}</div>
+
+                    {/* Delete button */}
+                    <button
+                      className="deleteChordBtn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteChord(c);
+                      }}
+                      disabled={deletingId === c._id}
+                      title="Delete chord"
+                    >
+                      <FiTrash2 />
+                      <span>{deletingId === c._id ? "Deleting..." : "Delete"}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -399,30 +465,93 @@ export default function MyChords() {
           </div>
         )}
 
-        {/* ✅ Preview Modal */}
+        {/* ✅ Preview Modal (with reviews list) */}
         {previewChord && (
           <div className="modalOverlay" onMouseDown={closePreview}>
-            <div className="previewCard" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="previewCard previewCard--wide" onMouseDown={(e) => e.stopPropagation()}>
               <button className="previewClose" onClick={closePreview} aria-label="Close preview">
                 <FiX />
               </button>
 
-              <div className="previewImgWrap">
-                <img src={previewChord.imageUrl} alt={previewChord.title || "Chord"} />
-              </div>
+              <div className="previewGrid">
+                {/* Left: image */}
+                <div className="previewImgWrap">
+                  <img src={previewChord.imageUrl} alt={previewChord.title || "Chord"} />
+                </div>
 
-              <div className="previewMeta">
-                <div className="previewTitle">{previewChord.title || "Untitled"}</div>
-                <div className="previewGenre">{previewChord.genre}</div>
+                {/* Right: details + reviews */}
+                <div className="previewSide">
+                  <div className="previewMeta">
+                    <div className="previewTitle">{previewChord.title || "Untitled"}</div>
+                    <div className="previewGenre">{previewChord.genre}</div>
 
-                <button
-                  className="deleteChordBtn deleteChordBtn--danger"
-                  onClick={() => handleDeleteChord(previewChord)}
-                  disabled={deletingId === previewChord._id}
-                >
-                  <FiTrash2 />
-                  <span>{deletingId === previewChord._id ? "Deleting..." : "Delete"}</span>
-                </button>
+                    {/* rating summary */}
+                    {(() => {
+                      const avg = getAvgRating(previewChord);
+                      const count = getReviewCount(previewChord);
+                      return (
+                        <div className="previewRatingRow">
+                          {count === 0 ? (
+                            <span className="noReviewsText">No reviews yet</span>
+                          ) : (
+                            <>
+                              {renderStars(avg, 18)}
+                              <span className="ratingNumber ratingNumber--big">{avg.toFixed(1)}</span>
+                              <span className="reviewCountText">({count} {count === 1 ? "review" : "reviews"})</span>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Reviews list */}
+                  <div className="reviewsBox">
+                    <div className="reviewsHeader">
+                      <span>Reviews</span>
+                    </div>
+
+                    {getReviewCount(previewChord) === 0 ? (
+                      <div className="reviewsEmpty">
+                        No one has reviewed this chord yet.
+                      </div>
+                    ) : (
+                      <div className="reviewsList">
+                        {getReviews(previewChord).slice().reverse().map((r, idx) => (
+                          <div className="reviewItem" key={r._id || idx}>
+                            <div
+                              className="reviewAvatar"
+                              style={r.photoURL ? { backgroundImage: `url(${r.photoURL})` } : {}}
+                            />
+                            <div className="reviewBody">
+                              <div className="reviewTop">
+                                <div className="reviewName">{r.name || "User"}</div>
+                                <div className="reviewDate">{formatDate(r.createdAt)}</div>
+                              </div>
+
+                              <div className="reviewStars">
+                                {renderStars(Number(r.rating || 0), 14)}
+                                <span className="reviewRatingNum">{Number(r.rating || 0).toFixed(1)}</span>
+                              </div>
+
+                              {r.text ? <div className="reviewText">{r.text}</div> : null}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Delete chord */}
+                  <button
+                    className="deleteChordBtn deleteChordBtn--danger"
+                    onClick={() => handleDeleteChord(previewChord)}
+                    disabled={deletingId === previewChord._id}
+                  >
+                    <FiTrash2 />
+                    <span>{deletingId === previewChord._id ? "Deleting..." : "Delete chord"}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

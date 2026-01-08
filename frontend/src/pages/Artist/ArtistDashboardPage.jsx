@@ -1,7 +1,7 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import "./ArtistDashboard.css";
+import "./styles/ArtistDashboard.css";
 import {
   FiBell,
   FiHome,
@@ -12,14 +12,20 @@ import {
   FiLogOut,
 } from "react-icons/fi";
 
+// ✅ Firebase sign out (only if you use Firebase Auth)
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase";
+
 export default function ArtistDashboard() {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const profile =
-    location.state?.profile || JSON.parse(localStorage.getItem("profile")) || null;
+    location.state?.profile ||
+    JSON.parse(localStorage.getItem("profile")) ||
+    null;
 
   const profilePic = profile?.photoURL || null;
-
-
 
   // ✅ Safely pick a name from whatever your backend returns
   const fullName =
@@ -30,6 +36,33 @@ export default function ArtistDashboard() {
     "Artist";
 
   const firstName = fullName.split(" ")[0];
+
+  // ✅ Route guard: if no profile, kick to home (prevents accessing dashboard after logout)
+  useEffect(() => {
+    const stored = localStorage.getItem("profile");
+    if (!stored) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
+
+  // ✅ Logout handler
+  const handleLogout = async () => {
+    try {
+      // ✅ Firebase logout (ends Firebase session)
+      await signOut(auth);
+    } catch (err) {
+      console.error("Firebase signOut error:", err);
+    } finally {
+      // ✅ Clear local user session
+      localStorage.removeItem("profile");
+
+      // Optional: clear everything (keep if you store tokens/settings)
+      localStorage.clear();
+
+      // ✅ Redirect to home, prevent back navigation
+      navigate("/", { replace: true });
+    }
+  };
 
   const requests = [
     {
@@ -86,7 +119,7 @@ export default function ArtistDashboard() {
             <span>My Chords</span>
           </a>
 
-          <a className="artistDash__navItem" href="#">
+          <a className="artistDash__navItem" href="/artist/reviews">
             <span className="artistDash__navIcon">
               <FiStar />
             </span>
@@ -102,12 +135,17 @@ export default function ArtistDashboard() {
             <span>Profile</span>
           </a>
 
-          <a className="artistDash__sideAction" href="#">
+          {/* ✅ Logout button */}
+          <button
+            type="button"
+            className="artistDash__sideAction"
+            onClick={handleLogout}
+          >
             <span className="artistDash__navIcon">
               <FiLogOut />
             </span>
             <span>Log out</span>
-          </a>
+          </button>
         </div>
       </aside>
 
@@ -121,7 +159,6 @@ export default function ArtistDashboard() {
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">
-              {/* ✅ Profile image if available, else default circle */}
               <div
                 className="artistDash__avatar"
                 style={
@@ -137,26 +174,21 @@ export default function ArtistDashboard() {
               <span className="artistDash__onlineDot" />
             </div>
 
-            {/* ✅ Name from logged-in artist */}
             <span className="artistDash__userName">{fullName}</span>
           </div>
         </div>
 
-        {/* Welcome */}
-        <section className="artistDash__welcome">
-          {/* ✅ Personalized welcome text */}
-          <div className="artistDash__welcomeRow">
-            <h1 className="artistDash__title">
-              Welcome Back,{" "}
-              <span style={{ fontWeight: 800 }}>{firstName}</span>
+        {/* Header (your consistent header layout) */}
+        <section className="chordsPage__header">
+          <div className="chordsHeader__row1">
+            <h1 className="chordsPage__title">
+              Welcome Back, <span style={{ fontWeight: 800 }}>{firstName}</span>
             </h1>
-            <div className="artistDash__titleLine" />
           </div>
-          <p className="artistDash__subtitle">
+
+          <p className="reviewsHeroCard__sub">
             Here's what's happening with your music today
           </p>
-
-
         </section>
 
         {/* Cards */}

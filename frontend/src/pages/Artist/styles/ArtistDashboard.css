@@ -139,6 +139,40 @@ body{
   background: rgba(255,255,255,.04);
 }
 
+/* Make buttons look exactly like sidebar links */
+button.artistDash__sideAction{
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 10px 10px;      /* match your .artistDash__sideAction padding */
+  margin: 0;
+  color: rgba(255,255,255,.78);
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+}
+
+/* Hover same as <a> */
+button.artistDash__sideAction:hover{
+  background: rgba(255,255,255,.04);
+}
+
+/* Optional: remove ugly focus ring but keep accessibility */
+button.artistDash__sideAction:focus{
+  outline: none;
+}
+button.artistDash__sideAction:focus-visible{
+  outline: 2px solid rgba(34,211,201,.45);
+  outline-offset: 2px;
+}
+
+
 /* ===== Main ===== */
 .artistDash__main{
   flex:1;
@@ -251,7 +285,6 @@ body{
   display:flex;
   flex-direction:column;
   gap:18px;
-  transform: translateY(-140px);
 }
 
 /* Glass cards */

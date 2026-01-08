@@ -13,6 +13,8 @@ import Signup from "./pages/SignUp/Signup";
 import Login from "./pages/Login/Login";
 import ArtistDashboard from "./pages/Artist/ArtistDashboardPage.jsx";
 import MyChords from "./pages/Artist/MyChords";
+import ArtistReviews from "./pages/Artist/ArtistReviews";
+
 
 import "./App.css";
 
@@ -54,6 +56,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/artist/dashboard" element={<ArtistDashboard />} />
         <Route path="/artist/chords" element={<MyChords />} />
+        <Route path="/artist/reviews" element={<ArtistReviews />} />
 
       </Routes>
 
