@@ -14,6 +14,7 @@ import Login from "./pages/Login/Login";
 import ArtistDashboard from "./pages/Artist/ArtistDashboardPage.jsx";
 import MyChords from "./pages/Artist/MyChords";
 import ArtistReviews from "./pages/Artist/ArtistReviews";
+import ArtistProfile from "./pages/Artist/ArtistProfile.jsx";
 
 
 import "./App.css";
@@ -57,6 +58,7 @@ function App() {
         <Route path="/artist/dashboard" element={<ArtistDashboard />} />
         <Route path="/artist/chords" element={<MyChords />} />
         <Route path="/artist/reviews" element={<ArtistReviews />} />
+        <Route path="/artist/profile" element={<ArtistProfile />} />
 
       </Routes>
 

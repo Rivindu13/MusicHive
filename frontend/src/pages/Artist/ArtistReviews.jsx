@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./styles/ArtistReviews.css";
 
 import {
@@ -12,8 +12,11 @@ import {
   FiLogOut,
 } from "react-icons/fi";
 
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase"; // ✅ correct path for your structure
+
 function Stars({ value = 0 }) {
-  const full = Math.round(value); // simple, like your UI
+  const full = Math.round(value);
   return (
     <div className="revStars">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -43,6 +46,8 @@ function formatDate(iso) {
 
 export default function ArtistReviews() {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const profile =
     location.state?.profile ||
     JSON.parse(localStorage.getItem("profile")) ||
@@ -63,16 +68,41 @@ export default function ArtistReviews() {
   const [summary, setSummary] = useState({ avgRating: 0, totalReviews: 0 });
   const [reviews, setReviews] = useState([]);
 
+  // ✅ Route guard: block access if logged out
+  useEffect(() => {
+    const stored = localStorage.getItem("profile");
+    if (!stored) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
+
+  // ✅ Logout handler
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Firebase logout error:", err);
+    } finally {
+      localStorage.removeItem("profile");
+      // optional: localStorage.clear();
+      navigate("/", { replace: true });
+    }
+  };
+
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
+
         if (!artistUid) {
           setSummary({ avgRating: 0, totalReviews: 0 });
           setReviews([]);
           return;
         }
-        const res = await fetch(`http://localhost:5000/api/reviews/artist/${artistUid}`);
+
+        const res = await fetch(
+          `http://localhost:5000/api/reviews/artist/${artistUid}`
+        );
 
         const data = await res.json();
         setSummary(data.summary || { avgRating: 0, totalReviews: 0 });
@@ -89,7 +119,7 @@ export default function ArtistReviews() {
 
   return (
     <div className="artistDash artistReviewsPage">
-      {/* Sidebar (reuse dashboard classes) */}
+      {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -118,7 +148,10 @@ export default function ArtistReviews() {
             <span>My Chords</span>
           </a>
 
-          <a className="artistDash__navItem artistDash__navItem--active" href="/artist/reviews">
+          <a
+            className="artistDash__navItem artistDash__navItem--active"
+            href="/artist/reviews"
+          >
             <span className="artistDash__navIcon">
               <FiStar />
             </span>
@@ -127,19 +160,24 @@ export default function ArtistReviews() {
         </nav>
 
         <div className="artistDash__sideBottom">
-          <a className="artistDash__sideAction" href="#">
+          <a className="artistDash__sideAction" href="/artist/profile">
             <span className="artistDash__navIcon">
               <FiUser />
             </span>
             <span>Profile</span>
           </a>
 
-          <a className="artistDash__sideAction" href="#">
+          {/* ✅ Logout button */}
+          <button
+            type="button"
+            className="artistDash__sideAction"
+            onClick={handleLogout}
+          >
             <span className="artistDash__navIcon">
               <FiLogOut />
             </span>
             <span>Log out</span>
-          </a>
+          </button>
         </div>
       </aside>
 
@@ -147,51 +185,49 @@ export default function ArtistReviews() {
       <main className="artistDash__main">
         {/* Top bar */}
         <div className="artistDash__topbar">
-        <button className="artistDash__iconBtn" aria-label="Notifications">
+          <button className="artistDash__iconBtn" aria-label="Notifications">
             <FiBell />
-        </button>
+          </button>
 
-        <div className="artistDash__user">
+          <div className="artistDash__user">
             <div className="artistDash__avatarWrap">
-            <div
+              <div
                 className="artistDash__avatar"
                 style={
-                profilePic
+                  profilePic
                     ? {
                         backgroundImage: `url(${profilePic})`,
                         backgroundSize: "cover",
                         backgroundPosition: "center",
-                    }
+                      }
                     : {}
                 }
-            />
-            <span className="artistDash__onlineDot" />
+              />
+              <span className="artistDash__onlineDot" />
             </div>
             <span className="artistDash__userName">{fullName}</span>
-        </div>
+          </div>
         </div>
 
         {/* Header card */}
         <section className="reviewsHeroCard">
-        <div className="reviewsHeroCard__left">
+          <div className="reviewsHeroCard__left">
             <h1 className="reviewsHeroCard__title">Reviews &amp; Testimonials</h1>
             <p className="reviewsHeroCard__sub">See what clients are saying about you</p>
-        </div>
+          </div>
 
-        <div className="reviewsHeroCard__right">
+          <div className="reviewsHeroCard__right">
             <div className="reviewsHeroCard__score">
-            {Number(summary.avgRating || 0).toFixed(1)}
+              {Number(summary.avgRating || 0).toFixed(1)}
             </div>
             <div className="reviewsHeroCard__meta">
-            <Stars value={summary.avgRating || 0} />
-            <div className="reviewsHeroCard__count">
+              <Stars value={summary.avgRating || 0} />
+              <div className="reviewsHeroCard__count">
                 From {summary.totalReviews || 0} reviews
+              </div>
             </div>
-            </div>
-        </div>
+          </div>
         </section>
-
-        
 
         {/* Reviews list */}
         <section className="reviewsStack">
@@ -223,11 +259,11 @@ export default function ArtistReviews() {
                     <div className="reviewRowCard__name">{r.plannerName}</div>
                     <div className="reviewRowCard__line2">
                       <Stars value={r.rating || 0} />
-                      <span className="reviewRowCard__event">• {r.eventType || "Event"}</span>
+                      <span className="reviewRowCard__event">
+                        • {r.eventType || "Event"}
+                      </span>
                     </div>
-                    <div className="reviewRowCard__text">
-                      {r.comment || "—"}
-                    </div>
+                    <div className="reviewRowCard__text">{r.comment || "—"}</div>
                   </div>
                 </div>
 
@@ -236,7 +272,7 @@ export default function ArtistReviews() {
             ))}
         </section>
 
-        {/* Footer (reuse dashboard footer style if you want) */}
+        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">

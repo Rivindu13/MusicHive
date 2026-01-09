@@ -28,9 +28,18 @@ body{
   background: radial-gradient(1200px 900px at 55% 25%, #2b2a78 0%, #1b1546 35%, #0c0b1a 70%, #06060f 100%);
 }
 
+/* ✅ NEW: stop whole-page scrolling; only main content should scroll */
+html, body{
+  overflow: hidden;
+}
+
 .artistDash{
   min-height:100vh;
   display:flex;
+
+  /* ✅ NEW */
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* ===== Sidebar ===== */
@@ -40,6 +49,12 @@ body{
   border-right:1px solid rgba(255,255,255,.06);
   padding:34px 18px 22px 18px;
   position:relative;
+
+  /* ✅ NEW: lock sidebar height + keep pinned */
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
 }
 
 .artistDash__brand{
@@ -122,6 +137,9 @@ body{
   display:flex;
   flex-direction:column;
   gap:14px;
+
+  /* ✅ NEW: keep it visible without needing to scroll */
+  bottom: 22px;
 }
 
 .artistDash__sideAction{
@@ -179,6 +197,11 @@ button.artistDash__sideAction:focus-visible{
   display:flex;
   flex-direction:column;
   padding: 20px 42px 18px 42px;
+
+  /* ✅ NEW: only main scrolls */
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Top bar */

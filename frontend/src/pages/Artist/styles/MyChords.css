@@ -1,5 +1,14 @@
 .chordsPage{ min-height:100vh; display:flex; color:#fff; }
 
+/* ✅ NEW: stop whole-page scrolling; only main should scroll */
+html, body{
+  overflow: hidden;
+}
+.chordsPage{
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* ===== Sidebar ===== */
 .chordsPage__sidebar{
   width:320px;
@@ -7,6 +16,12 @@
   border-right:1px solid rgba(255,255,255,.06);
   padding:34px 18px 22px 18px;
   position:relative;
+
+  /* ✅ NEW: lock sidebar to viewport + keep bottom actions visible */
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
 }
 
 .chordsPage__brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 18px 8px; }
@@ -31,6 +46,9 @@
 .chordsPage__sideBottom{
   position:absolute; left:0; right:0; bottom:78px;
   padding:0 26px; display:flex; flex-direction:column; gap:14px;
+
+  /* ✅ NEW */
+  bottom: 22px;
 }
 .chordsPage__sideAction{
   display:flex; align-items:center; gap:12px; padding:10px 10px;
@@ -38,10 +56,40 @@
 }
 .chordsPage__sideAction:hover{ background: rgba(255,255,255,.04); }
 
+/* Make logout button look exactly like the sidebar link */
+.chordsPage__sideActionBtn{
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  padding: 10px 10px;      /* match .chordsPage__sideAction */
+  margin: 0;
+  color: rgba(255,255,255,.78);
+  font: inherit;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 12px;
+}
+
+.chordsPage__sideActionBtn:hover{
+  background: rgba(255,255,255,.04);
+}
+
+
 /* ===== Main ===== */
 .chordsPage__main{
   flex:1; display:flex; flex-direction:column;
   padding: 20px 42px 18px 42px;
+
+  /* ✅ NEW: only main scrolls */
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .chordsPage__topbar{
@@ -623,5 +671,3 @@
   .previewGrid{ grid-template-columns: 1fr; }
   .reviewsBox{ max-height: 220px; }
 }
-
-

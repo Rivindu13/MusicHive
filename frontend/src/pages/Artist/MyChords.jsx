@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
-import { storage } from "../../firebase";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import { storage, auth } from "../../firebase";
+import { signOut } from "firebase/auth";
 import {
   ref,
   uploadBytesResumable,
@@ -27,6 +28,7 @@ import "./styles/MyChords.css";
 
 export default function MyChords() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const profile =
     location.state?.profile || JSON.parse(localStorage.getItem("profile")) || null;
@@ -35,6 +37,24 @@ export default function MyChords() {
 
   const fullName = profile?.name || "Name_Surname";
   const profilePic = profile?.photoURL || null;
+
+  // ✅ route guard: prevent opening page after logout / refresh
+  useEffect(() => {
+    const stored = localStorage.getItem("profile");
+    if (!stored) navigate("/", { replace: true });
+  }, [navigate]);
+
+  // ✅ logout
+  const handleLogout = async () => {
+    try {
+      await signOut(auth); // Firebase session end
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem("profile");
+      navigate("/", { replace: true });
+    }
+  };
 
   const [genre, setGenre] = useState("All Genres");
   const [search, setSearch] = useState("");
@@ -55,18 +75,17 @@ export default function MyChords() {
   const [deletingId, setDeletingId] = useState(null);
 
   // ===== helpers: rating/ reviews =====
-  const getReviews = (chord) => Array.isArray(chord?.reviews) ? chord.reviews : [];
+  const getReviews = (chord) => (Array.isArray(chord?.reviews) ? chord.reviews : []);
   const getReviewCount = (chord) => getReviews(chord).length;
 
   const getAvgRating = (chord) => {
     const reviews = getReviews(chord);
     if (!reviews.length) return 0;
     const sum = reviews.reduce((a, r) => a + (Number(r.rating) || 0), 0);
-    return Math.round((sum / reviews.length) * 10) / 10; // 1 decimal
+    return Math.round((sum / reviews.length) * 10) / 10;
   };
 
   const renderStars = (rating, size = 16) => {
-    // simple filled star logic (no halves): 4.6 => 4 filled + number shown
     const filled = Math.floor(rating);
     return (
       <div className="starsRow" aria-label={`Rating ${rating} out of 5`}>
@@ -249,22 +268,28 @@ export default function MyChords() {
             <span>My Chords</span>
           </Link>
 
-          <a className="chordsPage__navItem" href="/artist/reviews">
+          <Link className="chordsPage__navItem" to="/artist/reviews">
             <span className="chordsPage__navIcon"><FiStar /></span>
             <span>Reviews</span>
-          </a>
+          </Link>
         </nav>
 
         <div className="chordsPage__sideBottom">
-          <a className="chordsPage__sideAction" href="#">
+          {/* keep profile as link so it doesn't become "button-looking" */}
+          <a className="chordsPage__sideAction" href="/artist/profile">
             <span className="chordsPage__navIcon"><FiUser /></span>
             <span>Profile</span>
           </a>
 
-          <a className="chordsPage__sideAction" href="#">
+          {/* ✅ logout as button (styled to look like link) */}
+          <button
+            type="button"
+            className="chordsPage__sideAction chordsPage__sideActionBtn"
+            onClick={handleLogout}
+          >
             <span className="chordsPage__navIcon"><FiLogOut /></span>
             <span>Log out</span>
-          </a>
+          </button>
         </div>
       </aside>
 
@@ -290,7 +315,6 @@ export default function MyChords() {
 
         {/* Header */}
         <div className="chordsPage__header">
-          {/* Row 1 */}
           <div className="chordsHeader__row1">
             <h1 className="chordsPage__title">My Chords</h1>
 
@@ -300,7 +324,6 @@ export default function MyChords() {
             </button>
           </div>
 
-          {/* Row 2 */}
           <div className="chordsHeader__row2">
             <div className="searchBox searchBox--wide">
               <FiSearch className="searchIcon" />
@@ -363,7 +386,6 @@ export default function MyChords() {
                   <div className="chordMeta">
                     <div className="chordTitle">{c.title || "Untitled"}</div>
 
-                    {/* rating summary on card */}
                     <div className="cardRatingRow">
                       {count === 0 ? (
                         <span className="noReviewsText">No reviews yet</span>
@@ -371,14 +393,15 @@ export default function MyChords() {
                         <>
                           {renderStars(avg, 14)}
                           <span className="ratingNumber">{avg.toFixed(1)}</span>
-                          <span className="reviewCountText">({count} {count === 1 ? "review" : "reviews"})</span>
+                          <span className="reviewCountText">
+                            ({count} {count === 1 ? "review" : "reviews"})
+                          </span>
                         </>
                       )}
                     </div>
 
                     <div className="chordGenre">{c.genre}</div>
 
-                    {/* Delete button */}
                     <button
                       className="deleteChordBtn"
                       onClick={(e) => {
@@ -465,27 +488,27 @@ export default function MyChords() {
           </div>
         )}
 
-        {/* ✅ Preview Modal (with reviews list) */}
+        {/* ✅ Preview Modal */}
         {previewChord && (
           <div className="modalOverlay" onMouseDown={closePreview}>
-            <div className="previewCard previewCard--wide" onMouseDown={(e) => e.stopPropagation()}>
+            <div
+              className="previewCard previewCard--wide"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
               <button className="previewClose" onClick={closePreview} aria-label="Close preview">
                 <FiX />
               </button>
 
               <div className="previewGrid">
-                {/* Left: image */}
                 <div className="previewImgWrap">
                   <img src={previewChord.imageUrl} alt={previewChord.title || "Chord"} />
                 </div>
 
-                {/* Right: details + reviews */}
                 <div className="previewSide">
                   <div className="previewMeta">
                     <div className="previewTitle">{previewChord.title || "Untitled"}</div>
                     <div className="previewGenre">{previewChord.genre}</div>
 
-                    {/* rating summary */}
                     {(() => {
                       const avg = getAvgRating(previewChord);
                       const count = getReviewCount(previewChord);
@@ -497,7 +520,9 @@ export default function MyChords() {
                             <>
                               {renderStars(avg, 18)}
                               <span className="ratingNumber ratingNumber--big">{avg.toFixed(1)}</span>
-                              <span className="reviewCountText">({count} {count === 1 ? "review" : "reviews"})</span>
+                              <span className="reviewCountText">
+                                ({count} {count === 1 ? "review" : "reviews"})
+                              </span>
                             </>
                           )}
                         </div>
@@ -505,51 +530,54 @@ export default function MyChords() {
                     })()}
                   </div>
 
-                  {/* Reviews list */}
                   <div className="reviewsBox">
                     <div className="reviewsHeader">
                       <span>Reviews</span>
                     </div>
 
                     {getReviewCount(previewChord) === 0 ? (
-                      <div className="reviewsEmpty">
-                        No one has reviewed this chord yet.
-                      </div>
+                      <div className="reviewsEmpty">No one has reviewed this chord yet.</div>
                     ) : (
                       <div className="reviewsList">
-                        {getReviews(previewChord).slice().reverse().map((r, idx) => (
-                          <div className="reviewItem" key={r._id || idx}>
-                            <div
-                              className="reviewAvatar"
-                              style={r.photoURL ? { backgroundImage: `url(${r.photoURL})` } : {}}
-                            />
-                            <div className="reviewBody">
-                              <div className="reviewTop">
-                                <div className="reviewName">{r.name || "User"}</div>
-                                <div className="reviewDate">{formatDate(r.createdAt)}</div>
-                              </div>
+                        {getReviews(previewChord)
+                          .slice()
+                          .reverse()
+                          .map((r, idx) => (
+                            <div className="reviewItem" key={r._id || idx}>
+                              <div
+                                className="reviewAvatar"
+                                style={r.photoURL ? { backgroundImage: `url(${r.photoURL})` } : {}}
+                              />
+                              <div className="reviewBody">
+                                <div className="reviewTop">
+                                  <div className="reviewName">{r.name || "User"}</div>
+                                  <div className="reviewDate">{formatDate(r.createdAt)}</div>
+                                </div>
 
-                              <div className="reviewStars">
-                                {renderStars(Number(r.rating || 0), 14)}
-                                <span className="reviewRatingNum">{Number(r.rating || 0).toFixed(1)}</span>
-                              </div>
+                                <div className="reviewStars">
+                                  {renderStars(Number(r.rating || 0), 14)}
+                                  <span className="reviewRatingNum">
+                                    {Number(r.rating || 0).toFixed(1)}
+                                  </span>
+                                </div>
 
-                              {r.text ? <div className="reviewText">{r.text}</div> : null}
+                                {r.text ? <div className="reviewText">{r.text}</div> : null}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Delete chord */}
                   <button
                     className="deleteChordBtn deleteChordBtn--danger"
                     onClick={() => handleDeleteChord(previewChord)}
                     disabled={deletingId === previewChord._id}
                   >
                     <FiTrash2 />
-                    <span>{deletingId === previewChord._id ? "Deleting..." : "Delete chord"}</span>
+                    <span>
+                      {deletingId === previewChord._id ? "Deleting..." : "Delete chord"}
+                    </span>
                   </button>
                 </div>
               </div>

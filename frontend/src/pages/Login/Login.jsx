@@ -48,7 +48,9 @@ const Login = () => {
 
     alert("Login successful!");
 
-    if (profile.role === "artist") {
+    localStorage.setItem("profile", JSON.stringify(profile));
+
+    if (profile.role === "artist" || profile.role === "band") {
       navigate("/artist/dashboard", { state: { profile } });
     } else if (profile.role === "customer") {
       navigate("/customer/dashboard");

@@ -128,7 +128,7 @@ export default function ArtistDashboard() {
         </nav>
 
         <div className="artistDash__sideBottom">
-          <a className="artistDash__sideAction" href="#">
+          <a className="artistDash__sideAction" href="/artist/profile">
             <span className="artistDash__navIcon">
               <FiUser />
             </span>

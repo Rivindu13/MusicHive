@@ -66,6 +66,10 @@ html,
   color: #f5f3ff;
 }
 
+body{
+  overflow: hidden;
+}
+
 .app {
   min-height: 100vh;
 }
@@ -755,12 +759,16 @@ section {
 
 /* SIGNUP PAGE */
 .signup-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
   background: linear-gradient(180deg, #0d0727, #1b1442, #247f90);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: 60px;
+  padding-bottom: 24px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* LOGO */
@@ -1134,8 +1142,157 @@ s
   padding-left: 2px;      /* optional small indent */
 }
 
+/* App.css (ADD THIS AT THE END — no removals) */
 
+/* ===== Artist Type Selector (Solo/Band) ===== */
+.artist-type-block{
+  margin-bottom: 26px;
+  text-align: left;
+}
 
+.artist-type-title{
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #f5f3ff;
+}
+
+.artist-type-grid{
+  display: flex;
+  gap: 16px;
+}
+
+.artist-type-card{
+  flex: 1;
+  padding: 14px;
+  border-radius: 16px;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(10px);
+
+  transition: 0.25s ease;
+  text-align: center;
+}
+
+.artist-type-card img{
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.artist-type-card h4{
+  font-size: 16px;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.artist-type-card p{
+  font-size: 13px;
+  color: #d1d5db;
+}
+
+.artist-type-card:hover{
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+}
+
+.artist-type-card.active{
+  border-color: #ff4fd8;
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 24px rgba(255,79,216,0.45);
+}
+
+/* responsive */
+@media (max-width: 768px){
+  .artist-type-grid{
+    flex-direction: column;
+  }
+}
+
+/* ===== Simple Artist Type (radio-style, compact) ===== */
+.artist-type-block{
+  margin: 10px 0 16px;
+  text-align: left;
+}
+
+.artist-type-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,.85);
+  margin-bottom: 10px;
+}
+
+.artist-type-radioRow{
+  display:flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.artist-type-radio{
+  flex: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+
+  padding: 12px 14px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,.92);
+
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.artist-type-radio:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.10);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+}
+
+.artist-type-dot{
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.65);
+  display:inline-block;
+  position: relative;
+}
+
+.artist-type-radio.active{
+  border-color: rgba(255,79,216,0.70);
+  background: rgba(255,79,216,0.10);
+}
+
+.artist-type-radio.active .artist-type-dot{
+  border-color: rgba(34,211,201,0.95);
+}
+
+.artist-type-radio.active .artist-type-dot::after{
+  content:"";
+  position:absolute;
+  inset: 2px;
+  border-radius: 999px;
+  background: rgba(34,211,201,0.95);
+}
+
+.artist-type-label{
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.artist-type-hint{
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.62);
+  font-weight: 600;
+}
 
 
 
