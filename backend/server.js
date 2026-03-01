@@ -8,6 +8,12 @@ dotenv.config();
 import userRoutes from "./routes/userRoutes.js";
 import chordRoutes from "./routes/chordRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import availabilityRoutes from "./routes/availabilityRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import { startHoldExpiryJob } from "./jobs/holdExpiryJobs.js";
+
+
+startHoldExpiryJob();
 
 const app = express();
 
@@ -23,6 +29,9 @@ mongoose
 app.use("/api/users", userRoutes);
 app.use("/api/chords", chordRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/availability", availabilityRoutes);
+app.use("/api/bookings", bookingRoutes);
+
 
 
 app.listen(5000, () => console.log("Backend running on port 5000"));

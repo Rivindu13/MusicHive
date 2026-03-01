@@ -1,0 +1,448 @@
+/* Bookings page only (compatible with your artistDash base CSS) */
+
+/* ===== Hero ===== */
+.bookingsHeroCard{
+  padding: 18px 20px;
+  display:flex;
+  justify-content:space-between;
+  margin-top: 34px;
+  gap: 14px;
+}
+
+.bookingsHeroCard__title{
+  margin: 0;
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.bookingsHeroCard__sub{
+  margin: 6px 0 0;
+  color: rgba(255,255,255,.55);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bookingsHeroCard__right{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+
+.bookingsHeroCard__range{
+  color: rgba(255,255,255,.55);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-align:right;
+}
+
+.bookingsHeroCard__btn{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  padding: 10px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+.bookingsHeroCard__btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* ===== Tabs ===== */
+.bookingsTabsWrap{
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.bookingsTabs{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.bookingsTab{
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 900;
+  padding: 10px 14px;
+  border-radius: 14px;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.bookingsTab--active{
+  background: linear-gradient(180deg, rgba(34,211,201,.22), rgba(255,255,255,.06));
+  border-color: rgba(34,211,201,.35);
+  color: rgba(255,255,255,.92);
+}
+
+.bookingsTab__badge{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(34,211,201,.22);
+  border: 1px solid rgba(34,211,201,.35);
+  color: rgba(255,255,255,.92);
+}
+
+/* ===== Empty state ===== */
+.bookingsEmptyState{
+  border-radius: 18px;
+  padding: 18px 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  color: rgba(255,255,255,.70);
+  font-weight: 700;
+}
+
+/* ===== Availability ===== */
+.bookingsContent{
+  margin-top: 0;
+  padding-bottom: 12px;
+}
+
+.availabilityStack{
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+.availabilityRowCard{
+  border-radius: 18px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+
+  display:flex;
+  justify-content:space-between;
+  gap: 14px;
+  align-items:center;
+}
+
+.availabilityRowCard__date{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  min-width: 240px;
+}
+
+.availabilityRowCard__day{
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.availabilityRowCard__ymd{
+  color: rgba(255,255,255,.45);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.availabilityRowCard__slots{
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  justify-content: initial; 
+}
+
+/* Slot chips */
+.slotChip{
+  width: 100%;        /* was 360px */
+  min-width: 0;       /* important so it can shrink */
+  border-radius: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap: 6px;
+
+  cursor: pointer;
+  text-align:left;
+}
+
+.slotChip:disabled{
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.slotChip__title{
+  font-weight: 1000;
+  letter-spacing: .2px;
+}
+
+.slotChip__meta{
+  color: rgba(255,255,255,.65);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.slotChip__dot{
+  margin: 0 8px;
+  color: rgba(255,255,255,.35);
+}
+
+.slotChip--open{
+  background: linear-gradient(180deg, rgba(34,211,201,.18) 0%, rgba(255,255,255,.06) 100%);
+  border-color: rgba(34,211,201,.28);
+}
+
+.slotChip--disabled{
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.10);
+}
+
+.slotChip--booked{
+  background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border-color: rgba(255,255,255,.12);
+}
+
+.slotChip--held{
+  background: linear-gradient(180deg, rgba(255,193,7,.18) 0%, rgba(255,255,255,.06) 100%);
+  border-color: rgba(255,193,7,.28);
+}
+
+/* ===== Requests ===== */
+.requestsStack{
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+.requestRowCard{
+  border-radius: 18px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+
+  display:flex;
+  justify-content:space-between;
+  gap: 14px;
+  align-items:flex-start;
+}
+
+.requestRowCard__left{
+  display:flex;
+  gap: 14px;
+  align-items:flex-start;
+}
+
+.requestRowCard__avatar{
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.88);
+  opacity: .9;
+  flex: 0 0 auto;
+}
+
+.requestRowCard__body{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.requestRowCard__title{
+  font-weight: 1000;
+  font-size: 15px;
+}
+
+.requestRowCard__meta{
+  color: rgba(255,255,255,.55);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.requestRowCard__uid{
+  color: rgba(255,255,255,.82);
+  font-weight: 900;
+}
+
+.requestRowCard__note{
+  color: rgba(255,255,255,.75);
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 760px;
+}
+
+.requestRowCard__right{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+/* Action buttons (match dashboard buttons vibe) */
+.actionBtn{
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-weight: 1000;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  color: rgba(255,255,255,.92);
+}
+
+.actionBtn--accept{
+  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
+  border-color: rgba(255,255,255,.10);
+}
+
+.actionBtn--reject{
+  background: rgba(90,90,90,.55);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+/* ===== Upcoming ===== */
+.upcomingStack{
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+.upcomingRowCard{
+  border-radius: 18px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+
+  display:flex;
+  justify-content:space-between;
+  gap: 14px;
+  align-items:center;
+}
+
+.upcomingRowCard__left{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+}
+
+.upcomingRowCard__icon{
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(34,211,201,.18);
+  border: 1px solid rgba(34,211,201,.28);
+  color: rgba(255,255,255,.92);
+  font-weight: 1000;
+}
+
+.upcomingRowCard__body{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+}
+
+.upcomingRowCard__title{
+  font-weight: 1000;
+  font-size: 15px;
+}
+
+.upcomingRowCard__meta{
+  color: rgba(255,255,255,.55);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.upcomingRowCard__uid{
+  color: rgba(255,255,255,.82);
+  font-weight: 900;
+}
+
+.upcomingRowCard__dot{
+  margin: 0 8px;
+  color: rgba(255,255,255,.35);
+}
+
+.upcomingRowCard__status{
+  color: rgba(255,255,255,.82);
+  font-weight: 900;
+}
+
+.statusPill{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 1000;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.88);
+}
+
+.statusPill--accepted{
+  border-color: rgba(255,193,7,.22);
+  background: rgba(255,193,7,.12);
+}
+
+.statusPill--confirmed{
+  border-color: rgba(34,211,201,.28);
+  background: rgba(34,211,201,.18);
+}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .bookingsHeroCard{
+    flex-direction: column;
+    align-items:flex-start;
+  }
+
+  .bookingsHeroCard__right{
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .availabilityRowCard{
+    flex-direction: column;
+    align-items:flex-start;
+  }
+
+  .availabilityRowCard__slots{
+    width: 100%;
+    justify-content:flex-start;
+    flex-direction: column;
+  }
+
+  .slotChip{
+    width: 100%;
+  }
+
+  .requestRowCard{
+    flex-direction: column;
+    align-items:flex-start;
+  }
+
+  .requestRowCard__right{
+    margin-top: 10px;
+  }
+
+  .upcomingRowCard{
+    flex-direction: column;
+    align-items:flex-start;
+  }
+}

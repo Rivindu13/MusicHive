@@ -105,7 +105,7 @@ export default function ArtistDashboard() {
             <span>Overview</span>
           </a>
 
-          <a className="artistDash__navItem" href="#">
+          <a className="artistDash__navItem" href="/artist/bookings">
             <span className="artistDash__navIcon">
               <FiCalendar />
             </span>
