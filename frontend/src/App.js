@@ -16,6 +16,11 @@ import MyChords from "./pages/Artist/MyChords";
 import ArtistReviews from "./pages/Artist/ArtistReviews";
 import ArtistProfile from "./pages/Artist/ArtistProfile.jsx";
 import ArtistBookings from "./pages/Artist/ArtistBookings.jsx";
+import CustomerDashboard from "./pages/Customer/CustomerDashboardPage.jsx";
+import CustomerBookingArtists from "./pages/Customer/CustomerBookingArtists.jsx";
+import CustomerBookingPage from "./pages/Customer/CustomerBookingPage.jsx";
+
+
 
 
 import "./App.css";
@@ -28,7 +33,8 @@ function App() {
   const hideLayout =
   location.pathname.startsWith("/signup") ||
   location.pathname.startsWith("/login") ||
-  location.pathname.startsWith("/artist");
+  location.pathname.startsWith("/artist") ||
+  location.pathname.startsWith("/customer");
 
   return (
     <>
@@ -61,6 +67,9 @@ function App() {
         <Route path="/artist/reviews" element={<ArtistReviews />} />
         <Route path="/artist/profile" element={<ArtistProfile />} />
         <Route path="/artist/bookings" element={<ArtistBookings />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+        <Route path="/customer/book-artists" element={<CustomerBookingArtists />} />
+        <Route path="/customer/booking" element={<CustomerBookingPage />} />
 
       </Routes>
 

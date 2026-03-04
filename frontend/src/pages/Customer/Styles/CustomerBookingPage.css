@@ -1,0 +1,368 @@
+.customerBookingPage .cbpHeader{
+  margin-top: 26px;
+  display:flex;
+  align-items:flex-start;
+  gap: 14px;
+}
+
+.customerBookingPage .cbpBack{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.90);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor:pointer;
+  font-weight: 900;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  height: 40px;
+}
+
+.customerBookingPage .cbpTitleWrap{
+  flex: 1;
+}
+
+.customerBookingPage .cbpTitle{
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.customerBookingPage .cbpSub{
+  margin-top: 6px;
+  color: rgba(255,255,255,.60);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* artist summary */
+.customerBookingPage .cbpArtistCard{
+  margin-top: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  padding: 14px;
+  display:flex;
+  gap: 14px;
+  align-items:center;
+}
+
+.customerBookingPage .cbpArtistImg{
+  width: 86px;
+  height: 66px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerBookingPage .cbpArtistInfo{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.customerBookingPage .cbpArtistName{
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.customerBookingPage .cbpArtistMeta{
+  font-weight: 800;
+  font-size: 11px;
+  color: rgba(255,255,255,.62);
+}
+
+.customerBookingPage .cbpArtistPrice{
+  margin-top: 6px;
+  font-weight: 900;
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+}
+
+/* sections */
+.customerBookingPage .cbpSection{
+  margin-top: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  padding: 14px;
+}
+
+.customerBookingPage .cbpSectionTitle{
+  font-weight: 900;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+/* states */
+.customerBookingPage .cbpState{
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.customerBookingPage .cbpState--error{
+  border-color: rgba(255,159,10,.22);
+  background: rgba(255,159,10,.10);
+  color: rgba(255,255,255,.86);
+}
+
+.customerBookingPage .cbpState--success{
+  border-color: rgba(34,211,201,.22);
+  background: rgba(34,211,201,.10);
+  color: rgba(255,255,255,.90);
+}
+
+/* availability list */
+.customerBookingPage .cbpAvailList{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.customerBookingPage .cbpAvailRow{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  padding: 12px;
+  display:flex;
+  gap: 12px;
+  align-items:flex-start;
+}
+
+.customerBookingPage .cbpAvailDate{
+  width: 170px;
+}
+
+.customerBookingPage .cbpAvailDay{
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.customerBookingPage .cbpAvailYmd{
+  font-weight: 800;
+  font-size: 10px;
+  color: rgba(255,255,255,.55);
+  margin-top: 4px;
+}
+
+.customerBookingPage .cbpAvailSlots{
+  flex: 1;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customerBookingPage .cbpSlot{
+  flex: 1;
+  min-width: 180px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  padding: 10px 12px;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  cursor:pointer;
+  text-align:left;
+  transition: transform .12s ease, border-color .12s ease;
+}
+
+.customerBookingPage .cbpSlot:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.22);
+}
+
+.customerBookingPage .cbpSlot--disabled{
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none !important;
+}
+
+.customerBookingPage .cbpSlot--selected{
+  border-color: rgba(255,255,255,.45);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12) inset;
+}
+
+.customerBookingPage .cbpSlotTitle{
+  font-weight: 900;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.customerBookingPage .cbpSlotMeta{
+  font-weight: 800;
+  font-size: 10px;
+  color: rgba(255,255,255,.70);
+}
+
+.customerBookingPage .cbpDot{
+  margin: 0 8px;
+  opacity: .75;
+}
+
+/* note */
+.customerBookingPage .cbpNote{
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.12);
+  color: rgba(255,255,255,.90);
+  padding: 12px;
+  outline: none;
+  font-weight: 800;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.customerBookingPage .cbpSummaryRow{
+  margin-top: 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+}
+
+.customerBookingPage .cbpChosen{
+  flex: 1;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.10);
+  padding: 10px 12px;
+}
+
+.customerBookingPage .cbpChosenLabel{
+  font-size: 10px;
+  font-weight: 900;
+  color: rgba(255,255,255,.60);
+}
+
+.customerBookingPage .cbpChosenValue{
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,.90);
+}
+
+.customerBookingPage .cbpSubmit{
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 11px;
+  border: 1px solid rgba(255,159,10,.35);
+  background: rgba(255,159,10,.95);
+  color: #1c1200;
+  cursor:pointer;
+  min-width: 190px;
+}
+
+.customerBookingPage .cbpSubmit:disabled{
+  opacity: .55;
+  cursor:not-allowed;
+}
+
+/* small screens */
+@media (max-width: 740px){
+  .customerBookingPage .cbpHeader{
+    flex-direction: column;
+    align-items:flex-start;
+  }
+  .customerBookingPage .cbpAvailRow{
+    flex-direction: column;
+  }
+  .customerBookingPage .cbpAvailDate{
+    width: auto;
+  }
+  .customerBookingPage .cbpSummaryRow{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .customerBookingPage .cbpSubmit{
+    width: 100%;
+  }
+}
+
+/* CustomerBookingPage.css (KEEP your existing CSS, add ONLY these at the bottom) */
+
+.customerBookingPage .cbpSectionTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.customerBookingPage .cbpGhostBtn{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.88);
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor:pointer;
+  font-weight: 900;
+  font-size: 11px;
+}
+
+.customerBookingPage .cbpSelectedCard{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.12);
+  padding: 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+}
+
+.customerBookingPage .cbpSelectedMain{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.customerBookingPage .cbpSelectedBig{
+  font-weight: 900;
+  font-size: 13px;
+  color: rgba(255,255,255,.92);
+}
+
+.customerBookingPage .cbpSelectedSmall{
+  font-weight: 800;
+  font-size: 11px;
+  color: rgba(255,255,255,.62);
+}
+
+.customerBookingPage .cbpMiniPrimary{
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 11px;
+  border: 1px solid rgba(255,159,10,.35);
+  background: rgba(255,159,10,.95);
+  color: #1c1200;
+  cursor:pointer;
+}
+
+.customerBookingPage .cbpSlotsWrap{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.10);
+}
+
+.customerBookingPage .cbpMiniHint{
+  font-weight: 900;
+  font-size: 11px;
+  color: rgba(255,255,255,.70);
+  margin-bottom: 10px;
+}

@@ -1,0 +1,648 @@
+/* ===== Page Scoped Styles ===== */
+.customerBookingArtistsPage .cbaHeader{
+  margin-top: 34px;
+}
+
+.customerBookingArtistsPage .cbaTitle{
+  margin: 0 0 12px 0;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.customerBookingArtistsPage .cbaFilters{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+/* Search bar */
+.customerBookingArtistsPage .cbaSearch{
+  position: relative;
+  flex: 1;
+  max-width: 520px;
+}
+
+.customerBookingArtistsPage .cbaSearch__icon{
+  position:absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: .8;
+  color: rgba(0,0,0,.55);
+}
+
+.customerBookingArtistsPage .cbaSearch input{
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.88);
+  color: #000;
+  font-weight: 700;
+  outline: none;
+}
+
+.customerBookingArtistsPage .cbaSearch input::placeholder{
+  color: rgba(0,0,0,.55);
+  font-weight: 700;
+}
+
+/* Genre dropdown */
+.customerBookingArtistsPage .cbaSelectWrap{
+  position: relative;
+  min-width: 160px;
+}
+
+.customerBookingArtistsPage .cbaSelect{
+  width: 100%;
+  padding: 12px 36px 12px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.14);
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.customerBookingArtistsPage .cbaSelect option{
+  background: #0b0a1a;
+  color: #fff;
+}
+
+.customerBookingArtistsPage .cbaSelect__chev{
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: .85;
+}
+
+/* ===== Grid ===== */
+.customerBookingArtistsPage .cbaGrid{
+  margin-top: 14px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  padding-bottom: 12px;
+}
+
+.customerBookingArtistsPage .cbaEmpty{
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+}
+
+/* ===== Card ===== */
+.customerBookingArtistsPage .cbaCard{
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  overflow: hidden;
+}
+
+.customerBookingArtistsPage .cbaCard__top{
+  padding: 10px 12px 0 12px;
+}
+
+.customerBookingArtistsPage .cbaCard__date{
+  font-size: 10px;
+  font-weight: 900;
+  color: rgba(255,255,255,.75);
+}
+
+/* Body layout like screenshot (image left + details right) */
+.customerBookingArtistsPage .cbaCard__body{
+  display:flex;
+  gap: 12px;
+  padding: 10px 12px 14px 12px;
+  align-items:flex-start;
+}
+
+.customerBookingArtistsPage .cbaCard__img{
+  width: 84px;
+  height: 64px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerBookingArtistsPage .cbaCard__texts{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.customerBookingArtistsPage .cbaCard__name{
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.customerBookingArtistsPage .cbaCard__meta{
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.60);
+}
+
+/* Buttons row */
+/* When only one button exists, keep it at bottom-right */
+.customerBookingArtistsPage .cbaCard__actions{
+  display:flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.customerBookingArtistsPage .cbaCard__actions .cbaBtn{
+  margin-left: auto; /* pushes button to the right */
+}
+
+.customerBookingArtistsPage .cbaBtn{
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 10px;
+  cursor:pointer;
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+.customerBookingArtistsPage .cbaBtn--outline{
+  background: rgba(255,255,255,.90);
+  color: rgba(36, 78, 255, 1);
+}
+
+.customerBookingArtistsPage .cbaBtn--primary{
+  background: rgba(36, 78, 255, 1);
+  color: #fff;
+  border-color: rgba(36, 78, 255, 1);
+}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .customerBookingArtistsPage .cbaGrid{
+    grid-template-columns: 1fr;
+  }
+
+  .customerBookingArtistsPage .cbaFilters{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .customerBookingArtistsPage .cbaSearch{
+    width: 100%;
+    max-width: none;
+  }
+
+  .customerBookingArtistsPage .cbaSelectWrap{
+    width: 180px;
+  }
+}
+
+/* ================= Drawer (View Profile) ================= */
+.customerBookingArtistsPage .cbaDrawerOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.customerBookingArtistsPage .cbaDrawer{
+  width: min(520px, 94vw);
+  height: 100vh;
+  background: rgba(14, 14, 30, .92);
+  border-left: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 30px 90px rgba(0,0,0,.65);
+  backdrop-filter: blur(12px);
+  padding: 16px 16px 18px 16px;
+  overflow-y: auto;
+}
+
+.customerBookingArtistsPage .cbaDrawer__top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 8px 14px 8px;
+}
+
+.customerBookingArtistsPage .cbaDrawer__title{
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-size: 16px;
+  color: rgba(255,255,255,.92);
+}
+
+.customerBookingArtistsPage .cbaDrawer__close{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+.customerBookingArtistsPage .cbaDrawer__state{
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+  margin: 6px 6px 10px 6px;
+}
+
+/* Profile card */
+.customerBookingArtistsPage .cbaProfileCard{
+  margin: 0 6px 14px 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  padding: 14px;
+}
+
+.customerBookingArtistsPage .cbaProfileCard__head{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+}
+
+.customerBookingArtistsPage .cbaProfileAvatar{
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerBookingArtistsPage .cbaProfileHeadTexts{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+  flex: 1;
+}
+
+.customerBookingArtistsPage .cbaProfileName{
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.customerBookingArtistsPage .cbaProfileSub{
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.62);
+}
+
+.customerBookingArtistsPage .cbaProfileRatingRow{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.customerBookingArtistsPage .cbaProfileRatingText{
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.70);
+}
+
+/* Fields */
+.customerBookingArtistsPage .cbaProfileFields{
+  margin-top: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.customerBookingArtistsPage .cbaField{
+  display:grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  align-items:flex-start;
+}
+
+.customerBookingArtistsPage .cbaField__label{
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.80);
+}
+
+.customerBookingArtistsPage .cbaField__value{
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+
+.customerBookingArtistsPage .cbaField__value--box{
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
+  min-height: 86px;
+  white-space: pre-wrap;
+}
+
+/* Buttons bottom */
+.customerBookingArtistsPage .cbaProfileActions{
+  display:flex;
+  justify-content:space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.customerBookingArtistsPage .cbaBigBtn{
+  flex: 1;
+  padding: 12px 12px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 11px;
+  border: 1px solid rgba(255,255,255,.14);
+  cursor:pointer;
+}
+
+.customerBookingArtistsPage .cbaBigBtn--secondary{
+  background: rgba(34,211,201,.85);
+  color: #062422;
+  border-color: rgba(34,211,201,.35);
+}
+
+.customerBookingArtistsPage .cbaBigBtn--primary{
+  background: rgba(255,159,10,.95);
+  color: #1c1200;
+  border-color: rgba(255,159,10,.35);
+}
+
+/* Reviews */
+.customerBookingArtistsPage .cbaReviewsSection{
+  margin: 0 6px 18px 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  padding: 14px;
+}
+
+.customerBookingArtistsPage .cbaReviewsTitle{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.customerBookingArtistsPage .cbaReviewsList{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.customerBookingArtistsPage .cbaReviewCard{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  padding: 12px;
+}
+
+.customerBookingArtistsPage .cbaReviewTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.customerBookingArtistsPage .cbaReviewAvatar{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.20);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerBookingArtistsPage .cbaReviewInfo{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 2px;
+}
+
+.customerBookingArtistsPage .cbaReviewName{
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.customerBookingArtistsPage .cbaReviewMeta{
+  font-weight: 800;
+  font-size: 10px;
+  color: rgba(255,255,255,.55);
+}
+
+.customerBookingArtistsPage .cbaReviewRating{
+  flex: 0 0 auto;
+}
+
+/* Stars */
+.customerBookingArtistsPage .cbaStars{
+  display:flex;
+  gap: 2px;
+  line-height: 1;
+}
+
+.customerBookingArtistsPage .cbaStar{
+  font-size: 12px;
+  color: rgba(255,255,255,.25);
+}
+
+.customerBookingArtistsPage .cbaStar--full{
+  color: rgba(255, 215, 90, .95);
+}
+.customerBookingArtistsPage .cbaStar--half{
+  color: rgba(255, 215, 90, .65);
+}
+
+.customerBookingArtistsPage .cbaReviewComment{
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+.customerBookingArtistsPage .cbaReviewComment--muted{
+  color: rgba(255,255,255,.45);
+}
+
+/* ================= Availability (inside drawer) ================= */
+.customerBookingArtistsPage .cbaAvailWrap{
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.10);
+}
+
+.customerBookingArtistsPage .cbaAvailHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.customerBookingArtistsPage .cbaAvailTitle{
+  font-weight: 900;
+  font-size: 12px;
+  color: rgba(255,255,255,.85);
+}
+
+.customerBookingArtistsPage .cbaAvailHide{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.85);
+  font-weight: 900;
+  font-size: 11px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor:pointer;
+}
+
+.customerBookingArtistsPage .cbaAvailState{
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+}
+
+/* list of days */
+.customerBookingArtistsPage .cbaAvailList{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.customerBookingArtistsPage .cbaAvailRow{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  padding: 12px;
+  display:flex;
+  gap: 12px;
+  align-items:flex-start;
+}
+
+.customerBookingArtistsPage .cbaAvailDate{
+  width: 160px;
+}
+
+.customerBookingArtistsPage .cbaAvailDay{
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.customerBookingArtistsPage .cbaAvailYmd{
+  font-weight: 800;
+  font-size: 10px;
+  color: rgba(255,255,255,.55);
+  margin-top: 4px;
+}
+
+/* slot pills */
+.customerBookingArtistsPage .cbaAvailSlots{
+  flex: 1;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customerBookingArtistsPage .cbaSlotPill{
+  flex: 1;
+  min-width: 170px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  padding: 10px 12px;
+}
+
+.customerBookingArtistsPage .cbaSlotPill__title{
+  font-weight: 900;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.customerBookingArtistsPage .cbaSlotPill__meta{
+  font-weight: 800;
+  font-size: 10px;
+  color: rgba(255,255,255,.70);
+}
+
+.customerBookingArtistsPage .cbaSlotPill__dot{
+  margin: 0 8px;
+  opacity: .75;
+}
+
+/* status colors */
+.customerBookingArtistsPage .cbaSlotPill--open{
+  background: rgba(34,211,201,.12);
+  border-color: rgba(34,211,201,.22);
+}
+
+.customerBookingArtistsPage .cbaSlotPill--booked{
+  background: rgba(255,159,10,.10);
+  border-color: rgba(255,159,10,.22);
+}
+
+.customerBookingArtistsPage .cbaSlotPill--disabled{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+  opacity: .75;
+}
+
+.customerBookingArtistsPage .cbaSlotPill--held{
+  background: rgba(139,92,246,.10);
+  border-color: rgba(139,92,246,.22);
+}
+
+/* small screens */
+@media (max-width: 520px){
+  .customerBookingArtistsPage .cbaAvailRow{
+    flex-direction: column;
+  }
+  .customerBookingArtistsPage .cbaAvailDate{
+    width: auto;
+  }
+}
+
+.customerBookingArtistsPage .cbaSlotPill{
+  cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease;
+}
+.customerBookingArtistsPage .cbaSlotPill:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.22);
+}
+.customerBookingArtistsPage .cbaSlotPill--disabledUi{
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none !important;
+}
+.customerBookingArtistsPage .cbaSlotPill--selected{
+  border-color: rgba(255,255,255,.45);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12) inset;
+}

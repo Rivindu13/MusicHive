@@ -1,0 +1,245 @@
+/* Scoped so it won't affect artist pages */
+.customerDashPage .custHero{
+  margin-top: 34px;
+  margin-bottom: 14px;
+}
+
+.customerDashPage .custHero__row{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+}
+
+.customerDashPage .custHero__title{
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.customerDashPage .custHero__line{
+  height: 2px;
+  flex: 1;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  opacity: .85;
+  transform: translateY(6px);
+}
+
+.customerDashPage .custHero__sub{
+  margin: 8px 0 0;
+  color: rgba(255,255,255,.55);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* ===== Stats list (4 stacked like screenshot) ===== */
+.customerDashPage .custStats{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.customerDashPage .custStatCard{
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+
+.customerDashPage .custStatCard__icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  display:grid;
+  place-items:center;
+  opacity: .95;
+}
+
+.customerDashPage .custStatCard__label{
+  font-weight: 800;
+  color: rgba(255,255,255,.88);
+}
+
+.customerDashPage .custStatCard__value{
+  margin-left:auto;
+  font-weight: 900;
+  color: rgba(34,211,201,.92);
+}
+
+/* ===== My Bookings Card ===== */
+.customerDashPage .custBookingsCard{
+  margin-top: 14px;
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  backdrop-filter: blur(10px);
+}
+
+.customerDashPage .custBookingsCard__header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 6px 6px 10px 6px;
+}
+
+.customerDashPage .custBookingsCard__titleWrap{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.customerDashPage .custBookingsCard__icon{
+  width: 26px;
+  height: 26px;
+  display:grid;
+  place-items:center;
+  opacity: .9;
+}
+
+.customerDashPage .custBookingsCard__title{
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.customerDashPage .custBookingsCard__viewAll{
+  color: rgba(34,211,201,.9);
+  text-decoration:none;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.customerDashPage .custBookingsCard__list{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+/* Booking row */
+.customerDashPage .custBookingRow{
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(12,12,22,.28);
+  border: 1px solid rgba(255,255,255,.06);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 12px;
+}
+
+.customerDashPage .custBookingRow__left{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  min-width: 280px;
+}
+
+.customerDashPage .custBookingRow__avatar{
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.88);
+  opacity: .9;
+}
+
+.customerDashPage .custBookingRow__texts{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.customerDashPage .custBookingRow__title{
+  font-weight: 900;
+}
+
+.customerDashPage .custBookingRow__sub{
+  font-size: 12px;
+  color: rgba(255,255,255,.60);
+}
+
+.customerDashPage .custBookingRow__right{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+
+.customerDashPage .custBookingRow__priceWrap{
+  text-align:right;
+  min-width: 110px;
+}
+
+.customerDashPage .custBookingRow__price{
+  color: rgba(34,211,201,.95);
+  font-weight: 900;
+}
+
+.customerDashPage .custBookingRow__time{
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(255,255,255,.38);
+}
+
+.customerDashPage .custBookingRow__actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+/* Status pill */
+.customerDashPage .custStatusPill{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.90);
+}
+
+.customerDashPage .custStatusPill--confirmed{
+  border-color: rgba(34,211,201,.30);
+  background: rgba(34,211,201,.16);
+}
+
+.customerDashPage .custStatusPill--pending{
+  border-color: rgba(255,193,7,.30);
+  background: rgba(255,193,7,.16);
+}
+
+/* Cancel button */
+.customerDashPage .custCancelBtn{
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,0,0,.22);
+  background: rgba(255,0,0,.14);
+  color: rgba(255,255,255,.92);
+  font-weight: 900;
+  font-size: 11px;
+  cursor:pointer;
+}
+
+.customerDashPage .custCancelBtn:hover{
+  background: rgba(255,0,0,.22);
+}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .customerDashPage .custBookingRow{
+    flex-direction: column;
+    align-items:flex-start;
+  }
+  .customerDashPage .custBookingRow__right{
+    width: 100%;
+    justify-content:space-between;
+  }
+}

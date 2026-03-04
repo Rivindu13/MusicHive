@@ -52,7 +52,7 @@ const Login = () => {
 
     if (profile.role === "artist" || profile.role === "band") {
       navigate("/artist/dashboard", { state: { profile } });
-    } else if (profile.role === "customer") {
+    } else if (profile.role === "organizer") {
       navigate("/customer/dashboard");
     } else if (profile.role === "admin") {
       navigate("/admin/dashboard");

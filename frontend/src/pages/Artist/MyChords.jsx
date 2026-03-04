@@ -258,7 +258,7 @@ export default function MyChords() {
             <span>Overview</span>
           </Link>
 
-          <a className="chordsPage__navItem" href="#">
+          <a className="chordsPage__navItem" href="/artist/bookings">
             <span className="chordsPage__navIcon"><FiCalendar /></span>
             <span>Bookings</span>
           </a>

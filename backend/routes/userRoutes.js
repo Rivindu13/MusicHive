@@ -34,6 +34,46 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ✅ GET all artists/bands for customer booking page
+// /api/users/artists?genre=Pop&search=ave&onlyComplete=true
+router.get("/artists", async (req, res) => {
+  try {
+    const { genre, search, onlyComplete } = req.query;
+
+    const query = {
+      role: { $in: ["artist", "band"] },
+    };
+
+    if (onlyComplete === "true") {
+      query["artistProfile.isProfileComplete"] = true;
+    }
+
+    if (genre && genre !== "All Genres") {
+      query["artistProfile.genres"] = genre; // matches if genre is inside array
+    }
+
+    if (search && search.trim()) {
+      const s = search.trim();
+      query.$or = [
+        { name: { $regex: s, $options: "i" } },
+        { "artistProfile.location": { $regex: s, $options: "i" } },
+        { "artistProfile.instruments": { $regex: s, $options: "i" } },
+        { "artistProfile.genres": { $regex: s, $options: "i" } },
+      ];
+    }
+
+    const artists = await User.find(query)
+      .select("uid name role photoURL artistProfile.location artistProfile.genres artistProfile.pricePerHour artistProfile.instruments")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json({ success: true, data: artists });
+  } catch (err) {
+    console.error("GET /users/artists error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 /**
  * GET user (your existing)
  */
