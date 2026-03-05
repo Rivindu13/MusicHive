@@ -4,7 +4,7 @@ const router = express.Router();
 import AvailabilitySlot from "../models/AvailabilitySlots.js";
 import User from "../models/User.js";
 
-import { SLOTS, SLOT_TIMES, DAYS_AHEAD } from "../config/bookingConstants.js";
+import { SLOTS, SLOT_TIMES, DAYS_AHEAD, HOLD_MINUTES } from "../config/bookingConstants.js";
 import { addDays, toYMD } from "../utils/date.js";
 
 // Firebase auth middleware
@@ -54,6 +54,7 @@ router.post("/ensure", async (req, res) => {
                   startTime,
                   endTime,
                   status: "OPEN",
+                  heldBy: null,
                   heldUntil: null,
                   bookingId: null,
                 },
@@ -75,7 +76,6 @@ router.post("/ensure", async (req, res) => {
       data: { count: ops.length },
     });
   } catch (err) {
-    // Ignore duplicate key errors from bulk upsert race conditions
     if (err && err.code === 11000) {
       return res.json({
         success: true,
@@ -112,7 +112,80 @@ router.get("/artist/:artistUid", async (req, res) => {
 });
 
 /**
- * PATCH /api/availability/:slotId/toggle
+ * ✅ NEW
+ * PATCH /api/availability/:slotId/hold   (customer clicks slot pill)
+ * Rules:
+ * - only OPEN slot can be held
+ * - or if HELD but expired => can be held
+ * - if already held by same customer => extend/refresh timer
+ * - DISABLED/BOOKED/RESERVED cannot be held
+ */
+router.patch("/:slotId/hold", requireAuth, async (req, res) => {
+  try {
+    const { slotId } = req.params;
+    const customerUid = req.user.uid;
+
+    const now = new Date();
+    const heldUntil = new Date(now.getTime() + HOLD_MINUTES * 60 * 1000);
+
+    const slot = await AvailabilitySlot.findOneAndUpdate(
+      {
+        _id: slotId,
+        status: { $in: ["OPEN", "HELD"] },
+        $or: [
+          { status: "OPEN" },
+          // expired hold can be taken
+          { status: "HELD", heldUntil: { $lt: now } },
+          // same customer can refresh
+          { status: "HELD", heldBy: customerUid },
+        ],
+      },
+      {
+        $set: { status: "HELD", heldBy: customerUid, heldUntil },
+        $setOnInsert: {},
+      },
+      { new: true }
+    );
+
+    if (!slot) {
+      return res.status(409).json({ success: false, message: "Slot not available to hold" });
+    }
+
+    // if slot was HELD by someone else & not expired, it won't match query anyway
+    return res.json({ success: true, data: slot });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * ✅ OPTIONAL (recommended)
+ * PATCH /api/availability/:slotId/release  (customer unselects)
+ * Only releases if customer is the holder and still HELD
+ */
+router.patch("/:slotId/release", requireAuth, async (req, res) => {
+  try {
+    const { slotId } = req.params;
+    const customerUid = req.user.uid;
+
+    const slot = await AvailabilitySlot.findOneAndUpdate(
+      { _id: slotId, status: "HELD", heldBy: customerUid },
+      { $set: { status: "OPEN", heldBy: null, heldUntil: null } },
+      { new: true }
+    );
+
+    if (!slot) {
+      return res.status(404).json({ success: false, message: "No held slot to release" });
+    }
+
+    return res.json({ success: true, data: slot });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * PATCH /api/availability/:slotId/toggle (artist)
  * Body: { status: "OPEN" | "DISABLED" }
  * Rules:
  * - Only owner can toggle
@@ -133,7 +206,6 @@ router.patch("/:slotId/toggle", requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: "Slot not found" });
     }
 
-    // ✅ owner check using Firebase uid
     if (slot.artistUid !== req.user.uid) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
@@ -142,6 +214,7 @@ router.patch("/:slotId/toggle", requireAuth, async (req, res) => {
     if (slot.status === "HELD" && slot.heldUntil && slot.heldUntil < new Date()) {
       slot.status = "OPEN";
       slot.heldUntil = null;
+      slot.heldBy = null;
       slot.bookingId = null;
     }
 

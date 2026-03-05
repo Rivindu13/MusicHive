@@ -3,14 +3,15 @@ import Chord from "../models/chord.js";
 // POST /api/chords
 export const createChord = async (req, res) => {
   try {
-    const { uid, title, genre, imageUrl } = req.body;
+    const { uid, role, title, genre, imageUrl } = req.body;
 
-    if (!uid || !imageUrl) {
-      return res.status(400).json({ message: "uid and imageUrl required" });
+    if (!uid || !role || !imageUrl) {
+      return res.status(400).json({ message: "uid, role and imageUrl required" });
     }
 
     const chord = await Chord.create({
       uid,
+      role,        // ✅ ADD THIS
       title,
       genre,
       imageUrl,
@@ -25,7 +26,19 @@ export const createChord = async (req, res) => {
 // GET /api/chords/artist/:uid
 export const getChordsByArtist = async (req, res) => {
   try {
-    const chords = await Chord.find({ uid: req.params.uid }).sort({
+    const chords = await Chord.find({ uid: req.params.uid, role: "ARTIST" }).sort({
+      createdAt: -1,
+    });
+    return res.json(chords);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ GET /api/chords/customer/:uid
+export const getChordsByCustomer = async (req, res) => {
+  try {
+    const chords = await Chord.find({ uid: req.params.uid, role: "CUSTOMER" }).sort({
       createdAt: -1,
     });
     return res.json(chords);

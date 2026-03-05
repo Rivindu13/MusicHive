@@ -11,13 +11,23 @@ const AvailabilitySlotSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["OPEN", "HELD", "BOOKED", "DISABLED"],
+      enum: ["OPEN", "HELD", "RESERVED", "BOOKED", "DISABLED"],
       default: "OPEN",
       index: true,
     },
 
+    // ✅ who is holding this slot
+    heldBy: { type: String, default: null, index: true },
+
+    // ✅ until when it's held (10 mins)
     heldUntil: { type: Date, default: null },
-    bookingId: { type: mongoose.Schema.Types.ObjectId, ref: "Booking", default: null },
+
+    // ✅ set only when RESERVED/BOOKED
+    bookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
+      default: null,
+    },
   },
   { timestamps: true }
 );

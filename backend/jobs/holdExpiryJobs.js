@@ -2,30 +2,40 @@
 import AvailabilitySlot from "../models/AvailabilitySlots.js";
 import Booking from "../models/Booking.js";
 
-async function runHoldExpiryCleanup() {
+async function runCleanup() {
   const now = new Date();
 
-  // Find expired held slots
-  const expiredSlots = await AvailabilitySlot.find({
-    status: "HELD",
-    heldUntil: { $lt: now },
-  }).lean();
-
-  if (expiredSlots.length === 0) return;
-
-  const bookingIds = expiredSlots.map((s) => s.bookingId).filter(Boolean);
-
-  // Reset slots
+  /**
+   * 1) Release expired HELD slots -> OPEN
+   * (No booking exists at this stage in the new flow)
+   */
   await AvailabilitySlot.updateMany(
     { status: "HELD", heldUntil: { $lt: now } },
-    { $set: { status: "OPEN", heldUntil: null, bookingId: null } }
+    { $set: { status: "OPEN", heldUntil: null, heldBy: null } }
   );
 
-  // mark pending bookings as expired
-  if (bookingIds.length > 0) {
+  /**
+   * 2) Expire PENDING bookings older than 24h (expiresAt)
+   * and release RESERVED slots linked to them
+   */
+  const expiredBookings = await Booking.find({
+    status: "PENDING",
+    expiresAt: { $lt: now },
+  }).select("_id").lean();
+
+  if (expiredBookings.length > 0) {
+    const bookingIds = expiredBookings.map((b) => b._id);
+
+    // mark bookings expired
     await Booking.updateMany(
       { _id: { $in: bookingIds }, status: "PENDING" },
       { $set: { status: "EXPIRED" } }
+    );
+
+    // release reserved slots
+    await AvailabilitySlot.updateMany(
+      { status: "RESERVED", bookingId: { $in: bookingIds } },
+      { $set: { status: "OPEN", bookingId: null, heldUntil: null, heldBy: null } }
     );
   }
 }
@@ -33,8 +43,6 @@ async function runHoldExpiryCleanup() {
 export function startHoldExpiryJob() {
   // every 60s (MVP)
   setInterval(() => {
-    runHoldExpiryCleanup().catch((e) =>
-      console.error("HoldExpiryJob error:", e.message)
-    );
+    runCleanup().catch((e) => console.error("ExpiryJob error:", e.message));
   }, 60 * 1000);
 }

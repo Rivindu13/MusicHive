@@ -1,11 +1,10 @@
-// models/Chord.js
 import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
-    uid: { type: String, required: true },          // reviewer uid
-    name: { type: String, required: true },         // reviewer name
-    photoURL: { type: String, default: "" },        // reviewer photo
+    uid: { type: String, required: true },
+    name: { type: String, required: true },
+    photoURL: { type: String, default: "" },
     rating: { type: Number, required: true, min: 1, max: 5 },
     text: { type: String, default: "" },
   },
@@ -14,21 +13,21 @@ const reviewSchema = new mongoose.Schema(
 
 const chordSchema = new mongoose.Schema(
   {
-    uid: { type: String, required: true },          // chord owner (artist)
+    uid: { type: String, required: true, index: true },
+    role: { type: String, enum: ["ARTIST", "CUSTOMER"], required: true, index: true },
+
     title: { type: String, default: "" },
     genre: { type: String, default: "" },
     imageUrl: { type: String, required: true },
 
-    reviews: { type: [reviewSchema], default: [] }, // ✅ new
+    reviews: { type: [reviewSchema], default: [] },
   },
   { timestamps: true }
 );
 
-// optional: virtual average rating
-chordSchema.virtual("avgRating").get(function () {
-  if (!this.reviews?.length) return 0;
-  const sum = this.reviews.reduce((a, r) => a + (r.rating || 0), 0);
-  return Math.round((sum / this.reviews.length) * 10) / 10; // 1 decimal
-});
+chordSchema.index({ uid: 1, role: 1, createdAt: -1 });
 
-export default mongoose.model("Chord", chordSchema);
+// ✅ IMPORTANT: prevent OverwriteModelError
+const Chord = mongoose.models.Chord || mongoose.model("Chord", chordSchema);
+
+export default Chord;

@@ -54,10 +54,17 @@ function statusLabel(status) {
   if (status === "DISABLED") return "Disabled";
   if (status === "BOOKED") return "Booked";
   if (status === "HELD") return "Held";
+  if (status === "RESERVED") return "Reserved";
   return status || "Open";
 }
 function slotTypeLabel(t) {
   return t === "MORNING" ? "Morning" : t === "EVENING" ? "Evening" : t;
+}
+function formatMMSS(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const mm = String(Math.floor(total / 60)).padStart(2, "0");
+  const ss = String(total % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
 export default function CustomerBookingPage() {
@@ -80,25 +87,24 @@ export default function CustomerBookingPage() {
     profile?.customerName ||
     "Customer";
 
-  // coming from drawer
   const artistUid = location.state?.artistUid || null;
   const artist = location.state?.artist || null;
+
+  const initialSlotId = location.state?.slotId || null;
+  const initialHeldUntil = location.state?.heldUntil || null;
 
   const initialDate = location.state?.date || null;
   const initialSlotType = location.state?.slotType || null;
 
-  // route guard
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
 
     if (!artistUid) {
-      // if user refreshes page, state is lost → go back
       navigate("/customer/book-artists", { replace: true });
     }
   }, [artistUid, navigate]);
 
-  // logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -110,14 +116,12 @@ export default function CustomerBookingPage() {
     }
   };
 
-  // availability range
   const range = useMemo(() => {
     const from = ymd(addDays(new Date(), 1));
     const to = ymd(addDays(new Date(), 14));
     return { from, to };
   }, []);
 
-  // === NEW: hide slots by default, expand only when needed ===
   const [showSlots, setShowSlots] = useState(false);
   const [hasLoadedSlots, setHasLoadedSlots] = useState(false);
 
@@ -127,6 +131,12 @@ export default function CustomerBookingPage() {
 
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [selectedSlotType, setSelectedSlotType] = useState(initialSlotType);
+
+  const [heldSlotId, setHeldSlotId] = useState(initialSlotId);
+  const [heldUntil, setHeldUntil] = useState(initialHeldUntil);
+  const [holdLeftMs, setHoldLeftMs] = useState(0);
+  const [holdErr, setHoldErr] = useState("");
+  const [holding, setHolding] = useState(false);
 
   const grouped = useMemo(() => {
     const map = new Map();
@@ -138,18 +148,15 @@ export default function CustomerBookingPage() {
     return dates.map((d) => ({ date: d, ...map.get(d) }));
   }, [slots]);
 
-  // booking form state
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitErr, setSubmitErr] = useState("");
-  const [success, setSuccess] = useState(null); // { bookingId, status }
+  const [success, setSuccess] = useState(null);
 
-  // get firebase id token
   async function getIdTokenOrThrow() {
     const user = auth.currentUser;
     if (!user) throw new Error("You are not logged in.");
-    const token = await user.getIdToken();
-    return token;
+    return await user.getIdToken();
   }
 
   async function fetchAvailabilityOnce() {
@@ -160,7 +167,6 @@ export default function CustomerBookingPage() {
     setSlotsErr("");
 
     try {
-      // ensure 14 days exist
       await fetch(`${API_BASE}/api/availability/ensure`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,22 +192,6 @@ export default function CustomerBookingPage() {
     }
   }
 
-  // ✅ OPTIMIZED: load availability ONLY when expanded (or if no initial selection)
-  useEffect(() => {
-    if (!artistUid) return;
-
-    // If user arrived without selection, we should open + load slots to let them pick
-    if (!selectedDate || !selectedSlotType) {
-      setShowSlots(true);
-      fetchAvailabilityOnce();
-      return;
-    }
-
-    // Otherwise, load only when user expands
-    if (showSlots) fetchAvailabilityOnce();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artistUid, showSlots]);
-
   async function refreshAvailability() {
     if (!artistUid) return;
     try {
@@ -216,14 +206,191 @@ export default function CustomerBookingPage() {
     } catch {}
   }
 
+  // ✅ NEW: refresh hold when arriving from previous page
+  async function refreshHoldBySlotId(slotId) {
+    if (!slotId) return;
+    setHoldErr("");
+    setHolding(true);
+
+    try {
+      const idToken = await getIdTokenOrThrow();
+
+      const res = await fetch(`${API_BASE}/api/availability/${slotId}/hold`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Slot hold refresh failed");
+      }
+
+      const updated = data.data;
+      setHeldSlotId(updated._id);
+      setHeldUntil(updated.heldUntil);
+      setSelectedDate(updated.date);
+      setSelectedSlotType(updated.slotType);
+
+      await refreshAvailability();
+    } catch (e) {
+      setHoldErr(e.message || "Slot is not held (expired). Pick again.");
+      setHeldSlotId(null);
+      setHeldUntil(null);
+      setSelectedDate(null);
+      setSelectedSlotType(null);
+      await refreshAvailability();
+      setShowSlots(true);
+      fetchAvailabilityOnce();
+    } finally {
+      setHolding(false);
+    }
+  }
+
+  useEffect(() => {
+    if (initialSlotId) {
+      refreshHoldBySlotId(initialSlotId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // load slots only when needed
+  useEffect(() => {
+    if (!artistUid) return;
+
+    if (!heldSlotId) {
+      setShowSlots(true);
+      fetchAvailabilityOnce();
+      return;
+    }
+
+    if (showSlots) fetchAvailabilityOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artistUid, showSlots]);
+
+  // countdown
+  useEffect(() => {
+    if (!heldUntil) {
+      setHoldLeftMs(0);
+      return;
+    }
+
+    const target = new Date(heldUntil).getTime();
+    const tick = () => {
+      const left = target - Date.now();
+      setHoldLeftMs(left);
+
+      if (left <= 0) {
+        setHeldSlotId(null);
+        setHeldUntil(null);
+        setSelectedDate(null);
+        setSelectedSlotType(null);
+        refreshAvailability();
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heldUntil]);
+
+  async function releaseHeld(slotId) {
+    if (!slotId) return;
+    try {
+      const idToken = await getIdTokenOrThrow();
+      await fetch(`${API_BASE}/api/availability/${slotId}/release`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+    } catch {}
+  }
+
+  async function holdSlot(slotObj) {
+    if (!slotObj?._id) return;
+
+    setHoldErr("");
+    setHolding(true);
+
+    try {
+      const idToken = await getIdTokenOrThrow();
+
+      if (heldSlotId && heldSlotId !== slotObj._id) {
+        await fetch(`${API_BASE}/api/availability/${heldSlotId}/release`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+      }
+
+      const res = await fetch(
+        `${API_BASE}/api/availability/${slotObj._id}/hold`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Could not hold slot");
+      }
+
+      const updated = data.data;
+
+      setHeldSlotId(updated._id);
+      setHeldUntil(updated.heldUntil);
+      setSelectedDate(updated.date);
+      setSelectedSlotType(updated.slotType);
+
+      setShowSlots(false);
+
+      await refreshAvailability();
+    } catch (e) {
+      setHoldErr(e.message || "Could not hold slot");
+      await refreshAvailability();
+    } finally {
+      setHolding(false);
+    }
+  }
+
+  // unload release (best effort)
+  useEffect(() => {
+    const onUnload = () => {
+      if (!heldSlotId) return;
+      try {
+        const url = `${API_BASE}/api/availability/${heldSlotId}/release`;
+        if (navigator.sendBeacon) {
+          const blob = new Blob([], { type: "application/json" });
+          navigator.sendBeacon(url, blob);
+        } else {
+          fetch(url, { method: "PATCH", keepalive: true }).catch(() => {});
+        }
+      } catch {}
+    };
+
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [heldSlotId]);
+
   async function submitBooking() {
     setSubmitErr("");
     setSuccess(null);
 
     if (!artistUid) return;
 
-    if (!selectedDate || !selectedSlotType) {
-      setSubmitErr("Please select an available date & slot.");
+    if (!heldSlotId || !heldUntil || holdLeftMs <= 0) {
+      setSubmitErr("Your hold expired. Please select an OPEN slot again.");
       setShowSlots(true);
       await fetchAvailabilityOnce();
       return;
@@ -241,9 +408,7 @@ export default function CustomerBookingPage() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          artistUid,
-          date: selectedDate,
-          slotType: selectedSlotType,
+          slotId: heldSlotId,
           note: note || "",
         }),
       });
@@ -260,19 +425,17 @@ export default function CustomerBookingPage() {
         status: booking?.status || "PENDING",
       });
 
-      // refresh availability after hold
+      setHeldSlotId(null);
+      setHeldUntil(null);
+      setHoldLeftMs(0);
+
       await refreshAvailability();
     } catch (e) {
       setSubmitErr(e.message || "Booking failed");
+      await refreshAvailability();
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function pickSlot(date, slotType, status) {
-    if (status !== "OPEN") return;
-    setSelectedDate(date);
-    setSelectedSlotType(slotType);
   }
 
   const priceText =
@@ -305,6 +468,11 @@ export default function CustomerBookingPage() {
               <FiCalendar />
             </span>
             <span>Booking Artists</span>
+          </Link>
+
+          <Link className="artistDash__navItem" to="/customer/my-bookings">
+            <span className="artistDash__navIcon"><FiCalendar /></span>
+            <span>My Bookings</span>
           </Link>
 
           <Link className="artistDash__navItem" to="/customer/chords">
@@ -373,7 +541,10 @@ export default function CustomerBookingPage() {
           <button
             className="cbpBack"
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={async () => {
+              await releaseHeld(heldSlotId);
+              navigate(-1);
+            }}
           >
             <FiArrowLeft /> Back
           </button>
@@ -381,7 +552,7 @@ export default function CustomerBookingPage() {
           <div className="cbpTitleWrap">
             <h1 className="cbpTitle">Confirm Booking</h1>
             <div className="cbpSub">
-              You can request booking now. Change time only if needed.
+              Select a slot (it will be held for 10 minutes), then request booking.
             </div>
           </div>
         </section>
@@ -414,7 +585,23 @@ export default function CustomerBookingPage() {
           </div>
         </section>
 
-        {/* ✅ Selected slot summary + optional expansion */}
+        {/* Hold banner */}
+        {heldSlotId && heldUntil && holdLeftMs > 0 && (
+          <section className="cbpSection">
+            <div className="cbpState">
+              Held for you ({formatMMSS(holdLeftMs)} left) - 10 minutes
+            </div>
+          </section>
+        )}
+        {holdErr && (
+          <section className="cbpSection">
+            <div className="cbpState cbpState--error">
+              <FiAlertTriangle /> {holdErr}
+            </div>
+          </section>
+        )}
+
+        {/* Selected slot summary + optional expansion */}
         <section className="cbpSection">
           <div className="cbpSectionTop">
             <div className="cbpSectionTitle">Selected Slot</div>
@@ -440,14 +627,14 @@ export default function CustomerBookingPage() {
                     {humanDate(selectedDate)} • {slotTypeLabel(selectedSlotType)}
                   </div>
                   <div className="cbpSelectedSmall">
-                    If you want a different time, click “Change time”.
+                    Click “Change time” to pick another OPEN slot.
                   </div>
                 </>
               ) : (
                 <>
                   <div className="cbpSelectedBig">No slot selected</div>
                   <div className="cbpSelectedSmall">
-                    Expand and pick an OPEN slot.
+                    Expand and pick an OPEN slot (it will be held for 10 minutes).
                   </div>
                 </>
               )}
@@ -491,8 +678,16 @@ export default function CustomerBookingPage() {
               {!slotsLoading && !slotsErr && grouped.length > 0 && (
                 <div className="cbpAvailList">
                   {grouped.map((row) => {
-                    const mStatus = row.MORNING?.status || "OPEN";
-                    const eStatus = row.EVENING?.status || "OPEN";
+                    const m = row.MORNING;
+                    const e = row.EVENING;
+
+                    const mStatus = m?.status || "OPEN";
+                    const eStatus = e?.status || "OPEN";
+
+                    const mSelected =
+                      selectedDate === row.date && selectedSlotType === "MORNING";
+                    const eSelected =
+                      selectedDate === row.date && selectedSlotType === "EVENING";
 
                     return (
                       <div className="cbpAvailRow" key={row.date}>
@@ -506,22 +701,17 @@ export default function CustomerBookingPage() {
                             type="button"
                             className={`cbpSlot ${
                               mStatus !== "OPEN" ? "cbpSlot--disabled" : ""
-                            } ${
-                              selectedDate === row.date &&
-                              selectedSlotType === "MORNING"
-                                ? "cbpSlot--selected"
-                                : ""
-                            }`}
+                            } ${mSelected ? "cbpSlot--selected" : ""}`}
                             onClick={() => {
-                              pickSlot(row.date, "MORNING", mStatus);
-                              if (mStatus === "OPEN") setShowSlots(false); // auto close
+                              if (mStatus !== "OPEN") return;
+                              holdSlot(m);
                             }}
-                            disabled={mStatus !== "OPEN"}
+                            disabled={mStatus !== "OPEN" || holding}
                             title={statusLabel(mStatus)}
                           >
                             <div className="cbpSlotTitle">Morning</div>
                             <div className="cbpSlotMeta">
-                              {(row.MORNING?.startTime || "09:00")}–{(row.MORNING?.endTime || "12:00")}
+                              {(m?.startTime || "09:00")}–{(m?.endTime || "12:00")}
                               <span className="cbpDot">•</span>
                               {statusLabel(mStatus)}
                             </div>
@@ -531,22 +721,17 @@ export default function CustomerBookingPage() {
                             type="button"
                             className={`cbpSlot ${
                               eStatus !== "OPEN" ? "cbpSlot--disabled" : ""
-                            } ${
-                              selectedDate === row.date &&
-                              selectedSlotType === "EVENING"
-                                ? "cbpSlot--selected"
-                                : ""
-                            }`}
+                            } ${eSelected ? "cbpSlot--selected" : ""}`}
                             onClick={() => {
-                              pickSlot(row.date, "EVENING", eStatus);
-                              if (eStatus === "OPEN") setShowSlots(false); // auto close
+                              if (eStatus !== "OPEN") return;
+                              holdSlot(e);
                             }}
-                            disabled={eStatus !== "OPEN"}
+                            disabled={eStatus !== "OPEN" || holding}
                             title={statusLabel(eStatus)}
                           >
                             <div className="cbpSlotTitle">Evening</div>
                             <div className="cbpSlotMeta">
-                              {(row.EVENING?.startTime || "18:00")}–{(row.EVENING?.endTime || "21:00")}
+                              {(e?.startTime || "18:00")}–{(e?.endTime || "21:00")}
                               <span className="cbpDot">•</span>
                               {statusLabel(eStatus)}
                             </div>
@@ -587,7 +772,7 @@ export default function CustomerBookingPage() {
               type="button"
               className="cbpSubmit"
               onClick={submitBooking}
-              disabled={submitting || !selectedDate || !selectedSlotType}
+              disabled={submitting || !heldSlotId || !heldUntil || holdLeftMs <= 0 || holding}
             >
               {submitting ? "REQUESTING..." : "REQUEST BOOKING"}
             </button>
@@ -601,8 +786,8 @@ export default function CustomerBookingPage() {
 
           {success && (
             <div className="cbpState cbpState--success">
-              <FiCheckCircle /> Booking created: <b>{success.bookingId}</b> •
-              Status: <b>{success.status}</b>
+              <FiCheckCircle /> Booking created: <b>{success.bookingId}</b> • Status:{" "}
+              <b>{success.status}</b>
             </div>
           )}
         </section>

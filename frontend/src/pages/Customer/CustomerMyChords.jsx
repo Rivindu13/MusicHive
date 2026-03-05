@@ -22,23 +22,45 @@ import {
   FiFileText,
   FiTrash2,
   FiX,
+  FiHeart,
 } from "react-icons/fi";
 
-import "./styles/MyChords.css";
+import "./Styles/CustomerMyChords.css";
 
-export default function MyChords() {
+const API_BASE = "http://localhost:5000";
+
+/**
+ * IMPORTANT BACKEND NOTE:
+ * You should have endpoints for customers, e.g.
+ *  GET  /api/chords/customer/:uid
+ *  POST /api/chords   { uid, role:"CUSTOMER", title, genre, imageUrl }
+ *  DELETE /api/chords/:id
+ *
+ * If you currently only have /api/chords/artist/:uid,
+ * update backend to support customer as well.
+ */
+
+export default function CustomerMyChords() {
   const location = useLocation();
   const navigate = useNavigate();
 
   const profile =
-    location.state?.profile || JSON.parse(localStorage.getItem("profile")) || null;
+    location.state?.profile ||
+    JSON.parse(localStorage.getItem("profile")) ||
+    null;
 
   const uid = profile?.uid;
 
-  const fullName = profile?.name || "Name_Surname";
+  const fullName =
+    profile?.name ||
+    profile?.fullName ||
+    profile?.username ||
+    profile?.customerName ||
+    "Customer";
+
   const profilePic = profile?.photoURL || null;
 
-  // ✅ route guard: prevent opening page after logout / refresh
+  // ✅ route guard
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
@@ -47,7 +69,7 @@ export default function MyChords() {
   // ✅ logout
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Firebase session end
+      await signOut(auth);
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
@@ -62,16 +84,16 @@ export default function MyChords() {
 
   const [chords, setChords] = useState([]);
 
-  // ✅ Upload modal state
+  // Upload modal
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadGenre, setUploadGenre] = useState("Pop");
 
-  // ✅ Preview modal state
+  // Preview modal
   const [previewChord, setPreviewChord] = useState(null);
 
-  // ✅ Deleting state
+  // Delete state
   const [deletingId, setDeletingId] = useState(null);
 
   // ===== helpers: rating/ reviews =====
@@ -83,6 +105,7 @@ export default function MyChords() {
     if (!reviews.length) return 0;
     const sum = reviews.reduce((a, r) => a + (Number(r.rating) || 0), 0);
     return Math.round((sum / reviews.length) * 10) / 10;
+    // ex: 4.36 -> 4.4
   };
 
   const renderStars = (rating, size = 16) => {
@@ -113,12 +136,16 @@ export default function MyChords() {
     }
   };
 
-  // ===== fetch chords =====
+  // ===== fetch chords (CUSTOMER) =====
   const fetchChords = async () => {
     if (!uid) return;
-    const res = await fetch(`http://localhost:5000/api/chords/artist/${uid}`);
-    const data = await res.json();
-    setChords(Array.isArray(data) ? data : []);
+    try {
+      const res = await fetch(`${API_BASE}/api/chords/customer/${uid}`);
+      const data = await res.json();
+      setChords(Array.isArray(data) ? data : []);
+    } catch {
+      setChords([]);
+    }
   };
 
   useEffect(() => {
@@ -128,7 +155,6 @@ export default function MyChords() {
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-
     return chords.filter((c) => {
       const matchesGenre = genre === "All Genres" || c.genre === genre;
       const title = (c.title || "").toLowerCase();
@@ -152,7 +178,9 @@ export default function MyChords() {
   const uploadOneFileToFirebase = (file) =>
     new Promise((resolve, reject) => {
       const safeName = file.name.replace(/\s+/g, "_");
-      const path = `chords/${uid}/${Date.now()}_${safeName}`;
+
+      // ✅ separate customer uploads from artist uploads
+      const path = `chords/customers/${uid}/${Date.now()}_${safeName}`;
 
       const storageRef = ref(storage, path);
       const task = uploadBytesResumable(storageRef, file);
@@ -177,12 +205,12 @@ export default function MyChords() {
     try {
       const imageUrl = await uploadOneFileToFirebase(uploadFile);
 
-      const res = await fetch("http://localhost:5000/api/chords", {
+      const res = await fetch(`${API_BASE}/api/chords`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid,
-          role: "ARTIST",              // ✅ ADD THIS
+          role: "CUSTOMER", // ✅ let backend store ownerRole
           title: uploadTitle.trim(),
           genre: uploadGenre,
           imageUrl,
@@ -214,7 +242,7 @@ export default function MyChords() {
     setDeletingId(chord._id);
     try {
       // 1) delete from MongoDB
-      const res = await fetch(`http://localhost:5000/api/chords/${chord._id}`, {
+      const res = await fetch(`${API_BASE}/api/chords/${chord._id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -245,7 +273,7 @@ export default function MyChords() {
   }, [chords]);
 
   return (
-    <div className="chordsPage">
+    <div className="chordsPage customerMyChordsPage">
       {/* Sidebar */}
       <aside className="chordsPage__sidebar">
         <div className="chordsPage__brand">
@@ -254,35 +282,38 @@ export default function MyChords() {
         </div>
 
         <nav className="chordsPage__nav">
-          <Link className="chordsPage__navItem" to="/artist/dashboard">
+          <Link className="chordsPage__navItem" to="/customer/dashboard">
             <span className="chordsPage__navIcon"><FiHome /></span>
             <span>Overview</span>
           </Link>
 
-          <a className="chordsPage__navItem" href="/artist/bookings">
+          <Link className="chordsPage__navItem" to="/customer/book-artists">
             <span className="chordsPage__navIcon"><FiCalendar /></span>
-            <span>Bookings</span>
-          </a>
+            <span>Booking Artists</span>
+          </Link>
 
-          <Link className="chordsPage__navItem chordsPage__navItem--active" to="/artist/chords">
+          <Link className="chordsPage__navItem" to="/customer/my-bookings">
+            <span className="chordsPage__navIcon"><FiCalendar /></span>
+            <span>My Bookings</span>
+          </Link>
+
+          <Link className="chordsPage__navItem chordsPage__navItem--active" to="/customer/chords">
             <span className="chordsPage__navIcon"><FiMusic /></span>
             <span>My Chords</span>
           </Link>
 
-          <Link className="chordsPage__navItem" to="/artist/reviews">
+          <Link className="chordsPage__navItem" to="/customer/reviews">
             <span className="chordsPage__navIcon"><FiStar /></span>
             <span>Reviews</span>
           </Link>
         </nav>
 
         <div className="chordsPage__sideBottom">
-          {/* keep profile as link so it doesn't become "button-looking" */}
-          <a className="chordsPage__sideAction" href="/artist/profile">
+          <Link className="chordsPage__sideAction" to="/customer/profile">
             <span className="chordsPage__navIcon"><FiUser /></span>
             <span>Profile</span>
-          </a>
+          </Link>
 
-          {/* ✅ logout as button (styled to look like link) */}
           <button
             type="button"
             className="chordsPage__sideAction chordsPage__sideActionBtn"
@@ -300,6 +331,9 @@ export default function MyChords() {
         <div className="chordsPage__topbar">
           <button className="chordsPage__iconBtn" aria-label="Notifications">
             <FiBell />
+          </button>
+          <button className="chordsPage__iconBtn" aria-label="Favorites">
+            <FiHeart />
           </button>
 
           <div className="chordsPage__user">
@@ -431,7 +465,7 @@ export default function MyChords() {
           </div>
         </footer>
 
-        {/* ✅ Upload Modal */}
+        {/* Upload Modal */}
         {isUploadOpen && (
           <div className="modalOverlay" onMouseDown={closeUpload}>
             <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
@@ -489,7 +523,7 @@ export default function MyChords() {
           </div>
         )}
 
-        {/* ✅ Preview Modal */}
+        {/* Preview Modal */}
         {previewChord && (
           <div className="modalOverlay" onMouseDown={closePreview}>
             <div

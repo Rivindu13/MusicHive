@@ -116,6 +116,11 @@ export default function CustomerDashboardPage() {
             <span>Booking Artists</span>
           </Link>
 
+          <Link className="artistDash__navItem" to="/customer/my-bookings">
+            <span className="artistDash__navIcon"><FiCalendar /></span>
+            <span>My Bookings</span>
+          </Link>
+
           <Link className="artistDash__navItem" to="/customer/chords">
             <span className="artistDash__navIcon"><FiMusic /></span>
             <span>My Chords</span>

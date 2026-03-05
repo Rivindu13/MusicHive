@@ -56,7 +56,14 @@ function statusLabel(status) {
   if (status === "DISABLED") return "Disabled";
   if (status === "BOOKED") return "Booked";
   if (status === "HELD") return "Held";
+  if (status === "RESERVED") return "Reserved";
   return status || "Open";
+}
+function formatMMSS(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const mm = String(Math.floor(total / 60)).padStart(2, "0");
+  const ss = String(total % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
 function Stars({ value = 0 }) {
@@ -127,7 +134,15 @@ export default function CustomerBookingArtists() {
   const [slotsErr, setSlotsErr] = useState("");
   const [slots, setSlots] = useState([]);
 
-  // ✅ NEW: selected slot for navigation
+  // held state
+  const [heldSlotId, setHeldSlotId] = useState(null);
+  const [heldUntil, setHeldUntil] = useState(null);
+  const [holdErr, setHoldErr] = useState("");
+  const [holding, setHolding] = useState(false);
+
+  const [holdLeftMs, setHoldLeftMs] = useState(0);
+
+  // selection
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlotType, setSelectedSlotType] = useState(null);
 
@@ -147,13 +162,18 @@ export default function CustomerBookingArtists() {
     return dates.map((d) => ({ date: d, ...map.get(d) }));
   }, [slots]);
 
-  // ✅ Route guard
+  async function getIdTokenOrThrow() {
+    const user = auth.currentUser;
+    if (!user) throw new Error("You are not logged in.");
+    return await user.getIdToken();
+  }
+
+  // route guard
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
   }, [navigate]);
 
-  // ✅ Logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -165,7 +185,7 @@ export default function CustomerBookingArtists() {
     }
   };
 
-  // ✅ Fetch artists
+  // Fetch artists
   useEffect(() => {
     let debounce = setTimeout(async () => {
       setLoading(true);
@@ -177,7 +197,9 @@ export default function CustomerBookingArtists() {
         if (search.trim()) params.set("search", search.trim());
         params.set("onlyComplete", "true");
 
-        const res = await fetch(`${API_BASE}/api/users/artists?${params.toString()}`);
+        const res = await fetch(
+          `${API_BASE}/api/users/artists?${params.toString()}`
+        );
         const data = await res.json();
 
         if (!res.ok || !data.success) {
@@ -196,7 +218,40 @@ export default function CustomerBookingArtists() {
     return () => clearTimeout(debounce);
   }, [search, genre]);
 
-  const closeDrawer = () => {
+  async function refreshAvailability(uid = openUid) {
+    if (!uid) return;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/availability/artist/${uid}?from=${availabilityRange.from}&to=${availabilityRange.to}`
+      );
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSlots(Array.isArray(data.data) ? data.data : []);
+      }
+    } catch {}
+  }
+
+  async function releaseHeldSlot(slotIdToRelease) {
+    const slotId = slotIdToRelease || heldSlotId;
+    if (!slotId) return;
+    try {
+      const idToken = await getIdTokenOrThrow();
+      await fetch(`${API_BASE}/api/availability/${slotId}/release`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+    } catch {}
+  }
+
+  // ✅ FIXED: closeDrawer with flag
+  const closeDrawer = async ({ releaseHold = true } = {}) => {
+    if (releaseHold) {
+      await releaseHeldSlot();
+    }
+
     setDrawerOpen(false);
     setOpenUid(null);
 
@@ -210,12 +265,20 @@ export default function CustomerBookingArtists() {
     setSlots([]);
     setSlotsErr("");
 
-    // ✅ NEW: reset selection
     setSelectedDate(null);
     setSelectedSlotType(null);
+
+    setHeldSlotId(null);
+    setHeldUntil(null);
+    setHoldLeftMs(0);
+    setHoldErr("");
+    setHolding(false);
   };
 
   async function openDrawerFor(uid) {
+    // switching artists -> release old hold
+    await releaseHeldSlot();
+
     setDrawerOpen(true);
     setOpenUid(uid);
 
@@ -229,9 +292,14 @@ export default function CustomerBookingArtists() {
     setSlots([]);
     setSlotsErr("");
 
-    // ✅ NEW: reset selection when opening another artist
     setSelectedDate(null);
     setSelectedSlotType(null);
+
+    setHeldSlotId(null);
+    setHeldUntil(null);
+    setHoldLeftMs(0);
+    setHoldErr("");
+    setHolding(false);
 
     setProfileLoading(true);
     try {
@@ -269,10 +337,15 @@ export default function CustomerBookingArtists() {
     setShowAvailability(true);
     setSlotsLoading(true);
     setSlotsErr("");
+    setHoldErr("");
 
-    // ✅ NEW: reset selection when reloading availability
+    // reset selection + hold on reload
+    await releaseHeldSlot();
     setSelectedDate(null);
     setSelectedSlotType(null);
+    setHeldSlotId(null);
+    setHeldUntil(null);
+    setHoldLeftMs(0);
 
     try {
       await fetch(`${API_BASE}/api/availability/ensure`, {
@@ -314,6 +387,105 @@ export default function CustomerBookingArtists() {
     if (e.target.classList.contains("cbaDrawerOverlay")) closeDrawer();
   };
 
+  async function holdSlot(slotObj) {
+    if (!slotObj?._id) return;
+
+    setHoldErr("");
+    setHolding(true);
+
+    try {
+      const idToken = await getIdTokenOrThrow();
+
+      // release old hold if different
+      if (heldSlotId && heldSlotId !== slotObj._id) {
+        await fetch(`${API_BASE}/api/availability/${heldSlotId}/release`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+      }
+
+      const res = await fetch(
+        `${API_BASE}/api/availability/${slotObj._id}/hold`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Could not hold slot");
+      }
+
+      const updated = data.data;
+
+      setHeldSlotId(updated._id);
+      setHeldUntil(updated.heldUntil);
+      setSelectedDate(updated.date);
+      setSelectedSlotType(updated.slotType);
+
+      await refreshAvailability(openUid);
+    } catch (e) {
+      setHoldErr(e.message || "Could not hold slot");
+      await refreshAvailability(openUid);
+    } finally {
+      setHolding(false);
+    }
+  }
+
+  // countdown
+  useEffect(() => {
+    if (!heldUntil) {
+      setHoldLeftMs(0);
+      return;
+    }
+
+    const target = new Date(heldUntil).getTime();
+    const tick = () => {
+      const left = target - Date.now();
+      setHoldLeftMs(left);
+
+      if (left <= 0) {
+        setHeldSlotId(null);
+        setHeldUntil(null);
+        setSelectedDate(null);
+        setSelectedSlotType(null);
+        refreshAvailability(openUid);
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heldUntil, openUid]);
+
+  // release on unload (best effort)
+  useEffect(() => {
+    const onUnload = () => {
+      if (!heldSlotId) return;
+
+      try {
+        const url = `${API_BASE}/api/availability/${heldSlotId}/release`;
+        if (navigator.sendBeacon) {
+          const blob = new Blob([], { type: "application/json" });
+          navigator.sendBeacon(url, blob);
+        } else {
+          fetch(url, { method: "PATCH", keepalive: true }).catch(() => {});
+        }
+      } catch {}
+    };
+
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [heldSlotId]);
+
   return (
     <div className="artistDash customerBookingArtistsPage">
       {/* ===== Sidebar ===== */}
@@ -329,9 +501,17 @@ export default function CustomerBookingArtists() {
             <span>Overview</span>
           </Link>
 
-          <Link className="artistDash__navItem artistDash__navItem--active" to="/customer/book-artists">
+          <Link
+            className="artistDash__navItem artistDash__navItem--active"
+            to="/customer/book-artists"
+          >
             <span className="artistDash__navIcon"><FiCalendar /></span>
             <span>Booking Artists</span>
+          </Link>
+
+          <Link className="artistDash__navItem" to="/customer/my-bookings">
+            <span className="artistDash__navIcon"><FiCalendar /></span>
+            <span>My Bookings</span>
           </Link>
 
           <Link className="artistDash__navItem" to="/customer/chords">
@@ -351,7 +531,11 @@ export default function CustomerBookingArtists() {
             <span>Profile</span>
           </Link>
 
-          <button type="button" className="artistDash__sideAction" onClick={handleLogout}>
+          <button
+            type="button"
+            className="artistDash__sideAction"
+            onClick={handleLogout}
+          >
             <span className="artistDash__navIcon"><FiLogOut /></span>
             <span>Log out</span>
           </button>
@@ -377,7 +561,7 @@ export default function CustomerBookingArtists() {
           </div>
         </div>
 
-        {/* ===== Header ===== */}
+        {/* Header */}
         <section className="cbaHeader">
           <h1 className="cbaTitle">Book a Band/Artist</h1>
 
@@ -392,7 +576,11 @@ export default function CustomerBookingArtists() {
             </div>
 
             <div className="cbaSelectWrap">
-              <select className="cbaSelect" value={genre} onChange={(e) => setGenre(e.target.value)}>
+              <select
+                className="cbaSelect"
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+              >
                 <option>All Genres</option>
                 <option>Pop</option>
                 <option>Rock</option>
@@ -404,7 +592,7 @@ export default function CustomerBookingArtists() {
           </div>
         </section>
 
-        {/* ===== Artist Grid ===== */}
+        {/* Artist Grid */}
         <section className="cbaGrid">
           {loading && <div className="cbaEmpty">Loading artists...</div>}
           {!loading && error && <div className="cbaEmpty">{error}</div>}
@@ -476,7 +664,11 @@ export default function CustomerBookingArtists() {
           <aside className="cbaDrawer" role="dialog" aria-modal="true">
             <div className="cbaDrawer__top">
               <div className="cbaDrawer__title">Profile Information</div>
-              <button className="cbaDrawer__close" type="button" onClick={closeDrawer}>
+              <button
+                className="cbaDrawer__close"
+                type="button"
+                onClick={() => closeDrawer({ releaseHold: true })}
+              >
                 <FiX />
               </button>
             </div>
@@ -560,34 +752,48 @@ export default function CustomerBookingArtists() {
                     {slotsLoading ? "LOADING..." : "CHECK AVAILABILITY"}
                   </button>
 
-                  {/* ✅ UPDATED: BOOK NOW navigation */}
                   <button
                     className="cbaBigBtn cbaBigBtn--primary"
                     type="button"
                     onClick={() => {
                       if (!openUid || !selectedArtist) return;
 
-                      if (!selectedDate || !selectedSlotType) {
-                        alert("Please select an OPEN slot first.");
+                      if (!heldSlotId || !heldUntil || holdLeftMs <= 0) {
+                        alert("Please select an OPEN slot to hold first.");
                         return;
                       }
 
-                      closeDrawer();
+                      const heldUntilISO = new Date(heldUntil).toISOString();
+
+                      // ✅ IMPORTANT FIX: do NOT release hold when navigating
+                      closeDrawer({ releaseHold: false });
+
                       navigate("/customer/booking", {
                         state: {
                           artistUid: openUid,
                           artist: selectedArtist,
+                          slotId: heldSlotId,
+                          heldUntil: heldUntilISO,
                           date: selectedDate,
                           slotType: selectedSlotType,
                         },
                       });
                     }}
+                    disabled={holding}
                   >
                     BOOK NOW
                   </button>
                 </div>
 
-                {/* ===== Availability section ===== */}
+                {/* Hold banner */}
+                {heldSlotId && heldUntil && holdLeftMs > 0 && (
+                  <div className="cbaDrawer__state">
+                    Held for you ({formatMMSS(holdLeftMs)} left) - 10 minutes
+                  </div>
+                )}
+                {holdErr && <div className="cbaDrawer__state">{holdErr}</div>}
+
+                {/* Availability section */}
                 {showAvailability && (
                   <div className="cbaAvailWrap">
                     <div className="cbaAvailHeader">
@@ -613,11 +819,19 @@ export default function CustomerBookingArtists() {
                     {!slotsErr && groupedSlots.length > 0 && (
                       <div className="cbaAvailList">
                         {groupedSlots.map((row) => {
-                          const morningStatus = row.MORNING?.status || "OPEN";
-                          const eveningStatus = row.EVENING?.status || "OPEN";
+                          const morning = row.MORNING;
+                          const evening = row.EVENING;
+
+                          const morningStatus = morning?.status || "OPEN";
+                          const eveningStatus = evening?.status || "OPEN";
 
                           const canPickMorning = morningStatus === "OPEN";
                           const canPickEvening = eveningStatus === "OPEN";
+
+                          const isSelectedMorning =
+                            selectedDate === row.date && selectedSlotType === "MORNING";
+                          const isSelectedEvening =
+                            selectedDate === row.date && selectedSlotType === "EVENING";
 
                           return (
                             <div className="cbaAvailRow" key={row.date}>
@@ -627,47 +841,39 @@ export default function CustomerBookingArtists() {
                               </div>
 
                               <div className="cbaAvailSlots">
-                                {/* ✅ UPDATED: selectable Morning pill */}
                                 <div
                                   className={`cbaSlotPill cbaSlotPill--${String(morningStatus).toLowerCase()} ${
-                                    selectedDate === row.date && selectedSlotType === "MORNING"
-                                      ? "cbaSlotPill--selected"
-                                      : ""
+                                    isSelectedMorning ? "cbaSlotPill--selected" : ""
                                   } ${!canPickMorning ? "cbaSlotPill--disabledUi" : ""}`}
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => {
                                     if (!canPickMorning) return;
-                                    setSelectedDate(row.date);
-                                    setSelectedSlotType("MORNING");
+                                    holdSlot(morning);
                                   }}
                                 >
                                   <div className="cbaSlotPill__title">{slotLabel("MORNING")}</div>
                                   <div className="cbaSlotPill__meta">
-                                    {(row.MORNING?.startTime || "09:00")}–{(row.MORNING?.endTime || "12:00")}
+                                    {(morning?.startTime || "09:00")}–{(morning?.endTime || "12:00")}
                                     <span className="cbaSlotPill__dot">•</span>
                                     {statusLabel(morningStatus)}
                                   </div>
                                 </div>
 
-                                {/* ✅ UPDATED: selectable Evening pill */}
                                 <div
                                   className={`cbaSlotPill cbaSlotPill--${String(eveningStatus).toLowerCase()} ${
-                                    selectedDate === row.date && selectedSlotType === "EVENING"
-                                      ? "cbaSlotPill--selected"
-                                      : ""
+                                    isSelectedEvening ? "cbaSlotPill--selected" : ""
                                   } ${!canPickEvening ? "cbaSlotPill--disabledUi" : ""}`}
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => {
                                     if (!canPickEvening) return;
-                                    setSelectedDate(row.date);
-                                    setSelectedSlotType("EVENING");
+                                    holdSlot(evening);
                                   }}
                                 >
                                   <div className="cbaSlotPill__title">{slotLabel("EVENING")}</div>
                                   <div className="cbaSlotPill__meta">
-                                    {(row.EVENING?.startTime || "18:00")}–{(row.EVENING?.endTime || "21:00")}
+                                    {(evening?.startTime || "18:00")}–{(evening?.endTime || "21:00")}
                                     <span className="cbaSlotPill__dot">•</span>
                                     {statusLabel(eveningStatus)}
                                   </div>

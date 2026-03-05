@@ -6,4 +6,8 @@ export const SLOT_TIMES = {
 };
 
 export const DAYS_AHEAD = 30;
+
 export const HOLD_MINUTES = 10;
+
+// ✅ booking request expires after artist doesn't respond
+export const BOOKING_PENDING_HOURS = 24;
