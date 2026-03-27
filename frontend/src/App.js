@@ -21,6 +21,7 @@ import CustomerBookingArtists from "./pages/Customer/CustomerBookingArtists.jsx"
 import CustomerBookingPage from "./pages/Customer/CustomerBookingPage.jsx";
 import CustomerMyBookingsPage from "./pages/Customer/MyBookings.jsx";
 import CustomerMyChords from "./pages/Customer/CustomerMyChords.jsx";
+import CustomerProfile from "./pages/Customer/CustomerProfile.jsx";
 
 
 
@@ -73,6 +74,7 @@ function App() {
         <Route path="/customer/booking" element={<CustomerBookingPage />} />
         <Route path="/customer/my-bookings" element={<CustomerMyBookingsPage />} />
         <Route path="/customer/chords" element={<CustomerMyChords />} />
+        <Route path="/customer/profile" element={<CustomerProfile />} />
 
       </Routes>
 

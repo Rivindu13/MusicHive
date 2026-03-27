@@ -1,10 +1,10 @@
 import express from "express";
-import User from "../models/user.js";
+import User from "../models/User.js";
 
 const router = express.Router();
 
 /**
- * CREATE user (your existing)
+ * Create user
  * Used at signup/login
  */
 router.post("/", async (req, res) => {
@@ -21,9 +21,9 @@ router.post("/", async (req, res) => {
       user = await User.create({
         uid,
         email,
-        role,      // "artist" | "band" | "organizer"
-        name,
-        photoURL,
+        role,
+        name: name || "",
+        photoURL: photoURL || null,
       });
     }
 
@@ -34,8 +34,9 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ✅ GET all artists/bands for customer booking page
-// /api/users/artists?genre=Pop&search=ave&onlyComplete=true
+/**
+ * Get all artists/bands
+ */
 router.get("/artists", async (req, res) => {
   try {
     const { genre, search, onlyComplete } = req.query;
@@ -49,7 +50,7 @@ router.get("/artists", async (req, res) => {
     }
 
     if (genre && genre !== "All Genres") {
-      query["artistProfile.genres"] = genre; // matches if genre is inside array
+      query["artistProfile.genres"] = genre;
     }
 
     if (search && search.trim()) {
@@ -63,7 +64,9 @@ router.get("/artists", async (req, res) => {
     }
 
     const artists = await User.find(query)
-      .select("uid name role photoURL artistProfile.location artistProfile.genres artistProfile.pricePerHour artistProfile.instruments")
+      .select(
+        "uid name role photoURL artistProfile.location artistProfile.genres artistProfile.pricePerHour artistProfile.instruments artistProfile.bio"
+      )
       .sort({ createdAt: -1 })
       .lean();
 
@@ -75,11 +78,16 @@ router.get("/artists", async (req, res) => {
 });
 
 /**
- * GET user (your existing)
+ * Get single user by uid
  */
 router.get("/:uid", async (req, res) => {
   try {
     const user = await User.findOne({ uid: req.params.uid });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     return res.json(user);
   } catch (err) {
     console.error("GET /users/:uid error:", err);
@@ -88,13 +96,8 @@ router.get("/:uid", async (req, res) => {
 });
 
 /**
- * ✅ UPDATE profile fields (NEW)
- * Frontend profile page should call this.
- *
+ * Update profile
  * PATCH /api/users/:uid/profile
- * body can include:
- * - name, photoURL
- * - artistProfile: { bio, genres, location, pricePerHour, instruments, socials, bandMembers, isProfileComplete }
  */
 router.patch("/:uid/profile", async (req, res) => {
   try {
@@ -109,24 +112,44 @@ router.patch("/:uid/profile", async (req, res) => {
       name,
       photoURL,
       artistProfile = {},
+      organizerProfile = {},
     } = req.body;
 
-    // ✅ Update top-level safe fields
-    if (typeof name === "string") user.name = name;
-    if (typeof photoURL === "string") user.photoURL = photoURL;
+    // =========================
+    // Top-level common fields
+    // =========================
+    if (typeof name === "string") {
+      user.name = name.trim();
+    }
 
-    // ✅ Only update artistProfile if role is artist/band
-    const canHaveArtistProfile = user.role === "artist" || user.role === "band";
-    if (canHaveArtistProfile && artistProfile && typeof artistProfile === "object") {
-      // basic fields
-      if (typeof artistProfile.bio === "string") user.artistProfile.bio = artistProfile.bio;
-      if (typeof artistProfile.location === "string") user.artistProfile.location = artistProfile.location;
+    if (typeof photoURL === "string" || photoURL === null) {
+      user.photoURL = photoURL;
+    }
 
-      // arrays
-      if (Array.isArray(artistProfile.genres)) user.artistProfile.genres = artistProfile.genres;
-      if (Array.isArray(artistProfile.instruments)) user.artistProfile.instruments = artistProfile.instruments;
+    // =========================
+    // Artist / Band update
+    // =========================
+    if ((user.role === "artist" || user.role === "band") && artistProfile) {
+      if (typeof artistProfile.bio === "string") {
+        user.artistProfile.bio = artistProfile.bio;
+      }
 
-      // price
+      if (typeof artistProfile.location === "string") {
+        user.artistProfile.location = artistProfile.location;
+      }
+
+      if (Array.isArray(artistProfile.genres)) {
+        user.artistProfile.genres = artistProfile.genres
+          .map((item) => String(item).trim())
+          .filter(Boolean);
+      }
+
+      if (Array.isArray(artistProfile.instruments)) {
+        user.artistProfile.instruments = artistProfile.instruments
+          .map((item) => String(item).trim())
+          .filter(Boolean);
+      }
+
       if (
         artistProfile.pricePerHour === null ||
         typeof artistProfile.pricePerHour === "number"
@@ -134,46 +157,83 @@ router.patch("/:uid/profile", async (req, res) => {
         user.artistProfile.pricePerHour = artistProfile.pricePerHour;
       }
 
-      // socials
       if (artistProfile.socials && typeof artistProfile.socials === "object") {
-        user.artistProfile.socials.instagram =
-          typeof artistProfile.socials.instagram === "string"
-            ? artistProfile.socials.instagram
-            : user.artistProfile.socials.instagram;
-
-        user.artistProfile.socials.youtube =
-          typeof artistProfile.socials.youtube === "string"
-            ? artistProfile.socials.youtube
-            : user.artistProfile.socials.youtube;
-
-        user.artistProfile.socials.spotify =
-          typeof artistProfile.socials.spotify === "string"
-            ? artistProfile.socials.spotify
-            : user.artistProfile.socials.spotify;
-      }
-
-      // ✅ bandMembers only if role === "band"
-      if (user.role === "band") {
-        if (Array.isArray(artistProfile.bandMembers)) {
-          // sanitize entries
-          const cleaned = artistProfile.bandMembers
-            .filter((m) => m && typeof m === "object")
-            .map((m) => ({
-              name: String(m.name || "").trim(),
-              position: String(m.position || "").trim(),
-            }))
-            .filter((m) => m.name && m.position);
-
-          user.artistProfile.bandMembers = cleaned;
+        if (typeof artistProfile.socials.instagram === "string") {
+          user.artistProfile.socials.instagram = artistProfile.socials.instagram;
         }
-      } else {
-        // If not a band, ignore bandMembers updates (or optionally clear it)
-        // user.artistProfile.bandMembers = [];
+
+        if (typeof artistProfile.socials.youtube === "string") {
+          user.artistProfile.socials.youtube = artistProfile.socials.youtube;
+        }
+
+        if (typeof artistProfile.socials.spotify === "string") {
+          user.artistProfile.socials.spotify = artistProfile.socials.spotify;
+        }
       }
 
-      // profile complete flag (optional)
+      if (user.role === "band" && Array.isArray(artistProfile.bandMembers)) {
+        const cleanedMembers = artistProfile.bandMembers
+          .filter((member) => member && typeof member === "object")
+          .map((member) => ({
+            name: String(member.name || "").trim(),
+            position: String(member.position || "").trim(),
+          }))
+          .filter((member) => member.name && member.position);
+
+        user.artistProfile.bandMembers = cleanedMembers;
+      }
+
       if (typeof artistProfile.isProfileComplete === "boolean") {
         user.artistProfile.isProfileComplete = artistProfile.isProfileComplete;
+      }
+    }
+
+    // =========================
+    // Organizer update
+    // =========================
+    if (user.role === "organizer" && organizerProfile) {
+      if (typeof organizerProfile.phone === "string") {
+        user.organizerProfile.phone = organizerProfile.phone;
+      }
+
+      if (typeof organizerProfile.organizationName === "string") {
+        user.organizerProfile.organizationName =
+          organizerProfile.organizationName;
+      }
+
+      if (typeof organizerProfile.eventType === "string") {
+        user.organizerProfile.eventType = organizerProfile.eventType;
+      }
+
+      if (typeof organizerProfile.location === "string") {
+        user.organizerProfile.location = organizerProfile.location;
+      }
+
+      if (typeof organizerProfile.bio === "string") {
+        user.organizerProfile.bio = organizerProfile.bio;
+      }
+
+      if (Array.isArray(organizerProfile.preferredGenres)) {
+        user.organizerProfile.preferredGenres = organizerProfile.preferredGenres
+          .map((item) => String(item).trim())
+          .filter(Boolean);
+      }
+
+      if (typeof organizerProfile.budgetRange === "string") {
+        user.organizerProfile.budgetRange = organizerProfile.budgetRange;
+      }
+
+      if (typeof organizerProfile.instagram === "string") {
+        user.organizerProfile.instagram = organizerProfile.instagram;
+      }
+
+      if (typeof organizerProfile.website === "string") {
+        user.organizerProfile.website = organizerProfile.website;
+      }
+
+      if (typeof organizerProfile.isProfileComplete === "boolean") {
+        user.organizerProfile.isProfileComplete =
+          organizerProfile.isProfileComplete;
       }
     }
 

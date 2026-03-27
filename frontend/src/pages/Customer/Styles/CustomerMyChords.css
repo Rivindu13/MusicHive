@@ -1,884 +1,215 @@
-/* ================================
-   CustomerMyChords.css (SCOPED)
-   Same UI as Artist MyChords
-   but spacing/fonts match customer pages
-   ================================= */
-
-/* ✅ Scope everything under customerMyChordsPage */
-.customerMyChordsPage.chordsPage{
+/* ===== Layout ===== */
+.chordsPage {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   color: #fff;
-
-  height: 100vh;
   overflow: hidden;
 }
 
-/* Stop whole-page scroll (same behavior) */
-html, body{
+/* Stop whole-page scrolling */
+html, body {
   overflow: hidden;
 }
 
 /* ===== Sidebar ===== */
-.customerMyChordsPage .chordsPage__sidebar{
+.chordsPage__sidebar {
   width: 320px;
-  background: linear-gradient(180deg, rgba(10,10,23,.92) 0%, rgba(8,8,18,.95) 100%);
-  border-right: 1px solid rgba(255,255,255,.06);
-
-  /* ✅ slightly tighter than artist */
-  padding: 28px 16px 18px 16px;
-
   height: 100vh;
   position: sticky;
   top: 0;
   overflow: hidden;
+
+  background: linear-gradient(180deg, rgba(10,10,23,.92), rgba(8,8,18,.95));
+  border-right: 1px solid rgba(255,255,255,.06);
+
+  padding: 34px 18px 22px;
 }
 
-.customerMyChordsPage .chordsPage__brand{
+.chordsPage__brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px 16px 8px;
+  padding: 6px 8px 18px;
 }
 
-.customerMyChordsPage .chordsPage__brandIcon{
-  font-size: 20px;
+.chordsPage__brandIcon {
+  font-size: 22px;
   color: rgba(138,92,246,.85);
 }
 
-.customerMyChordsPage .chordsPage__brandText{
-  font-size: 20px; /* smaller */
+.chordsPage__brandText {
+  font-size: 22px;
   font-weight: 600;
-  background: linear-gradient(90deg, rgba(130,88,255,1), rgba(40,230,215,1));
+  background: linear-gradient(90deg, #8258ff, #28e6d7);
   -webkit-background-clip: text;
-  background-clip: text;
   color: transparent;
 }
 
-.customerMyChordsPage .chordsPage__nav{
-  margin-top: 18px;
+/* ===== Navigation ===== */
+.chordsPage__nav {
+  margin-top: 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 8px;
 }
 
-.customerMyChordsPage .chordsPage__navItem{
+.chordsPage__navItem {
   display: flex;
   align-items: center;
   gap: 12px;
 
-  /* tighter */
-  padding: 12px 12px;
+  padding: 14px;
   border-radius: 12px;
 
   color: rgba(255,255,255,.68);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 13px; /* customer-like */
-  background: transparent;
 }
 
-.customerMyChordsPage .chordsPage__navIcon{
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  opacity: .9;
-}
-
-.customerMyChordsPage .chordsPage__navItem:hover{
+.chordsPage__navItem:hover {
   background: rgba(255,255,255,.04);
 }
 
-.customerMyChordsPage .chordsPage__navItem--active{
-  color: rgba(255,255,255,.92);
+.chordsPage__navItem--active {
+  color: #fff;
   background: rgba(255,255,255,.04);
 }
 
-.customerMyChordsPage .chordsPage__sideBottom{
+/* ===== Sidebar bottom ===== */
+.chordsPage__sideBottom {
   position: absolute;
+  bottom: 22px;
   left: 0;
   right: 0;
 
-  /* customer pages usually tighter */
-  bottom: 18px;
-
-  padding: 0 22px;
+  padding: 0 26px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.customerMyChordsPage .chordsPage__sideAction{
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px;
-  border-radius: 12px;
-  color: rgba(255,255,255,.78);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.customerMyChordsPage .chordsPage__sideAction:hover{
-  background: rgba(255,255,255,.04);
-}
-
-.customerMyChordsPage .chordsPage__sideActionBtn{
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  border: none;
-  padding: 9px 10px;
-  margin: 0;
-  color: rgba(255,255,255,.78);
-  font: inherit;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.customerMyChordsPage .chordsPage__sideActionBtn:hover{
-  background: rgba(255,255,255,.04);
+  gap: 14px;
 }
 
 /* ===== Main ===== */
-.customerMyChordsPage .chordsPage__main{
+.chordsPage__main {
   flex: 1;
+  height: 100vh;
+
   display: flex;
   flex-direction: column;
 
-  /* ✅ customer main spacing a bit smaller */
-  padding: 18px 34px 16px 34px;
+  padding: 20px 42px 18px;
 
-  height: 100vh;
   overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.customerMyChordsPage .chordsPage__topbar{
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 18px;
-  padding-top: 2px;
-}
-
-.customerMyChordsPage .chordsPage__iconBtn{
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.12);
-  color: rgba(255,255,255,.9);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
-.customerMyChordsPage .chordsPage__user{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.customerMyChordsPage .chordsPage__avatarWrap{
-  position: relative;
-  width: 44px;
-  height: 44px;
-}
-
-.customerMyChordsPage .chordsPage__avatar{
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background-color: rgba(255,255,255,.88);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-.customerMyChordsPage .chordsPage__onlineDot{
-  position: absolute;
-  right: 1px;
-  top: 1px;
-  width: 11px;
-  height: 11px;
-  background: #19d36a;
-  border-radius: 50%;
-  border: 2px solid rgba(10,10,23,.92);
-}
-
-.customerMyChordsPage .chordsPage__userName{
-  font-weight: 700;
-  font-size: 13px;
-  color: rgba(255,255,255,.92);
 }
 
 /* ===== Header ===== */
-.customerMyChordsPage .chordsPage__header{
-  margin-top: 26px; /* smaller than artist (34px) */
+.chordsPage__header {
+  margin-top: 34px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.customerMyChordsPage .chordsHeader__row1{
+.chordsHeader__row1 {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  align-items: center;
 }
 
-.customerMyChordsPage .chordsHeader__row2{
+.chordsHeader__row2 {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  align-items: center;
 }
 
-.customerMyChordsPage .searchBox--wide{
-  flex: 1;
-  max-width: 520px;
+/* ===== Title ===== */
+.chordsPage__title {
+  font-size: 48px;
+  font-weight: 800;
 }
 
-.customerMyChordsPage .genreSelect{
-  min-width: 160px;
-}
-
-/* ✅ Customer title style closer to customer pages */
-.customerMyChordsPage .chordsPage__title{
-  margin: 0;
-  font-size: 34px; /* like cbaTitle */
-  font-weight: 900;
-  letter-spacing: .2px;
-}
-
-/* Upload button (keep same look but slightly smaller) */
-.customerMyChordsPage .uploadPillBtn{
+/* ===== Upload Button ===== */
+.uploadPillBtn {
   display: flex;
   align-items: center;
   gap: 10px;
 
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 999px;
 
   border: 1px solid rgba(255,255,255,.20);
   background: linear-gradient(90deg, rgba(34,211,201,.25), rgba(139,92,246,.25));
-  cursor: pointer;
-  font-weight: 900;
-  font-size: 12px; /* smaller */
+
   color: #fff;
-}
-.customerMyChordsPage .uploadPillBtn svg{
-  width: 16px;
-  height: 16px;
-  opacity: .95;
-}
-.customerMyChordsPage .uploadPillBtn:disabled{
-  opacity: .6;
-  cursor: not-allowed;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-/* Search box */
-.customerMyChordsPage .searchBox{
+/* ===== Search ===== */
+.searchBox {
   position: relative;
   width: 260px;
-  max-width: 60vw;
 }
-.customerMyChordsPage .searchBox input{
+
+.searchBox input {
   width: 100%;
   padding: 12px 14px 12px 40px;
+
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.88);
+  border: 1px solid rgba(255,255,255,.16);
+
+  background: #fff;
   color: #000;
-  font-weight: 700;
-  outline: none;
 }
-.customerMyChordsPage .searchBox input::placeholder{
-  color: rgba(0,0,0,.55);
-  font-weight: 700;
-}
-.customerMyChordsPage .searchIcon{
+
+.searchIcon {
   position: absolute;
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  opacity: .8;
-  color: rgba(0,0,0,.55);
 }
 
-/* Genre dropdown (customer style like cbaSelect) */
-.customerMyChordsPage .genreSelect{
+/* ===== Dropdown ===== */
+.genreSelect {
   padding: 12px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(255,255,255,.14);
-  color: rgba(255,255,255,.92);
-  font-weight: 900;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-}
 
-.customerMyChordsPage .genreSelect option{
-  background: #0b0a1a;
+  background: rgba(0,0,0,.22);
   color: #fff;
+
+  border: 1px solid rgba(255,255,255,.16);
 }
 
 /* ===== Grid ===== */
-/* customer pages feel tighter */
-.customerMyChordsPage .chordsGrid{
-  margin-top: 18px;
+.chordsGrid {
+  margin-top: 26px;
+
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
 }
 
-/* Cards: same look, slightly smaller corners */
-.customerMyChordsPage .chordCard{
-  border-radius: 14px;
+/* ===== Card ===== */
+.chordCard {
+  border-radius: 18px;
   overflow: hidden;
+
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(255,255,255,.06);
-  box-shadow: 0 20px 60px rgba(0,0,0,.45);
-  transition: transform .15s ease, border-color .15s ease;
-  cursor: pointer;
-}
-.customerMyChordsPage .chordCard:hover{
-  transform: translateY(-2px);
-  border-color: rgba(255,255,255,.18);
+
+  transition: 0.2s;
 }
 
-.customerMyChordsPage .chordCard img{
-  width: 100%;
-  height: 150px; /* slightly shorter */
-  object-fit: cover;
-  display: block;
-}
-
-.customerMyChordsPage .chordMeta{
-  padding: 10px 10px 12px 10px;
-}
-
-.customerMyChordsPage .chordTitle{
-  font-weight: 900;
-  font-size: 13px;
-}
-
-.customerMyChordsPage .chordGenre{
-  margin-top: 4px;
-  color: rgba(255,255,255,.60);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-/* Ratings row */
-.customerMyChordsPage .cardRatingRow{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  margin-bottom: 6px;
-}
-
-.customerMyChordsPage .starsRow{
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.customerMyChordsPage .star{ opacity: .9; }
-.customerMyChordsPage .star--filled{ color: rgba(34,211,201,.95); }
-.customerMyChordsPage .star--empty{ color: rgba(255,255,255,.22); }
-
-.customerMyChordsPage .ratingNumber{
-  font-weight: 900;
-  color: rgba(255,255,255,.92);
-  font-size: 11px;
-}
-
-.customerMyChordsPage .ratingNumber--big{
-  font-size: 14px;
-}
-
-.customerMyChordsPage .reviewCountText,
-.customerMyChordsPage .noReviewsText{
-  color: rgba(255,255,255,.55);
-  font-size: 10px;
-  font-weight: 800;
-}
-
-/* ===== Empty state ===== */
-.customerMyChordsPage .emptyStateCard{
-  grid-column: 1 / -1;
-  margin-top: 10px;
-  padding: 20px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06);
-  box-shadow: 0 20px 60px rgba(0,0,0,.35);
-  text-align: center;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.customerMyChordsPage .emptyIcon{
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.18);
-  display: grid;
-  place-items: center;
-}
-
-.customerMyChordsPage .emptyIcon svg{
-  width: 22px;
-  height: 22px;
-  opacity: .9;
-}
-
-.customerMyChordsPage .emptyTitle{
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.customerMyChordsPage .emptyText{
-  max-width: 520px;
-  color: rgba(255,255,255,.72);
-  line-height: 1.5;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.customerMyChordsPage .emptyCTA{
-  margin-top: 6px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.20);
-  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
-  color: #fff;
-  font-weight: 900;
-  font-size: 12px;
-  cursor: pointer;
-}
-.customerMyChordsPage .emptyCTA:disabled{
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-/* ===== Delete button ===== */
-.customerMyChordsPage .deleteChordBtn{
-  margin-top: 10px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  padding: 9px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,0,0,.10);
-  color: #fff;
-
-  font-weight: 900;
-  font-size: 11px; /* smaller */
-  cursor: pointer;
-}
-.customerMyChordsPage .deleteChordBtn svg{
-  width: 15px;
-  height: 15px;
-}
-.customerMyChordsPage .deleteChordBtn:hover{
-  background: rgba(255,0,0,.18);
-}
-.customerMyChordsPage .deleteChordBtn:disabled{
-  opacity: .6;
-  cursor: not-allowed;
-}
-.customerMyChordsPage .deleteChordBtn--danger{
-  max-width: 220px;
+.chordCard:hover {
+  transform: translateY(-3px);
 }
 
 /* ===== Footer ===== */
-.customerMyChordsPage .chordsPage__footer{
+.chordsPage__footer {
   margin-top: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0 4px 0;
-  color: rgba(255,255,255,.62);
-  font-size: 12px; /* slightly smaller */
-}
 
-.customerMyChordsPage .chordsPage__footerLinks{
-  display: flex;
-  gap: 28px;
-}
-
-.customerMyChordsPage .chordsPage__footerLinks a{
-  color: rgba(255,255,255,.62);
-  text-decoration: none;
-}
-
-.customerMyChordsPage .chordsPage__footerLinks a:hover{
-  color: rgba(255,255,255,.82);
-}
-
-/* ===== Modal ===== */
-.customerMyChordsPage .modalOverlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  padding: 16px;
-}
-
-.customerMyChordsPage .modalCard{
-  width: 520px;
-  max-width: 94vw;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(20,20,40,.92);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 30px 80px rgba(0,0,0,.55);
-  overflow: hidden;
-}
-
-.customerMyChordsPage .modalHeader{
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 14px 14px 10px 14px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
-}
 
-.customerMyChordsPage .modalTitle{
-  font-weight: 900;
-  font-size: 15px;
-}
-
-.customerMyChordsPage .modalClose{
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.18);
-  color: #fff;
-  cursor: pointer;
-}
-.customerMyChordsPage .modalClose:disabled{
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.customerMyChordsPage .modalBody{
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.customerMyChordsPage .filePick{
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.customerMyChordsPage .filePickBtn{
-  padding: 9px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.16);
-  background: rgba(0,0,0,.18);
-  font-weight: 900;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.customerMyChordsPage .filePickName{
-  color: rgba(255,255,255,.70);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.customerMyChordsPage .field{
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.customerMyChordsPage .field label{
-  color: rgba(255,255,255,.75);
-  font-weight: 900;
-  font-size: 12px;
-}
-
-.customerMyChordsPage .field input,
-.customerMyChordsPage .field select{
-  padding: 11px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.20);
-  color: #fff;
-  outline: none;
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.customerMyChordsPage .field select option{
-  background: #0b0a1a;
-  color: #fff;
-}
-
-.customerMyChordsPage .modalFooter{
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 14px 14px 14px;
-  border-top: 1px solid rgba(255,255,255,.08);
-}
-
-.customerMyChordsPage .secondaryBtn,
-.customerMyChordsPage .primaryBtn{
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.16);
-  font-weight: 900;
-  font-size: 12px;
-  cursor: pointer;
-  color: #fff;
-}
-
-.customerMyChordsPage .secondaryBtn{
-  background: rgba(255,255,255,.08);
-}
-
-.customerMyChordsPage .primaryBtn{
-  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
-  border: none;
-}
-
-.customerMyChordsPage .secondaryBtn:disabled,
-.customerMyChordsPage .primaryBtn:disabled{
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-/* ===== Preview modal ===== */
-.customerMyChordsPage .previewCard{
-  width: 860px;
-  max-width: 95vw;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(20,20,40,.92);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 30px 80px rgba(0,0,0,.55);
-  overflow: hidden;
-  position: relative;
-}
-
-.customerMyChordsPage .previewCard--wide{
-  width: min(980px, 92vw);
-  padding: 18px;
-  position: relative;
-}
-
-.customerMyChordsPage .previewClose{
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.20);
-  color: #fff;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-
-.customerMyChordsPage .previewGrid{
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 16px;
-}
-
-.customerMyChordsPage .previewImgWrap{
-  width: 100%;
-  background: rgba(0,0,0,.18);
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px;
-}
-
-.customerMyChordsPage .previewImgWrap img{
-  max-width: 100%;
-  max-height: 70vh;
-  border-radius: 14px;
-  object-fit: contain;
-  display: block;
-}
-
-.customerMyChordsPage .previewSide{
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.customerMyChordsPage .previewMeta{
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-}
-
-.customerMyChordsPage .previewTitle{
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.customerMyChordsPage .previewGenre{
-  color: rgba(255,255,255,.70);
-  font-weight: 800;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-
-.customerMyChordsPage .previewRatingRow{
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Reviews box */
-.customerMyChordsPage .reviewsBox{
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.06);
-  padding: 12px;
-  max-height: 300px;
-  overflow: auto;
-}
-
-.customerMyChordsPage .reviewsHeader{
-  font-weight: 900;
-  color: rgba(255,255,255,.92);
-  margin-bottom: 10px;
-  font-size: 12px;
-}
-
-.customerMyChordsPage .reviewsEmpty{
+  font-size: 13px;
   color: rgba(255,255,255,.62);
-  font-size: 12px;
-  font-weight: 800;
-  padding: 8px 4px;
-}
-
-.customerMyChordsPage .reviewsList{
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.customerMyChordsPage .reviewItem{
-  display: flex;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.06);
-  background: rgba(0,0,0,.12);
-}
-
-.customerMyChordsPage .reviewAvatar{
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.22);
-  background-size: cover;
-  background-position: center;
-  flex: 0 0 auto;
-}
-
-.customerMyChordsPage .reviewBody{ flex: 1; }
-
-.customerMyChordsPage .reviewTop{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.customerMyChordsPage .reviewName{
-  font-weight: 900;
-  color: rgba(255,255,255,.92);
-  font-size: 12px;
-}
-
-.customerMyChordsPage .reviewDate{
-  color: rgba(255,255,255,.45);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.customerMyChordsPage .reviewStars{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.customerMyChordsPage .reviewRatingNum{
-  color: rgba(255,255,255,.72);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.customerMyChordsPage .reviewText{
-  color: rgba(255,255,255,.72);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-/* Responsive */
-@media (max-width: 900px){
-  .customerMyChordsPage .chordsPage__main{
-    padding: 16px 16px 16px 16px;
-  }
-
-  .customerMyChordsPage .searchBox{
-    width: 100%;
-  }
-}
-
-@media (max-width: 860px){
-  .customerMyChordsPage .previewGrid{
-    grid-template-columns: 1fr;
-  }
-  .customerMyChordsPage .reviewsBox{
-    max-height: 220px;
-  }
 }

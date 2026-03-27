@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema({
   uid: { type: String, required: true, unique: true },
   email: { type: String, required: true },
-  name: { type: String },
+  name: { type: String, default: "" },
 
   role: {
     type: String,
@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema({
 
   photoURL: { type: String, default: null },
 
+  // =========================
+  // Artist / Band profile
+  // =========================
   artistProfile: {
     bio: {
       type: String,
@@ -62,10 +65,66 @@ const userSchema = new mongoose.Schema({
     },
   },
 
+  // =========================
+  // Organizer / Customer profile
+  // =========================
+  organizerProfile: {
+    phone: {
+      type: String,
+      default: "",
+    },
+
+    organizationName: {
+      type: String,
+      default: "",
+    },
+
+    eventType: {
+      type: String,
+      default: "",
+    },
+
+    location: {
+      type: String,
+      default: "",
+    },
+
+    bio: {
+      type: String,
+      default: "",
+      maxlength: 500,
+    },
+
+    preferredGenres: {
+      type: [String],
+      default: [],
+    },
+
+    budgetRange: {
+      type: String,
+      default: "",
+    },
+
+    instagram: {
+      type: String,
+      default: "",
+    },
+
+    website: {
+      type: String,
+      default: "",
+    },
+
+    isProfileComplete: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
   createdAt: { type: Date, default: Date.now },
 });
 
-// ✅ FIX: prevent OverwriteModelError on reload
+// prevent OverwriteModelError
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 export default User;

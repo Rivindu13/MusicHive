@@ -1,0 +1,193 @@
+.customerProfilePage .customerProfileHeader{
+  margin-top: 34px;
+}
+
+.customerProfilePage .customerProfileHeader__row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 16px;
+}
+
+.customerProfilePage .customerProfileHeader__title{
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.customerProfilePage .customerProfileHeader__title span{
+  font-weight: 900;
+}
+
+.customerProfilePage .customerProfileHeader__sub{
+  margin: 10px 0 0 0;
+  color: rgba(255,255,255,.65);
+  font-weight: 700;
+}
+
+.customerProfilePage .customerProfileHeader__actions{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+.customerProfilePage .customerProfileBtn{
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.30);
+}
+
+.customerProfilePage .customerProfileBtn svg{
+  width: 18px;
+  height: 18px;
+}
+
+.customerProfilePage .customerProfileBtn--save{
+  color: #fff;
+  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
+}
+
+.customerProfilePage .customerProfileBtn--save:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+.customerProfilePage .customerProfileCard{
+  padding: 22px;
+}
+
+.customerProfilePage .customerProfileCard__top{
+  display:flex;
+  gap: 18px;
+  align-items:flex-start;
+  margin-bottom: 18px;
+}
+
+.customerProfilePage .customerProfileAvatar{
+  width: 160px;
+  flex: 0 0 160px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap: 10px;
+}
+
+.customerProfilePage .customerProfileAvatar__img{
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.16);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 18px 40px rgba(0,0,0,.35);
+}
+
+.customerProfilePage .customerProfileAvatar__btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor:pointer;
+  font-weight: 900;
+  color: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  text-align:center;
+}
+
+.customerProfilePage .customerProfileAvatar__btn:hover{
+  background: rgba(255,255,255,.10);
+}
+
+.customerProfilePage .customerProfileAvatar__btn.isLoading{
+  opacity:.65;
+  pointer-events:none;
+}
+
+.customerProfilePage .customerProfileTopFields{
+  flex: 1;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+
+.customerProfilePage .customerProfileGrid{
+  margin-top: 10px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+
+.customerProfilePage .customerProfileField{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.customerProfilePage .customerProfileField label{
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.customerProfilePage .customerProfileField input,
+.customerProfilePage .customerProfileField textarea{
+  width:100%;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  color:#fff;
+  outline:none;
+  font-weight: 650;
+}
+
+.customerProfilePage .customerProfileField input:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+.customerProfilePage .customerProfileField textarea{
+  resize: vertical;
+  min-height: 140px;
+}
+
+.customerProfilePage .customerProfileField--full{
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1100px){
+  .customerProfilePage .customerProfileHeader__row{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .customerProfilePage .customerProfileTopFields{
+    grid-template-columns: 1fr;
+  }
+
+  .customerProfilePage .customerProfileGrid{
+    grid-template-columns: 1fr;
+  }
+
+  .customerProfilePage .customerProfileCard__top{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .customerProfilePage .customerProfileAvatar{
+    width:auto;
+    flex: 0 0 auto;
+  }
+}
