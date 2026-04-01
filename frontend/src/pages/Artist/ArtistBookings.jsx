@@ -11,6 +11,18 @@ import {
   FiStar,
   FiUser,
   FiLogOut,
+  FiMail,
+  FiPhone,
+  FiMapPin,
+  FiGlobe,
+  FiBriefcase,
+  FiTag,
+  FiDollarSign,
+  FiFileText,
+  FiChevronDown,
+  FiChevronUp,
+  FiEdit3,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
@@ -45,6 +57,15 @@ function humanDate(ymdStr) {
   }
 }
 
+function humanDateTime(value) {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
 function slotLabel(slotType) {
   return slotType === "MORNING" ? "Morning" : "Evening";
 }
@@ -54,7 +75,14 @@ function statusLabel(status) {
   if (status === "DISABLED") return "Disabled";
   if (status === "BOOKED") return "Booked";
   if (status === "HELD") return "Held";
+  if (status === "RESERVED") return "Reserved";
   return status || "Open";
+}
+
+function safeText(value, fallback = "—") {
+  if (value === null || value === undefined) return fallback;
+  const txt = String(value).trim();
+  return txt ? txt : fallback;
 }
 
 export default function ArtistBookings() {
@@ -84,17 +112,27 @@ export default function ArtistBookings() {
 
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
 
   const [loadingUpcoming, setLoadingUpcoming] = useState(false);
   const [upcoming, setUpcoming] = useState([]);
 
-  // ✅ Route guard
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
   }, [navigate]);
 
-  // ✅ Logout
+  useEffect(() => {
+    if (activeTab !== "REQUESTS") {
+      setSelectedRequestId(null);
+    }
+  }, [activeTab]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -122,7 +160,6 @@ export default function ArtistBookings() {
     return dates.map((d) => ({ date: d, ...map.get(d) }));
   }, [slots]);
 
-  // ✅ ensure slots (public, keep normal fetch)
   async function ensureSlots() {
     if (!artistUid) return;
     setEnsuring(true);
@@ -156,25 +193,32 @@ export default function ArtistBookings() {
     }
   }
 
-  // ✅ requests are protected now → use authFetch
   async function loadRequests() {
     if (!artistUid) return;
     setLoadingRequests(true);
+
     try {
       const res = await authFetch(
         `${API_BASE}/api/bookings/artist/${artistUid}?status=PENDING`
       );
       const data = await res.json();
-      setRequests(Array.isArray(data.data) ? data.data : []);
+      const rows = Array.isArray(data.data) ? data.data : [];
+
+      setRequests(rows);
+
+      setSelectedRequestId((prev) => {
+        if (!prev) return null;
+        return rows.some((r) => r._id === prev) ? prev : null;
+      });
     } catch (e) {
       console.error("Load requests failed:", e);
       setRequests([]);
+      setSelectedRequestId(null);
     } finally {
       setLoadingRequests(false);
     }
   }
 
-  // ✅ upcoming is protected now → use authFetch
   async function loadUpcoming() {
     if (!artistUid) return;
     setLoadingUpcoming(true);
@@ -203,25 +247,20 @@ export default function ArtistBookings() {
     }
   }
 
-  // ✅ initial load
   useEffect(() => {
     if (!artistUid) return;
     (async () => {
       await ensureSlots();
       await loadSlots();
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artistUid]);
 
-  // ✅ tab loads
   useEffect(() => {
     if (!artistUid) return;
     if (activeTab === "REQUESTS") loadRequests();
     if (activeTab === "UPCOMING") loadUpcoming();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, artistUid]);
 
-  // ✅ toggle slot (protected → authFetch)
   async function toggleSlot(slot) {
     if (!slot?._id) return;
     if (slot.status === "BOOKED") return;
@@ -244,8 +283,9 @@ export default function ArtistBookings() {
       );
 
       const data = await res.json();
-      console.log("toggle response:", data);
-      if (!res.ok || !data.success) throw new Error(data.message || "Toggle failed");
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Toggle failed");
+      }
 
       setSlots((old) => old.map((s) => (s._id === slot._id ? data.data : s)));
     } catch (e) {
@@ -255,7 +295,6 @@ export default function ArtistBookings() {
     }
   }
 
-  // ✅ accept (protected → authFetch)
   async function acceptBooking(id) {
     try {
       const res = await authFetch(`${API_BASE}/api/bookings/${id}/accept`, {
@@ -264,9 +303,17 @@ export default function ArtistBookings() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Accept failed");
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Accept failed");
+      }
 
-      setRequests((old) => old.filter((b) => b._id !== id));
+      const filtered = requests.filter((b) => b._id !== id);
+      setRequests(filtered);
+
+      if (selectedRequestId === id) {
+        setSelectedRequestId(null);
+      }
+
       loadSlots();
       loadUpcoming();
     } catch (e) {
@@ -275,7 +322,6 @@ export default function ArtistBookings() {
     }
   }
 
-  // ✅ reject (protected → authFetch)
   async function rejectBooking(id) {
     try {
       const res = await authFetch(`${API_BASE}/api/bookings/${id}/reject`, {
@@ -284,9 +330,17 @@ export default function ArtistBookings() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Reject failed");
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Reject failed");
+      }
 
-      setRequests((old) => old.filter((b) => b._id !== id));
+      const filtered = requests.filter((b) => b._id !== id);
+      setRequests(filtered);
+
+      if (selectedRequestId === id) {
+        setSelectedRequestId(null);
+      }
+
       loadSlots();
     } catch (e) {
       console.error(e);
@@ -294,9 +348,61 @@ export default function ArtistBookings() {
     }
   }
 
+  function toggleRequest(id) {
+    setSelectedRequestId((prev) => (prev === id ? null : id));
+  }
+
+  function openReviewModal(booking) {
+    setReviewTarget(booking);
+    setReviewRating(5);
+    setReviewComment("");
+  }
+
+  function closeReviewModal() {
+    if (submittingReview) return;
+    setReviewTarget(null);
+    setReviewRating(5);
+    setReviewComment("");
+  }
+
+  async function submitReview() {
+    if (!reviewTarget?._id) return;
+
+    setSubmittingReview(true);
+    try {
+      const res = await authFetch(`${API_BASE}/api/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: reviewTarget._id,
+          rating: reviewRating,
+          comment: reviewComment,
+          eventType:
+            reviewTarget.customer?.organizerProfile?.eventType || "Event",
+          reviewerName: fullName,
+          reviewerPhotoURL: profilePic || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to submit review");
+      }
+
+      closeReviewModal();
+      loadUpcoming();
+      alert("Review submitted successfully");
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to submit review");
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
+
   return (
     <div className="artistDash artistBookingsPage">
-      {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -309,7 +415,10 @@ export default function ArtistBookings() {
             <span>Overview</span>
           </a>
 
-          <a className="artistDash__navItem artistDash__navItem--active" href="/artist/bookings">
+          <a
+            className="artistDash__navItem artistDash__navItem--active"
+            href="/artist/bookings"
+          >
             <span className="artistDash__navIcon"><FiCalendar /></span>
             <span>Bookings</span>
           </a>
@@ -331,16 +440,18 @@ export default function ArtistBookings() {
             <span>Profile</span>
           </a>
 
-          <button type="button" className="artistDash__sideAction" onClick={handleLogout}>
+          <button
+            type="button"
+            className="artistDash__sideAction"
+            onClick={handleLogout}
+          >
             <span className="artistDash__navIcon"><FiLogOut /></span>
             <span>Log out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main */}
       <main className="artistDash__main">
-        {/* Top bar */}
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn" aria-label="Notifications">
             <FiBell />
@@ -366,7 +477,6 @@ export default function ArtistBookings() {
           </div>
         </div>
 
-        {/* Hero */}
         <section className="bookingsHeroCard">
           <div className="bookingsHeroCard__left">
             <h1 className="bookingsHeroCard__title">Bookings</h1>
@@ -394,7 +504,6 @@ export default function ArtistBookings() {
           </div>
         </section>
 
-        {/* Tabs */}
         <section className="bookingsTabsWrap">
           <div className="bookingsTabs">
             <button
@@ -426,12 +535,12 @@ export default function ArtistBookings() {
           </div>
         </section>
 
-        {/* Content */}
         <section className="bookingsContent">
-          {/* Availability */}
           {activeTab === "AVAILABILITY" && (
             <>
-              {loadingSlots && <div className="bookingsEmptyState">Loading availability...</div>}
+              {loadingSlots && (
+                <div className="bookingsEmptyState">Loading availability...</div>
+              )}
 
               {!loadingSlots && groupedByDate.length === 0 && (
                 <div className="bookingsEmptyState">
@@ -444,21 +553,25 @@ export default function ArtistBookings() {
                   {groupedByDate.map((row) => (
                     <div className="availabilityRowCard" key={row.date}>
                       <div className="availabilityRowCard__date">
-                        <div className="availabilityRowCard__day">{humanDate(row.date)}</div>
+                        <div className="availabilityRowCard__day">
+                          {humanDate(row.date)}
+                        </div>
                         <div className="availabilityRowCard__ymd">{row.date}</div>
                       </div>
 
                       <div className="availabilityRowCard__slots">
                         <button
                           type="button"
-                          className={`slotChip slotChip--${String(row.MORNING?.status || "OPEN").toLowerCase()}`}
+                          className={`slotChip slotChip--${String(
+                            row.MORNING?.status || "OPEN"
+                          ).toLowerCase()}`}
                           onClick={() => toggleSlot(row.MORNING)}
                           disabled={!row.MORNING || row.MORNING.status === "BOOKED"}
-                          title={row.MORNING?.status === "BOOKED" ? "Booked slots cannot be changed" : "Click to toggle"}
                         >
                           <span className="slotChip__title">Morning</span>
                           <span className="slotChip__meta">
-                            {row.MORNING?.startTime || "09:00"}–{row.MORNING?.endTime || "12:00"}
+                            {row.MORNING?.startTime || "09:00"}–
+                            {row.MORNING?.endTime || "12:00"}
                             <span className="slotChip__dot">•</span>
                             {statusLabel(row.MORNING?.status)}
                           </span>
@@ -466,14 +579,16 @@ export default function ArtistBookings() {
 
                         <button
                           type="button"
-                          className={`slotChip slotChip--${String(row.EVENING?.status || "OPEN").toLowerCase()}`}
+                          className={`slotChip slotChip--${String(
+                            row.EVENING?.status || "OPEN"
+                          ).toLowerCase()}`}
                           onClick={() => toggleSlot(row.EVENING)}
                           disabled={!row.EVENING || row.EVENING.status === "BOOKED"}
-                          title={row.EVENING?.status === "BOOKED" ? "Booked slots cannot be changed" : "Click to toggle"}
                         >
                           <span className="slotChip__title">Evening</span>
                           <span className="slotChip__meta">
-                            {row.EVENING?.startTime || "18:00"}–{row.EVENING?.endTime || "21:00"}
+                            {row.EVENING?.startTime || "18:00"}–
+                            {row.EVENING?.endTime || "21:00"}
                             <span className="slotChip__dot">•</span>
                             {statusLabel(row.EVENING?.status)}
                           </span>
@@ -486,53 +601,184 @@ export default function ArtistBookings() {
             </>
           )}
 
-          {/* Requests */}
           {activeTab === "REQUESTS" && (
             <>
-              {loadingRequests && <div className="bookingsEmptyState">Loading requests...</div>}
+              {loadingRequests && (
+                <div className="bookingsEmptyState">Loading requests...</div>
+              )}
 
               {!loadingRequests && requests.length === 0 && (
                 <div className="bookingsEmptyState">No pending requests right now.</div>
               )}
 
               {!loadingRequests && requests.length > 0 && (
-                <div className="requestsStack">
-                  {requests.map((b) => (
-                    <div className="requestRowCard" key={b._id}>
-                      <div className="requestRowCard__left">
-                        <div className="requestRowCard__avatar" />
-                        <div className="requestRowCard__body">
-                          <div className="requestRowCard__title">
-                            {humanDate(b.date)} • {slotLabel(b.slotType)}
-                          </div>
-                          <div className="requestRowCard__meta">
-                            Customer: <span className="requestRowCard__uid">{b.customerUid}</span>
-                          </div>
-                          <div className="requestRowCard__note">
-                            {b.note ? b.note : "— No note —"}
-                          </div>
-                        </div>
-                      </div>
+                <div className="requestsStack requestsStack--wide">
+                  {requests.map((b) => {
+                    const customer = b.customer || {};
+                    const organizer = customer.organizerProfile || {};
+                    const isOpen = selectedRequestId === b._id;
 
-                      <div className="requestRowCard__right">
-                        <button className="actionBtn actionBtn--accept" type="button" onClick={() => acceptBooking(b._id)}>
-                          Accept
+                    return (
+                      <div
+                        className={`requestExpandCard ${isOpen ? "requestExpandCard--open" : ""}`}
+                        key={b._id}
+                      >
+                        <button
+                          type="button"
+                          className="requestExpandCard__summary"
+                          onClick={() => toggleRequest(b._id)}
+                        >
+                          <div className="requestExpandCard__left">
+                            <div
+                              className="requestExpandCard__avatar"
+                              style={
+                                customer.photoURL
+                                  ? {
+                                      backgroundImage: `url(${customer.photoURL})`,
+                                      backgroundSize: "cover",
+                                      backgroundPosition: "center",
+                                    }
+                                  : {}
+                              }
+                            />
+
+                            <div className="requestExpandCard__body">
+                              <div className="requestExpandCard__title">
+                                {humanDate(b.date)} • {slotLabel(b.slotType)}
+                              </div>
+
+                              <div className="requestExpandCard__meta">
+                                <span>{safeText(customer.name, "Unknown customer")}</span>
+                                <span className="requestExpandCard__dot">•</span>
+                                <span>
+                                  {safeText(
+                                    organizer.organizationName,
+                                    safeText(customer.email, "No email")
+                                  )}
+                                </span>
+                              </div>
+
+                              <div className="requestExpandCard__note">
+                                {b.note ? b.note : "— No note —"}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="requestExpandCard__right">
+                            <span className="requestExpandCard__view">
+                              {isOpen ? "Hide details" : "View details"}
+                            </span>
+                            <span className="requestExpandCard__icon">
+                              {isOpen ? <FiChevronUp /> : <FiChevronDown />}
+                            </span>
+                          </div>
                         </button>
-                        <button className="actionBtn actionBtn--reject" type="button" onClick={() => rejectBooking(b._id)}>
-                          Reject
-                        </button>
+
+                        {isOpen && (
+                          <div className="requestExpandCard__details">
+                            <div className="requestExpandCard__detailsTop">
+                              <h3 className="requestExpandCard__detailsTitle">
+                                Booking Details
+                              </h3>
+                              <span className="statusPill statusPill--pending">
+                                {b.status}
+                              </span>
+                            </div>
+
+                            <div className="requestDetailsSection">
+                              <div className="requestDetailsSection__title">
+                                Booking information
+                              </div>
+
+                              <div className="detailsGrid">
+                                <div className="detailItem">
+                                  <span className="detailItem__label">Date</span>
+                                  <span className="detailItem__value">
+                                    {humanDate(b.date)}
+                                  </span>
+                                </div>
+
+                                <div className="detailItem">
+                                  <span className="detailItem__label">Slot</span>
+                                  <span className="detailItem__value">
+                                    {slotLabel(b.slotType)}
+                                  </span>
+                                </div>
+
+                                <div className="detailItem">
+                                  <span className="detailItem__label">Status</span>
+                                  <span className="detailItem__value">
+                                    {safeText(b.status)}
+                                  </span>
+                                </div>
+
+                                <div className="detailItem">
+                                  <span className="detailItem__label">Price</span>
+                                  <span className="detailItem__value">
+                                    {b.price != null ? `Rs. ${b.price}` : "Not set"}
+                                  </span>
+                                </div>
+
+                                <div className="detailItem">
+                                  <span className="detailItem__label">Payment</span>
+                                  <span className="detailItem__value">
+                                    {safeText(b.paymentStatus, "UNPAID")}
+                                  </span>
+                                </div>
+
+                                <div className="detailItem">
+                                  <span className="detailItem__label">Created</span>
+                                  <span className="detailItem__value">
+                                    {humanDateTime(b.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="detailBlock">
+                                <div className="detailBlock__label">
+                                  <FiFileText />
+                                  <span>Customer Note</span>
+                                </div>
+                                <div className="detailBlock__value">
+                                  {safeText(b.note)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="requestDetailsActions">
+                              <button
+                                className="actionBtn actionBtn--accept"
+                                type="button"
+                                onClick={() => acceptBooking(b._id)}
+                              >
+                                Accept
+                              </button>
+
+                              <button
+                                className="actionBtn actionBtn--reject"
+                                type="button"
+                                onClick={() => rejectBooking(b._id)}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
           )}
 
-          {/* Upcoming */}
           {activeTab === "UPCOMING" && (
             <>
-              {loadingUpcoming && <div className="bookingsEmptyState">Loading upcoming bookings...</div>}
+              {loadingUpcoming && (
+                <div className="bookingsEmptyState">
+                  Loading upcoming bookings...
+                </div>
+              )}
 
               {!loadingUpcoming && upcoming.length === 0 && (
                 <div className="bookingsEmptyState">No upcoming bookings yet.</div>
@@ -548,16 +794,44 @@ export default function ArtistBookings() {
                           <div className="upcomingRowCard__title">
                             {humanDate(b.date)} • {slotLabel(b.slotType)}
                           </div>
+
                           <div className="upcomingRowCard__meta">
-                            Customer: <span className="upcomingRowCard__uid">{b.customerUid}</span>
+                            Customer:{" "}
+                            <span className="upcomingRowCard__uid">
+                              {safeText(b.customer?.name, b.customerUid)}
+                            </span>
                             <span className="upcomingRowCard__dot">•</span>
-                            Status: <span className="upcomingRowCard__status">{b.status}</span>
+                            Status:{" "}
+                            <span className="upcomingRowCard__status">{b.status}</span>
                           </div>
+
+                          {b.canReviewOrganizer && (
+                            <div className="upcomingRowCard__reviewWrap">
+                              <button
+                                type="button"
+                                className="reviewBtn"
+                                onClick={() => openReviewModal(b)}
+                              >
+                                <FiEdit3 />
+                                <span>Review organizer</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {b.artistReviewGiven && (
+                            <div className="upcomingRowCard__reviewDone">
+                              Review already submitted
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <div className="upcomingRowCard__right">
-                        <span className={`statusPill statusPill--${String(b.status).toLowerCase()}`}>
+                        <span
+                          className={`statusPill statusPill--${String(
+                            b.status
+                          ).toLowerCase()}`}
+                        >
                           {b.status}
                         </span>
                       </div>
@@ -569,7 +843,6 @@ export default function ArtistBookings() {
           )}
         </section>
 
-        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
@@ -578,6 +851,78 @@ export default function ArtistBookings() {
           </div>
         </footer>
       </main>
+
+      {reviewTarget && (
+        <div className="reviewModalOverlay" onClick={closeReviewModal}>
+          <div className="reviewModal" onClick={(e) => e.stopPropagation()}>
+            <div className="reviewModal__header">
+              <div>
+                <h3 className="reviewModal__title">Review Organizer</h3>
+                <p className="reviewModal__sub">
+                  {safeText(reviewTarget.customer?.name, "Organizer")} •{" "}
+                  {humanDate(reviewTarget.date)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="reviewModal__close"
+                onClick={closeReviewModal}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div className="reviewModal__body">
+              <label className="reviewField">
+                <span className="reviewField__label">Rating</span>
+                <select
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(Number(e.target.value))}
+                  className="reviewField__input"
+                >
+                  <option value={5}>5 - Excellent</option>
+                  <option value={4}>4 - Good</option>
+                  <option value={3}>3 - Okay</option>
+                  <option value={2}>2 - Poor</option>
+                  <option value={1}>1 - Very Poor</option>
+                </select>
+              </label>
+
+              <label className="reviewField">
+                <span className="reviewField__label">Comment</span>
+                <textarea
+                  rows={5}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  className="reviewField__input reviewField__textarea"
+                  placeholder="Write your review here..."
+                />
+              </label>
+            </div>
+
+            <div className="reviewModal__actions">
+              <button
+                type="button"
+                className="actionBtn actionBtn--reject"
+                onClick={closeReviewModal}
+                disabled={submittingReview}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="actionBtn actionBtn--accept"
+                onClick={submitReview}
+                disabled={submittingReview}
+              >
+                {submittingReview ? "Submitting..." : "Submit Review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

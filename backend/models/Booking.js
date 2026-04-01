@@ -4,12 +4,20 @@ const BookingSchema = new mongoose.Schema(
   {
     artistUid: { type: String, required: true, index: true },
     customerUid: { type: String, required: true, index: true },
-    date: { type: String, required: true },
+    date: { type: String, required: true }, // YYYY-MM-DD
     slotType: { type: String, required: true, enum: ["MORNING", "EVENING"] },
 
     status: {
       type: String,
-      enum: ["PENDING", "ACCEPTED", "REJECTED", "CONFIRMED", "CANCELLED", "EXPIRED"],
+      enum: [
+        "PENDING",
+        "ACCEPTED",
+        "REJECTED",
+        "CONFIRMED",
+        "CANCELLED",
+        "EXPIRED",
+        "COMPLETED",
+      ],
       default: "PENDING",
       index: true,
     },
@@ -17,7 +25,6 @@ const BookingSchema = new mongoose.Schema(
     note: { type: String, default: "" },
     price: { type: Number, default: null },
 
-    // ✅ NEW: payment tracking
     paymentStatus: {
       type: String,
       enum: ["UNPAID", "PAID", "REFUNDED"],
@@ -25,17 +32,18 @@ const BookingSchema = new mongoose.Schema(
       index: true,
     },
     paidAt: { type: Date, default: null },
-    paymentRef: { type: String, default: "" }, // optional: gateway ref / txn id
+    paymentRef: { type: String, default: "" },
     amountPaid: { type: Number, default: null },
+
+    // ✅ add this
+    expiresAt: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );
 
 BookingSchema.index({ artistUid: 1, status: 1 });
 BookingSchema.index({ customerUid: 1, status: 1 });
-
-// ✅ helpful for review lookup / enforcing uniqueness logic
 BookingSchema.index({ artistUid: 1, customerUid: 1, date: 1, slotType: 1 });
 
-const Booking = mongoose.model("Booking", BookingSchema);
+const Booking = mongoose.models.Booking || mongoose.model("Booking", BookingSchema);
 export default Booking;

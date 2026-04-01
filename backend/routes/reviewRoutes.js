@@ -17,11 +17,17 @@ function computeSummary(reviews) {
   return { avgRating, totalReviews };
 }
 
-/**
- * ✅ Backward compatible:
- * GET /api/reviews/artist/:artistUid
- * returns: { summary: { avgRating, totalReviews }, reviews: [...] }
- */
+function isPastBookingDate(ymd) {
+  if (!ymd) return false;
+  const today = new Date();
+  const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const [year, month, day] = ymd.split("-").map(Number);
+  const bookingDay = new Date(year, month - 1, day);
+
+  return bookingDay < localToday;
+}
+
 router.get("/artist/:artistUid", async (req, res) => {
   try {
     const { artistUid } = req.params;
@@ -42,10 +48,6 @@ router.get("/artist/:artistUid", async (req, res) => {
   }
 });
 
-/**
- * ✅ Generic:
- * GET /api/reviews/user/:uid?role=ARTIST|CUSTOMER
- */
 router.get("/user/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
@@ -64,14 +66,10 @@ router.get("/user/:uid", async (req, res) => {
 });
 
 /**
- * ✅ POST /api/reviews
- * Only allowed if booking is CONFIRMED + PAID.
- *
- * Body: { bookingId, rating, comment, eventType?, reviewerName, reviewerPhotoURL? }
- *
- * Who can post:
- * - customer can review artist
- * - artist can review customer
+ * POST /api/reviews
+ * Review allowed only after booking date has passed.
+ * For customer -> artist review: booking must be CONFIRMED + PAID
+ * For artist -> customer review: booking must be ACCEPTED or CONFIRMED, and past date
  */
 router.post("/", requireAuth, async (req, res) => {
   try {
@@ -87,8 +85,11 @@ router.post("/", requireAuth, async (req, res) => {
     } = req.body || {};
 
     if (!bookingId || !reviewerName || typeof rating !== "number") {
-      return res.status(400).json({ message: "bookingId, reviewerName, and rating are required" });
+      return res
+        .status(400)
+        .json({ message: "bookingId, reviewerName, and rating are required" });
     }
+
     if (rating < 1 || rating > 5) {
       return res.status(400).json({ message: "rating must be between 1 and 5" });
     }
@@ -98,10 +99,9 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // ✅ must be completed + paid
-    if (booking.status !== "CONFIRMED" || booking.paymentStatus !== "PAID") {
+    if (!isPastBookingDate(booking.date)) {
       return res.status(400).json({
-        message: "You can review only after the booking is confirmed and paid",
+        message: "You can review only after the event date has passed",
       });
     }
 
@@ -112,11 +112,28 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(403).json({ message: "You are not part of this booking" });
     }
 
+    if (isCustomer) {
+      if (booking.status !== "CONFIRMED" || booking.paymentStatus !== "PAID") {
+        return res.status(400).json({
+          message:
+            "Customer can review only after the booking is confirmed and paid",
+        });
+      }
+    }
+
+    if (isArtist) {
+      if (!["ACCEPTED", "CONFIRMED"].includes(booking.status)) {
+        return res.status(400).json({
+          message:
+            "Artist can review organizer only after an accepted or confirmed booking",
+        });
+      }
+    }
+
     const reviewerRole = isCustomer ? "CUSTOMER" : "ARTIST";
     const revieweeRole = isCustomer ? "ARTIST" : "CUSTOMER";
     const revieweeUid = isCustomer ? booking.artistUid : booking.customerUid;
 
-    // ✅ Create review (unique index prevents duplicates)
     const newReview = await Review.create({
       bookingId,
       reviewerUid,
@@ -132,7 +149,6 @@ router.post("/", requireAuth, async (req, res) => {
 
     return res.status(201).json(newReview);
   } catch (err) {
-    // duplicate (already reviewed)
     if (err?.code === 11000) {
       return res.status(409).json({ message: "You already reviewed this booking" });
     }

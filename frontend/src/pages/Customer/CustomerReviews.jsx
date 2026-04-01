@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import "./styles/ArtistReviews.css";
+import "./Styles/CustomerReviews.css";
 
 import {
   FiBell,
@@ -13,10 +13,11 @@ import {
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
-import { auth } from "../../firebase"; // ✅ correct path for your structure
+import { auth } from "../../firebase";
 
 function Stars({ value = 0 }) {
   const full = Math.round(value);
+
   return (
     <div className="revStars">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -44,7 +45,7 @@ function formatDate(iso) {
   }
 }
 
-export default function ArtistReviews() {
+export default function OrganizerReviews() {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -59,16 +60,15 @@ export default function ArtistReviews() {
     profile?.name ||
     profile?.fullName ||
     profile?.username ||
-    profile?.artistName ||
-    "Artist";
+    profile?.organizationName ||
+    "Organizer";
 
-  const artistUid = profile?.uid;
+  const organizerUid = profile?.uid;
 
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({ avgRating: 0, totalReviews: 0 });
   const [reviews, setReviews] = useState([]);
 
-  // ✅ Route guard: block access if logged out
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) {
@@ -76,7 +76,6 @@ export default function ArtistReviews() {
     }
   }, [navigate]);
 
-  // ✅ Logout handler
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -84,7 +83,6 @@ export default function ArtistReviews() {
       console.error("Firebase logout error:", err);
     } finally {
       localStorage.removeItem("profile");
-      // optional: localStorage.clear();
       navigate("/", { replace: true });
     }
   };
@@ -94,31 +92,34 @@ export default function ArtistReviews() {
       try {
         setLoading(true);
 
-        if (!artistUid) {
+        if (!organizerUid) {
           setSummary({ avgRating: 0, totalReviews: 0 });
           setReviews([]);
           return;
         }
 
         const res = await fetch(
-          `http://localhost:5000/api/reviews/artist/${artistUid}`
+          `http://localhost:5000/api/reviews/user/${organizerUid}?role=CUSTOMER`
         );
 
         const data = await res.json();
+
         setSummary(data.summary || { avgRating: 0, totalReviews: 0 });
         setReviews(Array.isArray(data.reviews) ? data.reviews : []);
-      } catch (e) {
+      } catch (err) {
+        console.error("Failed to load organizer reviews:", err);
         setSummary({ avgRating: 0, totalReviews: 0 });
         setReviews([]);
       } finally {
         setLoading(false);
       }
     }
+
     load();
-  }, [artistUid]);
+  }, [organizerUid]);
 
   return (
-    <div className="artistDash artistReviewsPage">
+    <div className="artistDash organizerReviewsPage">
       {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
@@ -127,21 +128,21 @@ export default function ArtistReviews() {
         </div>
 
         <nav className="artistDash__nav">
-          <a className="artistDash__navItem" href="/artist/dashboard">
+          <a className="artistDash__navItem" href="/organizer/dashboard">
             <span className="artistDash__navIcon">
               <FiHome />
             </span>
             <span>Overview</span>
           </a>
 
-          <a className="artistDash__navItem" href="/artist/bookings">
+          <a className="artistDash__navItem" href="/organizer/bookings">
             <span className="artistDash__navIcon">
               <FiCalendar />
             </span>
             <span>Bookings</span>
           </a>
 
-          <a className="artistDash__navItem" href="/artist/chords">
+          <a className="artistDash__navItem" href="/organizer/chords">
             <span className="artistDash__navIcon">
               <FiMusic />
             </span>
@@ -150,7 +151,7 @@ export default function ArtistReviews() {
 
           <a
             className="artistDash__navItem artistDash__navItem--active"
-            href="/artist/reviews"
+            href="/organizer/reviews"
           >
             <span className="artistDash__navIcon">
               <FiStar />
@@ -160,14 +161,13 @@ export default function ArtistReviews() {
         </nav>
 
         <div className="artistDash__sideBottom">
-          <a className="artistDash__sideAction" href="/artist/profile">
+          <a className="artistDash__sideAction" href="/organizer/profile">
             <span className="artistDash__navIcon">
               <FiUser />
             </span>
             <span>Profile</span>
           </a>
 
-          {/* ✅ Logout button */}
           <button
             type="button"
             className="artistDash__sideAction"
@@ -183,7 +183,6 @@ export default function ArtistReviews() {
 
       {/* Main */}
       <main className="artistDash__main">
-        {/* Top bar */}
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn" aria-label="Notifications">
             <FiBell />
@@ -209,17 +208,20 @@ export default function ArtistReviews() {
           </div>
         </div>
 
-        {/* Header card */}
+        {/* Header */}
         <section className="reviewsHeroCard">
           <div className="reviewsHeroCard__left">
-            <h1 className="reviewsHeroCard__title">Reviews &amp; Testimonials</h1>
-            <p className="reviewsHeroCard__sub">See what clients are saying about you</p>
+            <h1 className="reviewsHeroCard__title">Organizer Reviews</h1>
+            <p className="reviewsHeroCard__sub">
+              See what artists are saying about working with you
+            </p>
           </div>
 
           <div className="reviewsHeroCard__right">
             <div className="reviewsHeroCard__score">
               {Number(summary.avgRating || 0).toFixed(1)}
             </div>
+
             <div className="reviewsHeroCard__meta">
               <Stars value={summary.avgRating || 0} />
               <div className="reviewsHeroCard__count">
@@ -231,11 +233,13 @@ export default function ArtistReviews() {
 
         {/* Reviews list */}
         <section className="reviewsStack">
-          {loading && <div className="reviewsEmptyState">Loading reviews...</div>}
+          {loading && (
+            <div className="reviewsEmptyState">Loading reviews...</div>
+          )}
 
           {!loading && reviews.length === 0 && (
             <div className="reviewsEmptyState">
-              No reviews yet. When event planners review you, they’ll show up here.
+              No reviews yet. When artists review you after events, they’ll show up here.
             </div>
           )}
 
@@ -255,19 +259,26 @@ export default function ArtistReviews() {
                         : {}
                     }
                   />
+
                   <div className="reviewRowCard__body">
-                    <div className="reviewRowCard__name">{r.reviewerName}</div>
+                    <div className="reviewRowCard__name">
+                      {r.reviewerName || "Artist"}
+                    </div>
+
                     <div className="reviewRowCard__line2">
                       <Stars value={r.rating || 0} />
                       <span className="reviewRowCard__event">
                         • {r.eventType || "Event"}
                       </span>
                     </div>
+
                     <div className="reviewRowCard__text">{r.comment || "—"}</div>
                   </div>
                 </div>
 
-                <div className="reviewRowCard__date">{formatDate(r.createdAt)}</div>
+                <div className="reviewRowCard__date">
+                  {formatDate(r.createdAt)}
+                </div>
               </div>
             ))}
         </section>

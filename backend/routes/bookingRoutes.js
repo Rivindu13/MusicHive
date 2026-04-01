@@ -3,25 +3,121 @@ const router = express.Router();
 
 import AvailabilitySlot from "../models/AvailabilitySlots.js";
 import Booking from "../models/Booking.js";
+import User from "../models/User.js";
+import Review from "../models/review.js";
 
 import { BOOKING_PENDING_HOURS } from "../config/bookingConstants.js";
 import { tomorrowYMD } from "../utils/date.js";
-
 import { requireAuth } from "../middleware/requireAuth.js";
 
 function isValidYMD(s) {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
+function mapCustomer(user) {
+  if (!user) return null;
+
+  return {
+    uid: user.uid,
+    name: user.name || "",
+    email: user.email || "",
+    photoURL: user.photoURL || null,
+    role: user.role || "",
+    organizerProfile: {
+      phone: user.organizerProfile?.phone || "",
+      organizationName: user.organizerProfile?.organizationName || "",
+      eventType: user.organizerProfile?.eventType || "",
+      location: user.organizerProfile?.location || "",
+      bio: user.organizerProfile?.bio || "",
+      preferredGenres: Array.isArray(user.organizerProfile?.preferredGenres)
+        ? user.organizerProfile.preferredGenres
+        : [],
+      budgetRange: user.organizerProfile?.budgetRange || "",
+      instagram: user.organizerProfile?.instagram || "",
+      website: user.organizerProfile?.website || "",
+      isProfileComplete: !!user.organizerProfile?.isProfileComplete,
+    },
+  };
+}
+
+function mapArtist(user) {
+  if (!user) return null;
+
+  return {
+    uid: user.uid,
+    name: user.name || "",
+    email: user.email || "",
+    photoURL: user.photoURL || null,
+    role: user.role || "",
+    artistProfile: {
+      bio: user.artistProfile?.bio || "",
+      genres: Array.isArray(user.artistProfile?.genres)
+        ? user.artistProfile.genres
+        : [],
+      location: user.artistProfile?.location || "",
+      pricePerHour: user.artistProfile?.pricePerHour ?? null,
+      instruments: Array.isArray(user.artistProfile?.instruments)
+        ? user.artistProfile.instruments
+        : [],
+      socials: {
+        instagram: user.artistProfile?.socials?.instagram || "",
+        youtube: user.artistProfile?.socials?.youtube || "",
+        spotify: user.artistProfile?.socials?.spotify || "",
+      },
+      bandMembers: Array.isArray(user.artistProfile?.bandMembers)
+        ? user.artistProfile.bandMembers
+        : [],
+      isProfileComplete: !!user.artistProfile?.isProfileComplete,
+    },
+  };
+}
+
+function isPastBookingDate(ymd) {
+  if (!ymd) return false;
+  const today = new Date();
+  const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const [year, month, day] = ymd.split("-").map(Number);
+  const bookingDay = new Date(year, month - 1, day);
+
+  return bookingDay < localToday;
+}
+
+async function expireOldPendingBookingsForArtist(artistUid) {
+  const pendingBookings = await Booking.find({
+    artistUid,
+    status: "PENDING",
+  });
+
+  for (const booking of pendingBookings) {
+    const shouldExpire =
+      isPastBookingDate(booking.date) ||
+      (booking.expiresAt && booking.expiresAt < new Date());
+
+    if (!shouldExpire) continue;
+
+    booking.status = "EXPIRED";
+    await booking.save();
+
+    const slot = await AvailabilitySlot.findOne({
+      artistUid: booking.artistUid,
+      date: booking.date,
+      slotType: booking.slotType,
+      bookingId: booking._id,
+    });
+
+    if (slot && slot.status !== "BOOKED") {
+      slot.status = "OPEN";
+      slot.heldUntil = null;
+      slot.heldBy = null;
+      slot.bookingId = null;
+      await slot.save();
+    }
+  }
+}
+
 /**
- * ✅ UPDATED FLOW
- * POST /api/bookings/request (customer clicks "Request Booking")
- * Body: { slotId, note }
- *
- * Rules:
- * - slot must be HELD by this customer and not expired
- * - convert HELD -> RESERVED
- * - create booking PENDING with expiresAt = now + 24h
+ * POST /api/bookings/request
  */
 router.post("/request", requireAuth, async (req, res) => {
   try {
@@ -34,11 +130,11 @@ router.post("/request", requireAuth, async (req, res) => {
 
     const now = new Date();
 
-    // 1) load slot
     const slot = await AvailabilitySlot.findById(slotId);
-    if (!slot) return res.status(404).json({ success: false, message: "Slot not found" });
+    if (!slot) {
+      return res.status(404).json({ success: false, message: "Slot not found" });
+    }
 
-    // booking allowed from tomorrow onward
     const minDate = tomorrowYMD();
     if (!isValidYMD(slot.date) || slot.date < minDate) {
       return res
@@ -46,18 +142,22 @@ router.post("/request", requireAuth, async (req, res) => {
         .json({ success: false, message: `Booking allowed from ${minDate}` });
     }
 
-    // 2) validate hold ownership + not expired
     if (slot.status !== "HELD") {
       return res.status(409).json({ success: false, message: "Slot is not held" });
     }
+
     if (!slot.heldBy || slot.heldBy !== customerUid) {
-      return res.status(403).json({ success: false, message: "This slot is not held by you" });
-    }
-    if (!slot.heldUntil || slot.heldUntil < now) {
-      return res.status(409).json({ success: false, message: "Hold expired. Please select again." });
+      return res
+        .status(403)
+        .json({ success: false, message: "This slot is not held by you" });
     }
 
-    // 3) Atomic convert HELD -> RESERVED (protect against races)
+    if (!slot.heldUntil || slot.heldUntil < now) {
+      return res
+        .status(409)
+        .json({ success: false, message: "Hold expired. Please select again." });
+    }
+
     const reservedSlot = await AvailabilitySlot.findOneAndUpdate(
       {
         _id: slotId,
@@ -69,7 +169,6 @@ router.post("/request", requireAuth, async (req, res) => {
         $set: {
           status: "RESERVED",
           heldUntil: null,
-          // keep heldBy optional; but cleaner to clear it now
           heldBy: null,
         },
       },
@@ -77,12 +176,15 @@ router.post("/request", requireAuth, async (req, res) => {
     );
 
     if (!reservedSlot) {
-      return res.status(409).json({ success: false, message: "Slot could not be reserved" });
+      return res
+        .status(409)
+        .json({ success: false, message: "Slot could not be reserved" });
     }
 
-    const expiresAt = new Date(now.getTime() + BOOKING_PENDING_HOURS * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      now.getTime() + BOOKING_PENDING_HOURS * 60 * 60 * 1000
+    );
 
-    // 4) create booking
     const booking = await Booking.create({
       artistUid: reservedSlot.artistUid,
       customerUid,
@@ -93,39 +195,52 @@ router.post("/request", requireAuth, async (req, res) => {
       expiresAt,
     });
 
-    // 5) link slot -> booking
     reservedSlot.bookingId = booking._id;
     await reservedSlot.save();
 
-    return res.status(201).json({ success: true, data: { booking, slot: reservedSlot } });
+    return res.status(201).json({
+      success: true,
+      data: { booking, slot: reservedSlot },
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /**
- * PATCH /api/bookings/:id/accept (artist)
- * booking must be PENDING (and not expired)
- * slot must be RESERVED with bookingId
+ * PATCH /api/bookings/:id/accept
  */
 router.patch("/:id/accept", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
 
     if (booking.artistUid !== req.user.uid) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
     if (booking.status !== "PENDING") {
-      return res.status(400).json({ success: false, message: "Booking must be PENDING" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Booking must be PENDING" });
     }
 
-    // optional safety: prevent accepting already expired
     if (booking.expiresAt && booking.expiresAt < new Date()) {
       booking.status = "EXPIRED";
       await booking.save();
-      return res.status(409).json({ success: false, message: "Booking request expired" });
+      return res
+        .status(409)
+        .json({ success: false, message: "Booking request expired" });
+    }
+
+    if (isPastBookingDate(booking.date)) {
+      booking.status = "EXPIRED";
+      await booking.save();
+      return res
+        .status(409)
+        .json({ success: false, message: "Booking request date has passed" });
     }
 
     const slot = await AvailabilitySlot.findOne({
@@ -155,20 +270,23 @@ router.patch("/:id/accept", requireAuth, async (req, res) => {
 });
 
 /**
- * PATCH /api/bookings/:id/reject (artist)
- * booking must be PENDING
- * slot RESERVED -> OPEN
+ * PATCH /api/bookings/:id/reject
  */
 router.patch("/:id/reject", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
 
     if (booking.artistUid !== req.user.uid) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
+
     if (booking.status !== "PENDING") {
-      return res.status(400).json({ success: false, message: "Booking must be PENDING" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Booking must be PENDING" });
     }
 
     const slot = await AvailabilitySlot.findOne({
@@ -207,11 +325,53 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
+    // ✅ auto-expire old pending requests first
+    await expireOldPendingBookingsForArtist(uid);
+
     const query = { artistUid: uid };
     if (status) query.status = status;
 
     const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, data: bookings });
+
+    const customerUids = [...new Set(bookings.map((b) => b.customerUid).filter(Boolean))];
+
+    const customers = await User.find({ uid: { $in: customerUids } })
+      .select(
+        "uid name email role photoURL organizerProfile.phone organizerProfile.organizationName organizerProfile.eventType organizerProfile.location organizerProfile.bio organizerProfile.preferredGenres organizerProfile.budgetRange organizerProfile.instagram organizerProfile.website organizerProfile.isProfileComplete"
+      )
+      .lean();
+
+    const customerMap = new Map(customers.map((u) => [u.uid, mapCustomer(u)]));
+
+    let artistReviewBookingIds = [];
+    if (["ACCEPTED", "CONFIRMED", "COMPLETED"].includes(String(status).toUpperCase()) || !status) {
+      const reviews = await Review.find({
+        reviewerUid: uid,
+        reviewerRole: "ARTIST",
+      })
+        .select("bookingId")
+        .lean();
+
+      artistReviewBookingIds = reviews.map((r) => String(r.bookingId));
+    }
+
+    const enriched = bookings.map((booking) => {
+      const isPast = isPastBookingDate(booking.date);
+      const artistReviewGiven = artistReviewBookingIds.includes(String(booking._id));
+
+      return {
+        ...booking,
+        customer: customerMap.get(booking.customerUid) || null,
+        isPastEvent: isPast,
+        artistReviewGiven,
+        canReviewOrganizer:
+          (booking.status === "ACCEPTED" || booking.status === "CONFIRMED") &&
+          isPast &&
+          !artistReviewGiven,
+      };
+    });
+
+    return res.json({ success: true, data: enriched });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -233,33 +393,49 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
     if (status) query.status = status;
 
     const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
-    return res.json({ success: true, data: bookings });
+
+    const artistUids = [...new Set(bookings.map((b) => b.artistUid).filter(Boolean))];
+
+    const artists = await User.find({ uid: { $in: artistUids } })
+      .select(
+        "uid name email role photoURL artistProfile.bio artistProfile.genres artistProfile.location artistProfile.pricePerHour artistProfile.instruments artistProfile.socials artistProfile.bandMembers artistProfile.isProfileComplete"
+      )
+      .lean();
+
+    const artistMap = new Map(artists.map((u) => [u.uid, mapArtist(u)]));
+
+    const enriched = bookings.map((booking) => ({
+      ...booking,
+      artist: artistMap.get(booking.artistUid) || null,
+    }));
+
+    return res.json({ success: true, data: enriched });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /**
- * PATCH /api/bookings/:id/markPaid (MVP simulation)
- * Allowed only if status ACCEPTED -> CONFIRMED
+ * PATCH /api/bookings/:id/markPaid
  */
 router.patch("/:id/markPaid", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
 
-    // ✅ customer must be logged in user
     if (booking.customerUid !== req.user.uid) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
     if (booking.status !== "ACCEPTED") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Booking must be ACCEPTED to pay" });
+      return res.status(400).json({
+        success: false,
+        message: "Booking must be ACCEPTED to pay",
+      });
     }
 
-    // optional: accept paymentRef/amountPaid from body (for future gateway)
     const { paymentRef, amountPaid } = req.body || {};
 
     booking.status = "CONFIRMED";
@@ -267,7 +443,9 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
     booking.paidAt = new Date();
     booking.paymentRef = paymentRef || booking.paymentRef || "";
     booking.amountPaid =
-      typeof amountPaid === "number" ? amountPaid : booking.amountPaid ?? booking.price ?? null;
+      typeof amountPaid === "number"
+        ? amountPaid
+        : booking.amountPaid ?? booking.price ?? null;
 
     await booking.save();
 
