@@ -604,7 +604,7 @@ export default function CustomerBookingArtists() {
             artists.map((a) => {
               const price =
                 typeof a?.artistProfile?.pricePerHour === "number"
-                  ? `LKR ${a.artistProfile.pricePerHour.toLocaleString()} / hour`
+                  ? `LKR ${a.artistProfile.pricePerHour.toLocaleString()} per event`
                   : "Price not set";
 
               return (
@@ -733,10 +733,10 @@ export default function CustomerBookingArtists() {
                   </div>
 
                   <div className="cbaField">
-                    <div className="cbaField__label">Price :</div>
+                    <div className="cbaField__label">Price per event:</div>
                     <div className="cbaField__value">
                       {typeof selectedArtist?.artistProfile?.pricePerHour === "number"
-                        ? `LKR ${selectedArtist.artistProfile.pricePerHour.toLocaleString()} / hour`
+                        ? `LKR ${selectedArtist.artistProfile.pricePerHour.toLocaleString()} per event`
                         : "—"}
                     </div>
                   </div>
@@ -765,7 +765,6 @@ export default function CustomerBookingArtists() {
 
                       const heldUntilISO = new Date(heldUntil).toISOString();
 
-                      // ✅ IMPORTANT FIX: do NOT release hold when navigating
                       closeDrawer({ releaseHold: false });
 
                       navigate("/customer/booking", {

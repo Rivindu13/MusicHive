@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import "../Artist/styles/ArtistDashboard.css";
 import "./Styles/MyBookings.css";
@@ -18,7 +18,7 @@ import {
   FiX,
 } from "react-icons/fi";
 
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebase";
 
 const API_BASE = "http://localhost:5000";
@@ -52,16 +52,31 @@ function statusLabel(status) {
   return status || "—";
 }
 
+function waitForAuthReady() {
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      unsub();
+      resolve(user);
+    });
+  });
+}
+
 async function getIdTokenOrThrow() {
-  const user = auth.currentUser;
+  let user = auth.currentUser;
+
+  if (!user) {
+    user = await waitForAuthReady();
+  }
+
   if (!user) throw new Error("You are not logged in.");
+
   return await user.getIdToken();
 }
 
 export default function CustomerMyBookingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // profile
   const profile = useMemo(() => {
     return JSON.parse(localStorage.getItem("profile")) || null;
   }, []);
@@ -76,13 +91,21 @@ export default function CustomerMyBookingsPage() {
 
   const customerUid = profile?.uid || profile?.userUid || profile?.id || null;
 
-  // route guard
+  const [authReady, setAuthReady] = useState(false);
+
   useEffect(() => {
-    const stored = localStorage.getItem("profile");
-    if (!stored) navigate("/", { replace: true });
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setAuthReady(true);
+
+      const stored = localStorage.getItem("profile");
+      if (!stored && !user) {
+        navigate("/", { replace: true });
+      }
+    });
+
+    return () => unsub();
   }, [navigate]);
 
-  // logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -94,23 +117,16 @@ export default function CustomerMyBookingsPage() {
     }
   };
 
-  // tabs
-  const [tab, setTab] = useState("PENDING"); // PENDING | ACCEPTED | PAID
-
-  // bookings
+  const [tab, setTab] = useState("PENDING");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [items, setItems] = useState([]);
 
-  // artist cache (for names/photos)
-  const [artistMap, setArtistMap] = useState({}); // { [artistUid]: {name, photoURL} }
-
-  // pay state
+  const [artistMap, setArtistMap] = useState({});
   const [payingId, setPayingId] = useState(null);
   const [payErr, setPayErr] = useState("");
   const [payOk, setPayOk] = useState("");
 
-  // review modal state
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [rating, setRating] = useState(5);
@@ -148,15 +164,17 @@ export default function CustomerMyBookingsPage() {
   }
 
   async function loadCustomerBookings() {
+    if (!authReady) return;
+
     setLoading(true);
     setErr("");
+
     try {
       const idToken = await getIdTokenOrThrow();
-
       const uid = customerUid || auth.currentUser?.uid;
+
       if (!uid) throw new Error("Missing customer uid in profile.");
 
-      // ✅ your existing route:
       const res = await fetch(`${API_BASE}/api/bookings/customer/${uid}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
@@ -169,8 +187,9 @@ export default function CustomerMyBookingsPage() {
       const list = Array.isArray(data.data) ? data.data : [];
       setItems(list);
 
-      // preload artist details (best effort)
-      const uniqueArtistUids = Array.from(new Set(list.map((b) => b.artistUid).filter(Boolean)));
+      const uniqueArtistUids = Array.from(
+        new Set(list.map((b) => b.artistUid).filter(Boolean))
+      );
       uniqueArtistUids.forEach((aUid) => fetchArtistIfMissing(aUid));
     } catch (e) {
       setItems([]);
@@ -181,17 +200,69 @@ export default function CustomerMyBookingsPage() {
   }
 
   useEffect(() => {
+    if (!authReady) return;
     loadCustomerBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authReady]);
 
-  // filtered lists
+  useEffect(() => {
+    if (!authReady) return;
+
+    async function checkReturnedPayment() {
+      const params = new URLSearchParams(location.search);
+      const bookingId = params.get("bookingId");
+      const payment = params.get("payment");
+
+      if (!bookingId || !payment) return;
+
+      try {
+        const idToken = await getIdTokenOrThrow();
+
+        const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/payment-status`, {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || "Failed to fetch payment status");
+        }
+
+        const info = data.data;
+
+        if (info.paymentStatus === "PAID") {
+          setPayOk("Payment successful. Booking is now confirmed.");
+          setPayErr("");
+          setTab("PAID");
+        } else if (payment === "cancel") {
+          setPayErr("Payment unsuccessful.");
+          setPayOk("");
+          setTab("ACCEPTED");
+        } else {
+          setPayErr(info.paymentMessage || "Payment unsuccessful.");
+          setPayOk("");
+          setTab("ACCEPTED");
+        }
+
+        await loadCustomerBookings();
+        window.history.replaceState({}, document.title, "/customer/my-bookings");
+      } catch (e) {
+        setPayErr(e.message || "Failed to verify payment result");
+      } finally {
+        setPayingId(null);
+      }
+    }
+
+    checkReturnedPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, location.search]);
+
   const pending = useMemo(() => {
     return items.filter((b) => b.status === "PENDING");
   }, [items]);
 
   const accepted = useMemo(() => {
-    // accepted but not paid yet
     return items.filter(
       (b) =>
         b.status === "ACCEPTED" &&
@@ -200,7 +271,6 @@ export default function CustomerMyBookingsPage() {
   }, [items]);
 
   const paid = useMemo(() => {
-    // paid/confirmed
     return items.filter(
       (b) =>
         (b.paymentStatus === "PAID" || b.status === "CONFIRMED") &&
@@ -212,33 +282,57 @@ export default function CustomerMyBookingsPage() {
   const visible =
     tab === "PENDING" ? pending : tab === "ACCEPTED" ? accepted : paid;
 
+  function handleTabChange(nextTab) {
+    setTab(nextTab);
+
+    if (nextTab !== "PAID") {
+      setPayOk("");
+    }
+
+    if (nextTab !== "ACCEPTED") {
+      setPayErr("");
+    }
+  }
+
   async function payNow(bookingId) {
     setPayErr("");
     setPayOk("");
     setPayingId(bookingId);
+
     try {
       const idToken = await getIdTokenOrThrow();
 
-      // ✅ your existing route:
-      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/markPaid`, {
-        method: "PATCH",
+      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/init-payment`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({}), // optional: { paymentRef, amountPaid }
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "Payment failed");
+        throw new Error(data.message || "Failed to start payment");
       }
 
-      setPayOk("Payment successful. Booking is now confirmed.");
-      await loadCustomerBookings();
+      const { checkoutUrl, payment } = data.data;
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = checkoutUrl;
+
+      Object.entries(payment).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value ?? "";
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
     } catch (e) {
-      setPayErr(e.message || "Payment failed");
-    } finally {
+      setPayErr(e.message || "Failed to start payment");
       setPayingId(null);
     }
   }
@@ -268,38 +362,47 @@ export default function CustomerMyBookingsPage() {
     if (!reviewBooking?._id) return;
 
     try {
-        setReviewSubmitting(true);
-        const idToken = await getIdTokenOrThrow();
+      setReviewSubmitting(true);
+      const idToken = await getIdTokenOrThrow();
 
-        const res = await fetch(`${API_BASE}/api/reviews`, {
+      const res = await fetch(`${API_BASE}/api/reviews`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-            bookingId: reviewBooking._id,
-            reviewerName: fullName,
-            reviewerPhotoURL: profilePic || null,
-            rating: Number(rating),
-            comment: comment || "",
+          bookingId: reviewBooking._id,
+          reviewerName: fullName,
+          reviewerPhotoURL: profilePic || null,
+          rating: Number(rating),
+          comment: comment || "",
         }),
-        });
+      });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || "Review failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Review failed");
 
-        setReviewOk("Review submitted!");
+      setReviewOk("Review submitted!");
     } catch (e) {
-        setReviewErr(e.message || "Review failed");
+      setReviewErr(e.message || "Review failed");
     } finally {
-        setReviewSubmitting(false);
+      setReviewSubmitting(false);
     }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="artistDash customerMyBookingsPage">
+        <main className="artistDash__main">
+          <div className="cmbEmpty">Loading your session...</div>
+        </main>
+      </div>
+    );
   }
 
   return (
     <div className="artistDash customerMyBookingsPage">
-      {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -349,9 +452,7 @@ export default function CustomerMyBookingsPage() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="artistDash__main">
-        {/* Top bar */}
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn"><FiBell /></button>
           <button className="artistDash__iconBtn"><FiHeart /></button>
@@ -368,14 +469,13 @@ export default function CustomerMyBookingsPage() {
           </div>
         </div>
 
-        {/* Header */}
         <section className="cmbHeader">
           <h1 className="cmbTitle">My Bookings</h1>
 
           <div className="cmbTabs">
             <button
               className={`cmbTab ${tab === "PENDING" ? "cmbTab--active" : ""}`}
-              onClick={() => setTab("PENDING")}
+              onClick={() => handleTabChange("PENDING")}
               type="button"
             >
               Pending ({pending.length})
@@ -383,7 +483,7 @@ export default function CustomerMyBookingsPage() {
 
             <button
               className={`cmbTab ${tab === "ACCEPTED" ? "cmbTab--active" : ""}`}
-              onClick={() => setTab("ACCEPTED")}
+              onClick={() => handleTabChange("ACCEPTED")}
               type="button"
             >
               Accepted / Pay ({accepted.length})
@@ -391,7 +491,7 @@ export default function CustomerMyBookingsPage() {
 
             <button
               className={`cmbTab ${tab === "PAID" ? "cmbTab--active" : ""}`}
-              onClick={() => setTab("PAID")}
+              onClick={() => handleTabChange("PAID")}
               type="button"
             >
               Paid / Review ({paid.length})
@@ -408,7 +508,6 @@ export default function CustomerMyBookingsPage() {
           </div>
         </section>
 
-        {/* State */}
         {err && (
           <div className="cmbState cmbState--error">
             <FiAlertTriangle /> {err}
@@ -427,7 +526,6 @@ export default function CustomerMyBookingsPage() {
           </div>
         )}
 
-        {/* List */}
         <section className="cmbList">
           {loading && <div className="cmbEmpty">Loading your bookings...</div>}
 
@@ -438,10 +536,11 @@ export default function CustomerMyBookingsPage() {
           {!loading &&
             !err &&
             visible.map((b) => {
-              const cached = artistMap[b.artistUid];
-              const artistName = cached?.name || "Artist";
+              const artistName = b.artist?.name || artistMap[b.artistUid]?.name || "Artist";
               const artistPhoto =
-                cached?.photoURL || "https://via.placeholder.com/56";
+                b.artist?.photoURL ||
+                artistMap[b.artistUid]?.photoURL ||
+                "https://via.placeholder.com/56";
 
               const payAllowed =
                 b.status === "ACCEPTED" &&
@@ -513,7 +612,6 @@ export default function CustomerMyBookingsPage() {
             })}
         </section>
 
-        {/* Review modal */}
         {reviewOpen && (
           <div
             className="cmbModalOverlay"
@@ -594,7 +692,6 @@ export default function CustomerMyBookingsPage() {
           </div>
         )}
 
-        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">

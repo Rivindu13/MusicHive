@@ -440,7 +440,7 @@ export default function CustomerBookingPage() {
 
   const priceText =
     typeof artist?.artistProfile?.pricePerHour === "number"
-      ? `LKR ${artist.artistProfile.pricePerHour.toLocaleString()} / hour`
+      ? `LKR ${artist.artistProfile.pricePerHour.toLocaleString()} per event`
       : "Price not set";
 
   return (

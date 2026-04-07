@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "crypto";
 const router = express.Router();
 
 import AvailabilitySlot from "../models/AvailabilitySlots.js";
@@ -116,6 +117,47 @@ async function expireOldPendingBookingsForArtist(artistUid) {
   }
 }
 
+function formatAmount(amount) {
+  return Number(amount || 0).toFixed(2);
+}
+
+function generatePayHereHash({ merchantId, orderId, amount, currency, merchantSecret }) {
+  const hashedSecret = crypto
+    .createHash("md5")
+    .update(merchantSecret)
+    .digest("hex")
+    .toUpperCase();
+
+  return crypto
+    .createHash("md5")
+    .update(`${merchantId}${orderId}${amount}${currency}${hashedSecret}`)
+    .digest("hex")
+    .toUpperCase();
+}
+
+function generatePayHereMd5Sig({
+  merchantId,
+  orderId,
+  payhereAmount,
+  payhereCurrency,
+  statusCode,
+  merchantSecret,
+}) {
+  const hashedSecret = crypto
+    .createHash("md5")
+    .update(merchantSecret)
+    .digest("hex")
+    .toUpperCase();
+
+  return crypto
+    .createHash("md5")
+    .update(
+      `${merchantId}${orderId}${payhereAmount}${payhereCurrency}${statusCode}${hashedSecret}`
+    )
+    .digest("hex")
+    .toUpperCase();
+}
+
 /**
  * POST /api/bookings/request
  */
@@ -181,6 +223,25 @@ router.post("/request", requireAuth, async (req, res) => {
         .json({ success: false, message: "Slot could not be reserved" });
     }
 
+    // Save artist's current price into the booking
+    const artistUser = await User.findOne({ uid: reservedSlot.artistUid }).lean();
+
+    if (!artistUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Artist not found",
+      });
+    }
+
+    const artistPrice = artistUser.artistProfile?.pricePerHour;
+
+    if (typeof artistPrice !== "number" || artistPrice <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Artist price is not set",
+      });
+    }
+
     const expiresAt = new Date(
       now.getTime() + BOOKING_PENDING_HOURS * 60 * 60 * 1000
     );
@@ -192,6 +253,7 @@ router.post("/request", requireAuth, async (req, res) => {
       slotType: reservedSlot.slotType,
       status: "PENDING",
       note: note || "",
+      price: artistPrice,
       expiresAt,
     });
 
@@ -325,7 +387,6 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
-    // ✅ auto-expire old pending requests first
     await expireOldPendingBookingsForArtist(uid);
 
     const query = { artistUid: uid };
@@ -378,7 +439,7 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
 });
 
 /**
- * GET /api/bookings/customer/:uid?status=ACCEPTED
+ * GET /api/bookings/customer/:uid
  */
 router.get("/customer/:uid", requireAuth, async (req, res) => {
   try {
@@ -416,9 +477,10 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
 });
 
 /**
- * PATCH /api/bookings/:id/markPaid
+ * POST /api/bookings/:id/init-payment
+ * Customer starts PayHere payment
  */
-router.patch("/:id/markPaid", requireAuth, async (req, res) => {
+router.post("/:id/init-payment", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
@@ -436,23 +498,210 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
       });
     }
 
-    const { paymentRef, amountPaid } = req.body || {};
+    if (booking.paymentStatus === "PAID") {
+      return res.status(400).json({
+        success: false,
+        message: "Booking is already paid",
+      });
+    }
 
-    booking.status = "CONFIRMED";
-    booking.paymentStatus = "PAID";
-    booking.paidAt = new Date();
-    booking.paymentRef = paymentRef || booking.paymentRef || "";
-    booking.amountPaid =
-      typeof amountPaid === "number"
-        ? amountPaid
-        : booking.amountPaid ?? booking.price ?? null;
+    if (typeof booking.price !== "number" || booking.price <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking price is missing or invalid",
+      });
+    }
 
+    const user = await User.findOne({ uid: booking.customerUid }).lean();
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Customer not found" });
+    }
+
+    const merchantId = process.env.PAYHERE_MERCHANT_ID;
+    const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET;
+    const currency = process.env.PAYHERE_CURRENCY || "LKR";
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+    const publicNotifyBase = process.env.PUBLIC_NOTIFY_BASE_URL;
+
+
+    if (!merchantId || !merchantSecret || !publicNotifyBase) {
+      return res.status(500).json({
+        success: false,
+        message: "PayHere environment variables are missing",
+      });
+    }
+
+    const amount = formatAmount(booking.price);
+    const orderId = `BOOKING_${booking._id}_${Date.now()}`;
+
+    const hash = generatePayHereHash({
+      merchantId,
+      orderId,
+      amount,
+      currency,
+      merchantSecret,
+    });
+
+
+    booking.payhereOrderId = orderId;
+    booking.paymentMessage = "Payment initiated";
     await booking.save();
 
-    return res.json({ success: true, data: booking });
+    const fullName = (user.name || "Customer").trim();
+    const nameParts = fullName.split(" ");
+    const firstName = nameParts[0] || "Customer";
+    const lastName = nameParts.slice(1).join(" ") || "User";
+
+    return res.json({
+      success: true,
+      data: {
+        checkoutUrl: "https://sandbox.payhere.lk/pay/checkout",
+        payment: {
+          merchant_id: merchantId,
+          return_url: `${clientUrl}/customer/my-bookings?payment=return&bookingId=${booking._id}`,
+          cancel_url: `${clientUrl}/customer/my-bookings?payment=cancel&bookingId=${booking._id}`,
+          notify_url: `${publicNotifyBase}/api/bookings/payhere/notify`,
+          order_id: orderId,
+          items: `Artist Booking ${booking._id}`,
+          currency,
+          amount,
+          first_name: firstName,
+          last_name: lastName,
+          email: user.email || "customer@example.com",
+          phone: user.organizerProfile?.phone || "0770000000",
+          address: user.organizerProfile?.location || "Sri Lanka",
+          city: "Colombo",
+          country: "Sri Lanka",
+          custom_1: String(booking._id),
+          custom_2: String(booking.customerUid),
+          hash,
+        },
+      },
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
+});
+
+/**
+ * POST /api/bookings/payhere/notify
+ * PayHere server callback
+ */
+router.post("/payhere/notify", async (req, res) => {
+  try {
+    const {
+      merchant_id,
+      order_id,
+      payment_id,
+      payhere_amount,
+      payhere_currency,
+      status_code,
+      md5sig,
+      status_message,
+    } = req.body || {};
+
+    const merchantSecret = process.env.PAYHERE_MERCHANT_SECRET;
+    const expectedMerchantId = process.env.PAYHERE_MERCHANT_ID;
+
+    if (
+      !merchant_id ||
+      !order_id ||
+      !payhere_amount ||
+      !payhere_currency ||
+      !status_code ||
+      !md5sig
+    ) {
+      return res.status(400).send("Missing required params");
+    }
+
+    if (merchant_id !== expectedMerchantId) {
+      return res.status(400).send("Invalid merchant");
+    }
+
+    const expectedSig = generatePayHereMd5Sig({
+      merchantId: merchant_id,
+      orderId: order_id,
+      payhereAmount: payhere_amount,
+      payhereCurrency: payhere_currency,
+      statusCode: status_code,
+      merchantSecret,
+    });
+
+    if (expectedSig !== md5sig) {
+      return res.status(400).send("Invalid signature");
+    }
+
+    const booking = await Booking.findOne({ payhereOrderId: order_id });
+    if (!booking) {
+      return res.status(404).send("Booking not found");
+    }
+
+    if (String(status_code) === "2") {
+      booking.paymentStatus = "PAID";
+      booking.status = "CONFIRMED";
+      booking.paidAt = new Date();
+      booking.paymentRef = payment_id || "";
+      booking.amountPaid = Number(payhere_amount);
+      booking.paymentMessage = status_message || "Payment successful";
+      await booking.save();
+    } else if (String(status_code) === "0") {
+      booking.paymentStatus = "UNPAID";
+      booking.paymentMessage = status_message || "Payment pending";
+      await booking.save();
+    } else {
+      booking.paymentStatus = "UNPAID";
+      booking.paymentMessage = status_message || "Payment unsuccessful";
+      await booking.save();
+    }
+
+    return res.status(200).send("OK");
+  } catch (err) {
+    return res.status(500).send("Server error");
+  }
+});
+
+/**
+ * GET /api/bookings/:id/payment-status
+ * Frontend checks latest stored payment state after redirect
+ */
+router.get("/:id/payment-status", requireAuth, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).lean();
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    if (booking.customerUid !== req.user.uid) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        bookingId: booking._id,
+        status: booking.status,
+        paymentStatus: booking.paymentStatus,
+        paymentMessage: booking.paymentMessage || "",
+        paymentRef: booking.paymentRef || "",
+        amountPaid: booking.amountPaid,
+        paidAt: booking.paidAt,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * PATCH /api/bookings/:id/markPaid
+ * Disable old unsafe direct route
+ */
+router.patch("/:id/markPaid", requireAuth, async (req, res) => {
+  return res.status(400).json({
+    success: false,
+    message: "Direct markPaid is disabled. Use PayHere payment flow.",
+  });
 });
 
 export default router;

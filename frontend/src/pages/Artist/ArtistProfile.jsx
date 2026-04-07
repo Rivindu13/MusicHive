@@ -414,7 +414,7 @@ export default function ArtistProfile() {
               </div>
 
               <div className="profileField">
-                <label>Price per hour (LKR)</label>
+                <label>Price per event (LKR)</label>
                 <input
                   type="number"
                   value={form.pricePerHour}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Styles/CustomerReviews.css";
 
 import {
@@ -128,45 +128,52 @@ export default function OrganizerReviews() {
         </div>
 
         <nav className="artistDash__nav">
-          <a className="artistDash__navItem" href="/organizer/dashboard">
+          <Link className="artistDash__navItem" to="/customer/dashboard">
             <span className="artistDash__navIcon">
               <FiHome />
             </span>
             <span>Overview</span>
-          </a>
+          </Link>
 
-          <a className="artistDash__navItem" href="/organizer/bookings">
+          <Link className="artistDash__navItem" to="/customer/book-artists">
             <span className="artistDash__navIcon">
               <FiCalendar />
             </span>
-            <span>Bookings</span>
-          </a>
+            <span>Booking Artists</span>
+          </Link>
 
-          <a className="artistDash__navItem" href="/organizer/chords">
+          <Link className="artistDash__navItem" to="/customer/my-bookings">
+            <span className="artistDash__navIcon">
+              <FiCalendar />
+            </span>
+            <span>My Bookings</span>
+          </Link>
+
+          <Link className="artistDash__navItem" to="/customer/chords">
             <span className="artistDash__navIcon">
               <FiMusic />
             </span>
             <span>My Chords</span>
-          </a>
+          </Link>
 
-          <a
-            className="artistDash__navItem artistDash__navItem--active"
-            href="/organizer/reviews"
-          >
+          <Link className="artistDash__navItem" to="/customer/reviews">
             <span className="artistDash__navIcon">
               <FiStar />
             </span>
             <span>Reviews</span>
-          </a>
+          </Link>
         </nav>
 
         <div className="artistDash__sideBottom">
-          <a className="artistDash__sideAction" href="/organizer/profile">
+          <Link
+            className="artistDash__sideAction artistDash__navItem--active"
+            to="/customer/profile"
+          >
             <span className="artistDash__navIcon">
               <FiUser />
             </span>
             <span>Profile</span>
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -211,7 +218,7 @@ export default function OrganizerReviews() {
         {/* Header */}
         <section className="reviewsHeroCard">
           <div className="reviewsHeroCard__left">
-            <h1 className="reviewsHeroCard__title">Organizer Reviews</h1>
+            <h1 className="reviewsHeroCard__title">Reviews</h1>
             <p className="reviewsHeroCard__sub">
               See what artists are saying about working with you
             </p>

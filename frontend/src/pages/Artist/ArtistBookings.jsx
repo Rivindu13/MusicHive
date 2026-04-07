@@ -480,7 +480,7 @@ export default function ArtistBookings() {
         <section className="bookingsHeroCard">
           <div className="bookingsHeroCard__left">
             <h1 className="bookingsHeroCard__title">Bookings</h1>
-            <p className="bookingsHeroCard__sub">Availability • Requests • Upcoming</p>
+            <p className="bookingsHeroCard__sub">Availability • Requests • Accepted</p>
           </div>
 
           <div className="bookingsHeroCard__right">
@@ -530,7 +530,7 @@ export default function ArtistBookings() {
               className={`bookingsTab ${activeTab === "UPCOMING" ? "bookingsTab--active" : ""}`}
               onClick={() => setActiveTab("UPCOMING")}
             >
-              Upcoming
+              Accepted
             </button>
           </div>
         </section>
