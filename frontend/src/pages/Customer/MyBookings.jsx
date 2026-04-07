@@ -127,6 +127,9 @@ export default function CustomerMyBookingsPage() {
   const [payErr, setPayErr] = useState("");
   const [payOk, setPayOk] = useState("");
 
+  const [cancellingId, setCancellingId] = useState(null);
+  const [cancelOk, setCancelOk] = useState("");
+
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [rating, setRating] = useState(5);
@@ -292,6 +295,10 @@ export default function CustomerMyBookingsPage() {
     if (nextTab !== "ACCEPTED") {
       setPayErr("");
     }
+
+    if (nextTab !== "PENDING") {
+      setCancelOk("");
+    }
   }
 
   async function payNow(bookingId) {
@@ -334,6 +341,44 @@ export default function CustomerMyBookingsPage() {
     } catch (e) {
       setPayErr(e.message || "Failed to start payment");
       setPayingId(null);
+    }
+  }
+
+  async function cancelBooking(bookingId) {
+    const confirmCancel = window.confirm("Are you sure you want to cancel this booking?");
+    if (!confirmCancel) return;
+
+    setErr("");
+    setCancelOk("");
+    setCancellingId(bookingId);
+
+    try {
+      const idToken = await getIdTokenOrThrow();
+
+      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/cancel`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to cancel booking");
+      }
+
+      setItems((prev) =>
+        prev.map((b) =>
+          b._id === bookingId ? { ...b, status: "CANCELLED" } : b
+        )
+      );
+
+      setCancelOk("Booking cancelled successfully.");
+    } catch (e) {
+      setErr(e.message || "Cancel failed");
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -454,8 +499,8 @@ export default function CustomerMyBookingsPage() {
 
       <main className="artistDash__main">
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn"><FiBell /></button>
-          <button className="artistDash__iconBtn"><FiHeart /></button>
+          <button className="artistDash__iconBtn" type="button"><FiBell /></button>
+          <button className="artistDash__iconBtn" type="button"><FiHeart /></button>
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">
@@ -526,6 +571,12 @@ export default function CustomerMyBookingsPage() {
           </div>
         )}
 
+        {cancelOk && (
+          <div className="cmbState cmbState--success">
+            <FiCheckCircle /> {cancelOk}
+          </div>
+        )}
+
         <section className="cmbList">
           {loading && <div className="cmbEmpty">Loading your bookings...</div>}
 
@@ -585,6 +636,17 @@ export default function CustomerMyBookingsPage() {
                     </div>
 
                     <div className="cmbActions">
+                      {tab === "PENDING" && (
+                        <button
+                          type="button"
+                          className="cmbBtn cmbBtn--danger"
+                          onClick={() => cancelBooking(b._id)}
+                          disabled={cancellingId === b._id}
+                        >
+                          {cancellingId === b._id ? "CANCELLING..." : "CANCEL"}
+                        </button>
+                      )}
+
                       {payAllowed && (
                         <button
                           type="button"

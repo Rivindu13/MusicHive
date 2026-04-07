@@ -520,3 +520,70 @@ button.artistDash__sideAction:focus-visible{
   .requestRow__right{ width:100%; justify-content:space-between; }
 }
 
+.artistHero {
+  margin-top: 34px;
+  margin-bottom: 14px;
+}
+
+.artistHero__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.artistHero__title {
+  margin: 0;
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.artistHero__name {
+  font-weight: 900;
+}
+
+.artistHero__sub {
+  margin: 10px 0 0;
+  color: rgba(255,255,255,.55);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.artistDash__state {
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.artistDash__state--success {
+  background: rgba(34,211,201,.12);
+  color: rgba(255,255,255,.94);
+  border-color: rgba(34,211,201,.24);
+}
+
+.artistDash__state--error {
+  background: rgba(255,0,0,.12);
+  color: rgba(255,255,255,.94);
+  border-color: rgba(255,0,0,.20);
+}
+
+.artistDash__empty {
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  color: rgba(255,255,255,.65);
+  background: rgba(12,12,22,.28);
+  border: 1px solid rgba(255,255,255,.06);
+  font-weight: 700;
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+

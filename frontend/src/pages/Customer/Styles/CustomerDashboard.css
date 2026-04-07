@@ -243,3 +243,50 @@
     justify-content:space-between;
   }
 }
+
+.customerDashPage .custAlert{
+  margin-top: 10px;
+  margin-bottom: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.customerDashPage .custAlert--success{
+  background: rgba(34,211,201,.12);
+  color: rgba(255,255,255,.94);
+  border-color: rgba(34,211,201,.24);
+}
+
+.customerDashPage .custAlert--error{
+  background: rgba(255,0,0,.12);
+  color: rgba(255,255,255,.94);
+  border-color: rgba(255,0,0,.20);
+}
+
+.customerDashPage .custEmptyState{
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  color: rgba(255,255,255,.65);
+  background: rgba(12,12,22,.28);
+  border: 1px solid rgba(255,255,255,.06);
+  font-weight: 700;
+}
+
+.customerDashPage .custStatusPill--accepted{
+  border-color: rgba(59,130,246,.30);
+  background: rgba(59,130,246,.16);
+}
+
+.customerDashPage .custStatusPill--cancelled,
+.customerDashPage .custStatusPill--expired{
+  border-color: rgba(255,0,0,.25);
+  background: rgba(255,0,0,.14);
+}
+
+.customerDashPage .custCancelBtn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}

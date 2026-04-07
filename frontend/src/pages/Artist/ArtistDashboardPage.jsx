@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 
 import "./styles/ArtistDashboard.css";
 import {
@@ -10,11 +10,73 @@ import {
   FiStar,
   FiUser,
   FiLogOut,
+  FiAlertTriangle,
+  FiCheckCircle,
 } from "react-icons/fi";
 
-// ✅ Firebase sign out (only if you use Firebase Auth)
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebase";
+
+const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:5000";
+
+function humanDate(ymdStr) {
+  try {
+    const d = new Date(ymdStr);
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return ymdStr;
+  }
+}
+
+function relativeTime(dateString) {
+  if (!dateString) return "";
+  const now = new Date();
+  const then = new Date(dateString);
+  const diff = now - then;
+
+  const mins = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
+}
+
+function formatCurrency(amount) {
+  return `LKR ${Number(amount || 0).toLocaleString()}`;
+}
+
+function slotTypeLabel(t) {
+  return t === "MORNING" ? "Morning" : t === "EVENING" ? "Evening" : t || "";
+}
+
+function toDateOnly(dateStr) {
+  const d = new Date(dateStr);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function isWithinNextTwoDays(dateStr) {
+  if (!dateStr) return false;
+
+  const today = new Date();
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  const bookingDay = toDateOnly(dateStr);
+  const twoDaysLater = new Date(todayOnly);
+  twoDaysLater.setDate(todayOnly.getDate() + 2);
+
+  return bookingDay >= todayOnly && bookingDay <= twoDaysLater;
+}
+
+function getBookingTitle(booking) {
+  return booking?.note?.trim() || "Booking Request";
+}
 
 export default function ArtistDashboard() {
   const location = useLocation();
@@ -27,7 +89,6 @@ export default function ArtistDashboard() {
 
   const profilePic = profile?.photoURL || null;
 
-  // ✅ Safely pick a name from whatever your backend returns
   const fullName =
     profile?.name ||
     profile?.fullName ||
@@ -36,61 +97,208 @@ export default function ArtistDashboard() {
     "Artist";
 
   const firstName = fullName.split(" ")[0];
+  const artistUid = profile?.uid || profile?.userUid || profile?.id || null;
 
-  // ✅ Route guard: if no profile, kick to home (prevents accessing dashboard after logout)
+  const [authReady, setAuthReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState([]);
+  const [err, setErr] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [actionLoadingId, setActionLoadingId] = useState("");
+
   useEffect(() => {
-    const stored = localStorage.getItem("profile");
-    if (!stored) {
-      navigate("/", { replace: true });
-    }
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setAuthReady(true);
+
+      const stored = localStorage.getItem("profile");
+      if (!stored && !user) {
+        navigate("/", { replace: true });
+      }
+    });
+
+    return () => unsub();
   }, [navigate]);
 
-  // ✅ Logout handler
+  useEffect(() => {
+    if (!successMsg) return;
+    const timer = setTimeout(() => setSuccessMsg(""), 3000);
+    return () => clearTimeout(timer);
+  }, [successMsg]);
+
   const handleLogout = async () => {
     try {
-      // ✅ Firebase logout (ends Firebase session)
       await signOut(auth);
     } catch (err) {
       console.error("Firebase signOut error:", err);
     } finally {
-      // ✅ Clear local user session
       localStorage.removeItem("profile");
-
-      // Optional: clear everything (keep if you store tokens/settings)
       localStorage.clear();
-
-      // ✅ Redirect to home, prevent back navigation
       navigate("/", { replace: true });
     }
   };
 
-  const requests = [
-    {
-      id: 1,
-      title: "Birthday Party",
-      subtitle: "Niluka Events • Dec 18, 2025",
-      price: "LKR 45,000",
-      time: "2h ago",
-    },
-    {
-      id: 2,
-      title: "Birthday Party",
-      subtitle: "Niluka Events • Dec 18, 2025",
-      price: "LKR 45,000",
-      time: "2h ago",
-    },
-    {
-      id: 3,
-      title: "Birthday Party",
-      subtitle: "Niluka Events • Dec 18, 2025",
-      price: "LKR 45,000",
-      time: "2h ago",
-    },
-  ];
+  async function getIdTokenOrThrow() {
+    let user = auth.currentUser;
+
+    if (!user) {
+      user = await new Promise((resolve) => {
+        const unsub = onAuthStateChanged(auth, (u) => {
+          unsub();
+          resolve(u);
+        });
+      });
+    }
+
+    if (!user) throw new Error("You are not logged in.");
+
+    return await user.getIdToken();
+  }
+
+  async function loadArtistBookings() {
+    if (!authReady) return;
+
+    setLoading(true);
+    setErr("");
+
+    try {
+      const uid = artistUid || auth.currentUser?.uid;
+      if (!uid) throw new Error("Missing artist uid.");
+
+      const token = await getIdTokenOrThrow();
+
+      const res = await fetch(`${API_BASE}/api/bookings/artist/${uid}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to load artist bookings");
+      }
+
+      setItems(Array.isArray(data.data) ? data.data : []);
+    } catch (e) {
+      setItems([]);
+      setErr(e.message || "Failed to load artist bookings");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!authReady) return;
+    loadArtistBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady]);
+
+  async function acceptBooking(bookingId) {
+    try {
+      setActionLoadingId(bookingId);
+      setErr("");
+      setSuccessMsg("");
+
+      const token = await getIdTokenOrThrow();
+
+      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/accept`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to accept booking");
+      }
+
+      setItems((prev) =>
+        prev.map((b) =>
+          b._id === bookingId ? { ...b, status: "ACCEPTED" } : b
+        )
+      );
+
+      setSuccessMsg("Booking accepted successfully.");
+    } catch (e) {
+      setErr(e.message || "Failed to accept booking");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
+
+  async function rejectBooking(bookingId) {
+    const confirmed = window.confirm("Are you sure you want to decline this booking?");
+    if (!confirmed) return;
+
+    try {
+      setActionLoadingId(bookingId);
+      setErr("");
+      setSuccessMsg("");
+
+      const token = await getIdTokenOrThrow();
+
+      const res = await fetch(`${API_BASE}/api/bookings/${bookingId}/reject`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to reject booking");
+      }
+
+      setItems((prev) =>
+        prev.map((b) =>
+          b._id === bookingId ? { ...b, status: "REJECTED" } : b
+        )
+      );
+
+      setSuccessMsg("Booking declined successfully.");
+    } catch (e) {
+      setErr(e.message || "Failed to reject booking");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
+
+  const pendingRequests = useMemo(() => {
+    return items
+      .filter((b) => b.status === "PENDING")
+      .slice(0, 3);
+  }, [items]);
+
+  const pendingCount = useMemo(() => {
+    return items.filter((b) => b.status === "PENDING").length;
+  }, [items]);
+
+  const upcomingBookings = useMemo(() => {
+    return items
+      .filter(
+        (b) =>
+          (b.status === "ACCEPTED" || b.status === "CONFIRMED") &&
+          isWithinNextTwoDays(b.date)
+      )
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 5);
+  }, [items]);
+
+  if (!authReady) {
+    return (
+      <div className="artistDash">
+        <main className="artistDash__main">
+          <div className="artistDash__empty">Loading your session...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="artistDash">
-      {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -98,44 +306,43 @@ export default function ArtistDashboard() {
         </div>
 
         <nav className="artistDash__nav">
-          <a className="artistDash__navItem artistDash__navItem--active" href="#">
+          <Link className="artistDash__navItem artistDash__navItem--active" to="/artist/dashboard">
             <span className="artistDash__navIcon">
               <FiHome />
             </span>
             <span>Overview</span>
-          </a>
+          </Link>
 
-          <a className="artistDash__navItem" href="/artist/bookings">
+          <Link className="artistDash__navItem" to="/artist/bookings">
             <span className="artistDash__navIcon">
               <FiCalendar />
             </span>
             <span>Bookings</span>
-          </a>
+          </Link>
 
-          <a className="artistDash__navItem" href="/artist/chords">
+          <Link className="artistDash__navItem" to="/artist/chords">
             <span className="artistDash__navIcon">
               <FiMusic />
             </span>
             <span>My Chords</span>
-          </a>
+          </Link>
 
-          <a className="artistDash__navItem" href="/artist/reviews">
+          <Link className="artistDash__navItem" to="/artist/reviews">
             <span className="artistDash__navIcon">
               <FiStar />
             </span>
             <span>Reviews</span>
-          </a>
+          </Link>
         </nav>
 
         <div className="artistDash__sideBottom">
-          <a className="artistDash__sideAction" href="/artist/profile">
+          <Link className="artistDash__sideAction" to="/artist/profile">
             <span className="artistDash__navIcon">
               <FiUser />
             </span>
             <span>Profile</span>
-          </a>
+          </Link>
 
-          {/* ✅ Logout button */}
           <button
             type="button"
             className="artistDash__sideAction"
@@ -149,11 +356,9 @@ export default function ArtistDashboard() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="artistDash__main">
-        {/* Top bar */}
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" aria-label="Notifications">
+          <button className="artistDash__iconBtn" aria-label="Notifications" type="button">
             <FiBell />
           </button>
 
@@ -178,22 +383,31 @@ export default function ArtistDashboard() {
           </div>
         </div>
 
-        {/* Header (your consistent header layout) */}
-        <section className="chordsPage__header">
-          <div className="chordsHeader__row1">
-            <h1 className="chordsPage__title">
-              Welcome Back, <span style={{ fontWeight: 800 }}>{firstName}</span>
+        <section className="artistHero">
+          <div className="artistHero__row">
+            <h1 className="artistHero__title">
+              Welcome Back, <span className="artistHero__name">{firstName}</span>
             </h1>
           </div>
 
-          <p className="reviewsHeroCard__sub">
-            Here's what's happening with your music today
+          <p className="artistHero__sub">
+            Here&apos;s what&apos;s happening with your music today
           </p>
         </section>
 
-        {/* Cards */}
+        {err && (
+          <div className="artistDash__state artistDash__state--error">
+            <FiAlertTriangle /> {err}
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="artistDash__state artistDash__state--success">
+            <FiCheckCircle /> {successMsg}
+          </div>
+        )}
+
         <section className="artistDash__content">
-          {/* New Booking Requests */}
           <div className="glassCard glassCard--requests">
             <div className="glassCard__header">
               <div className="glassCard__headerLeft">
@@ -203,42 +417,83 @@ export default function ArtistDashboard() {
                 <span className="glassCard__headerTitle">
                   New Booking Requests
                 </span>
-                <span className="glassCard__badge">3</span>
+                <span className="glassCard__badge">{pendingCount}</span>
               </div>
 
-              <a className="glassCard__viewAll" href="#">
+              <Link className="glassCard__viewAll" to="/artist/bookings">
                 View all
-              </a>
+              </Link>
             </div>
 
             <div className="glassCard__list">
-              {requests.map((r) => (
-                <div className="requestRow" key={r.id}>
-                  <div className="requestRow__left">
-                    <div className="requestRow__avatar" />
-                    <div className="requestRow__texts">
-                      <div className="requestRow__title">{r.title}</div>
-                      <div className="requestRow__sub">{r.subtitle}</div>
-                    </div>
-                  </div>
+              {loading ? (
+                <div className="artistDash__empty">Loading booking requests...</div>
+              ) : pendingRequests.length === 0 ? (
+                <div className="artistDash__empty">No new booking requests.</div>
+              ) : (
+                pendingRequests.map((r) => {
+                  const customerName = r.customer?.name || "Customer";
+                  const customerPhoto = r.customer?.photoURL || "";
+                  const subtitle = `${customerName} • ${humanDate(r.date)}${r.slotType ? ` • ${slotTypeLabel(r.slotType)}` : ""}`;
 
-                  <div className="requestRow__right">
-                    <div className="requestRow__priceWrap">
-                      <div className="requestRow__price">{r.price}</div>
-                      <div className="requestRow__time">{r.time}</div>
-                    </div>
+                  return (
+                    <div className="requestRow" key={r._id}>
+                      <div className="requestRow__left">
+                        <div
+                          className="requestRow__avatar"
+                          style={
+                            customerPhoto
+                              ? {
+                                  backgroundImage: `url(${customerPhoto})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                  backgroundRepeat: "no-repeat",
+                                }
+                              : {}
+                          }
+                        />
+                        <div className="requestRow__texts">
+                          <div className="requestRow__title">{getBookingTitle(r)}</div>
+                          <div className="requestRow__sub">{subtitle}</div>
+                        </div>
+                      </div>
 
-                    <div className="requestRow__actions">
-                      <button className="btn btn--accept">Accept</button>
-                      <button className="btn btn--decline">Decline</button>
+                      <div className="requestRow__right">
+                        <div className="requestRow__priceWrap">
+                          <div className="requestRow__price">
+                            {formatCurrency(r.price)}
+                          </div>
+                          <div className="requestRow__time">
+                            {relativeTime(r.createdAt)}
+                          </div>
+                        </div>
+
+                        <div className="requestRow__actions">
+                          <button
+                            className="btn btn--accept"
+                            type="button"
+                            onClick={() => acceptBooking(r._id)}
+                            disabled={actionLoadingId === r._id}
+                          >
+                            {actionLoadingId === r._id ? "Working..." : "Accept"}
+                          </button>
+                          <button
+                            className="btn btn--decline"
+                            type="button"
+                            onClick={() => rejectBooking(r._id)}
+                            disabled={actionLoadingId === r._id}
+                          >
+                            {actionLoadingId === r._id ? "Working..." : "Decline"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })
+              )}
             </div>
           </div>
 
-          {/* Upcoming Bookings */}
           <div className="glassCard glassCard--upcoming">
             <div className="glassCard__header">
               <div className="glassCard__headerLeft">
@@ -249,16 +504,64 @@ export default function ArtistDashboard() {
               </div>
             </div>
 
-            <div className="upcomingBody" />
+            <div className="glassCard__list">
+              {loading ? (
+                <div className="artistDash__empty">Loading upcoming bookings...</div>
+              ) : upcomingBookings.length === 0 ? (
+                <div className="artistDash__empty">
+                  No upcoming bookings for the next 2 days.
+                </div>
+              ) : (
+                upcomingBookings.map((b) => {
+                  const customerName = b.customer?.name || "Customer";
+                  const customerPhoto = b.customer?.photoURL || "";
+                  const subtitle = `${customerName} • ${humanDate(b.date)}${b.slotType ? ` • ${slotTypeLabel(b.slotType)}` : ""}`;
+
+                  return (
+                    <div className="requestRow" key={b._id}>
+                      <div className="requestRow__left">
+                        <div
+                          className="requestRow__avatar"
+                          style={
+                            customerPhoto
+                              ? {
+                                  backgroundImage: `url(${customerPhoto})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                  backgroundRepeat: "no-repeat",
+                                }
+                              : {}
+                          }
+                        />
+                        <div className="requestRow__texts">
+                          <div className="requestRow__title">{getBookingTitle(b)}</div>
+                          <div className="requestRow__sub">{subtitle}</div>
+                        </div>
+                      </div>
+
+                      <div className="requestRow__right">
+                        <div className="requestRow__priceWrap">
+                          <div className="requestRow__price">
+                            {formatCurrency(b.amountPaid || b.price)}
+                          </div>
+                          <div className="requestRow__time">
+                            {b.status === "CONFIRMED" ? "Confirmed" : "Accepted"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </section>
 
-        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
+            <a href="/">Terms</a>
+            <a href="/">Privacy</a>
           </div>
         </footer>
       </main>

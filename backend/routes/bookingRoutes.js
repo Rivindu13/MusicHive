@@ -704,4 +704,72 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
   });
 });
 
+/**
+ * PATCH /api/bookings/:id/cancel
+ * Customer cancels own booking
+ */
+router.patch("/:id/cancel", requireAuth, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    if (booking.customerUid !== req.user.uid) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
+    }
+
+    if (["CANCELLED", "REJECTED", "EXPIRED"].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking is already closed",
+      });
+    }
+
+    booking.status = "CANCELLED";
+
+    // optional payment handling
+    if (booking.paymentStatus === "PAID") {
+      booking.paymentMessage = "Booking cancelled after payment";
+    } else {
+      booking.paymentMessage = "Booking cancelled";
+    }
+
+    await booking.save();
+
+    const slot = await AvailabilitySlot.findOne({
+      artistUid: booking.artistUid,
+      date: booking.date,
+      slotType: booking.slotType,
+      bookingId: booking._id,
+    });
+
+    if (slot) {
+      slot.status = "OPEN";
+      slot.heldUntil = null;
+      slot.heldBy = null;
+      slot.bookingId = null;
+      await slot.save();
+    }
+
+    return res.json({
+      success: true,
+      message: "Booking cancelled successfully",
+      data: booking,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+});
+
 export default router;

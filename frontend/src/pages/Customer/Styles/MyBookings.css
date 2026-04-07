@@ -307,3 +307,18 @@
     margin-left: 0;
   }
 }
+
+.cmbBtn--danger {
+  background: rgba(255, 0, 0, 0.15);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #fff;
+}
+
+.cmbBtn--danger:hover {
+  background: rgba(255, 0, 0, 0.25);
+}
+
+.cmbBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
