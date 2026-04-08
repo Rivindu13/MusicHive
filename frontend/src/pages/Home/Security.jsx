@@ -1,4 +1,3 @@
-// src/components/Security.jsx
 import React from "react";
 import Reveal from "../../components/Reveal";
 
@@ -19,7 +18,6 @@ const Security = () => {
 
   return (
     <section className="security">
-      {/* title block */}
       <Reveal>
         <h2>Secure &amp; Reliable</h2>
         <p className="security-sub">
@@ -27,7 +25,6 @@ const Security = () => {
         </p>
       </Reveal>
 
-      {/* cards – staggered like How It Works */}
       <div className="security-grid">
         <Reveal
           className="security-card"

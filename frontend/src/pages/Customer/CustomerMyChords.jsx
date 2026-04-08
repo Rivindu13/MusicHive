@@ -23,22 +23,12 @@ import {
   FiTrash2,
   FiX,
   FiHeart,
+  FiDownload,
 } from "react-icons/fi";
 
 import "./Styles/CustomerMyChords.css";
 
 const API_BASE = "http://localhost:5000";
-
-/**
- * IMPORTANT BACKEND NOTE:
- * You should have endpoints for customers, e.g.
- *  GET  /api/chords/customer/:uid
- *  POST /api/chords   { uid, role:"CUSTOMER", title, genre, imageUrl }
- *  DELETE /api/chords/:id
- *
- * If you currently only have /api/chords/artist/:uid,
- * update backend to support customer as well.
- */
 
 export default function CustomerMyChords() {
   const location = useLocation();
@@ -60,13 +50,11 @@ export default function CustomerMyChords() {
 
   const profilePic = profile?.photoURL || null;
 
-  // ✅ route guard
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
   }, [navigate]);
 
-  // ✅ logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -78,25 +66,29 @@ export default function CustomerMyChords() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState("my");
+
   const [genre, setGenre] = useState("All Genres");
   const [search, setSearch] = useState("");
+
+  const [exploreGenre, setExploreGenre] = useState("All Genres");
+  const [exploreSearch, setExploreSearch] = useState("");
+
   const [uploading, setUploading] = useState(false);
 
   const [chords, setChords] = useState([]);
+  const [allChords, setAllChords] = useState([]);
 
-  // Upload modal
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadGenre, setUploadGenre] = useState("Pop");
 
-  // Preview modal
   const [previewChord, setPreviewChord] = useState(null);
-
-  // Delete state
   const [deletingId, setDeletingId] = useState(null);
 
-  // ===== helpers: rating/ reviews =====
+  const genres = ["All Genres", "Pop", "Rock", "Classical", "Jazz"];
+
   const getReviews = (chord) => (Array.isArray(chord?.reviews) ? chord.reviews : []);
   const getReviewCount = (chord) => getReviews(chord).length;
 
@@ -105,7 +97,6 @@ export default function CustomerMyChords() {
     if (!reviews.length) return 0;
     const sum = reviews.reduce((a, r) => a + (Number(r.rating) || 0), 0);
     return Math.round((sum / reviews.length) * 10) / 10;
-    // ex: 4.36 -> 4.4
   };
 
   const renderStars = (rating, size = 16) => {
@@ -136,8 +127,7 @@ export default function CustomerMyChords() {
     }
   };
 
-  // ===== fetch chords (CUSTOMER) =====
-  const fetchChords = async () => {
+  const fetchMyChords = async () => {
     if (!uid) return;
     try {
       const res = await fetch(`${API_BASE}/api/chords/customer/${uid}`);
@@ -148,13 +138,39 @@ export default function CustomerMyChords() {
     }
   };
 
+  const fetchAllChords = async () => {
+    try {
+      const params = new URLSearchParams();
+
+      if (exploreSearch.trim()) {
+        params.append("search", exploreSearch.trim());
+      }
+
+      if (exploreGenre !== "All Genres") {
+        params.append("genre", exploreGenre);
+      }
+
+      const res = await fetch(`${API_BASE}/api/chords/explore?${params.toString()}`);
+      const data = await res.json();
+      setAllChords(Array.isArray(data) ? data : []);
+    } catch {
+      setAllChords([]);
+    }
+  };
+
   useEffect(() => {
-    fetchChords();
+    fetchMyChords();
     // eslint-disable-next-line
   }, [uid]);
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
+    fetchAllChords();
+    // eslint-disable-next-line
+  }, [exploreSearch, exploreGenre]);
+
+  const filteredMyChords = useMemo(() => {
     const s = search.trim().toLowerCase();
+
     return chords.filter((c) => {
       const matchesGenre = genre === "All Genres" || c.genre === genre;
       const title = (c.title || "").toLowerCase();
@@ -163,7 +179,6 @@ export default function CustomerMyChords() {
     });
   }, [genre, chords, search]);
 
-  // ===== Upload modal controls =====
   const openUpload = () => {
     setUploadFile(null);
     setUploadTitle("");
@@ -178,8 +193,6 @@ export default function CustomerMyChords() {
   const uploadOneFileToFirebase = (file) =>
     new Promise((resolve, reject) => {
       const safeName = file.name.replace(/\s+/g, "_");
-
-      // ✅ separate customer uploads from artist uploads
       const path = `chords/customers/${uid}/${Date.now()}_${safeName}`;
 
       const storageRef = ref(storage, path);
@@ -202,6 +215,7 @@ export default function CustomerMyChords() {
     if (!uploadTitle.trim()) return alert("Please enter a title.");
 
     setUploading(true);
+
     try {
       const imageUrl = await uploadOneFileToFirebase(uploadFile);
 
@@ -210,7 +224,7 @@ export default function CustomerMyChords() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           uid,
-          role: "CUSTOMER", // ✅ let backend store ownerRole
+          role: "CUSTOMER",
           title: uploadTitle.trim(),
           genre: uploadGenre,
           imageUrl,
@@ -220,7 +234,9 @@ export default function CustomerMyChords() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to save chord");
 
-      await fetchChords();
+      await fetchMyChords();
+      await fetchAllChords();
+
       setIsUploadOpen(false);
       alert("Chord uploaded successfully!");
     } catch (err) {
@@ -230,33 +246,34 @@ export default function CustomerMyChords() {
     }
   };
 
-  // ===== Preview controls =====
   const openPreview = (chord) => setPreviewChord(chord);
   const closePreview = () => setPreviewChord(null);
 
-  // ===== Delete chord =====
   const handleDeleteChord = async (chord) => {
     const ok = window.confirm(`Delete "${chord.title || "Untitled"}"?`);
     if (!ok) return;
 
     setDeletingId(chord._id);
+
     try {
-      // 1) delete from MongoDB
       const res = await fetch(`${API_BASE}/api/chords/${chord._id}`, {
         method: "DELETE",
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to delete chord");
 
-      // 2) delete from Firebase Storage
       if (chord.imageUrl) {
         const imgRef = ref(storage, chord.imageUrl);
         await deleteObject(imgRef);
       }
 
-      if (previewChord?._id === chord._id) setPreviewChord(null);
+      if (previewChord?._id === chord._id) {
+        setPreviewChord(null);
+      }
 
-      await fetchChords();
+      await fetchMyChords();
+      await fetchAllChords();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -264,17 +281,42 @@ export default function CustomerMyChords() {
     }
   };
 
-  // keep previewChord fresh if chords list updates
+  const handleDownloadChord = async (chord) => {
+    try {
+      const response = await fetch(chord.imageUrl);
+      const blob = await response.blob();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${(chord.title || "chord")
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "_")}.jpg`;
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error(err);
+      window.open(chord.imageUrl, "_blank");
+    }
+  };
+
   useEffect(() => {
     if (!previewChord?._id) return;
-    const latest = chords.find((c) => c._id === previewChord._id);
+
+    const latest =
+      chords.find((c) => c._id === previewChord._id) ||
+      allChords.find((c) => c._id === previewChord._id);
+
     if (latest) setPreviewChord(latest);
     // eslint-disable-next-line
-  }, [chords]);
+  }, [chords, allChords]);
 
   return (
     <div className="chordsPage customerMyChordsPage">
-      {/* Sidebar */}
       <aside className="chordsPage__sidebar">
         <div className="chordsPage__brand">
           <span className="chordsPage__brandIcon">♫</span>
@@ -299,7 +341,7 @@ export default function CustomerMyChords() {
 
           <Link className="chordsPage__navItem chordsPage__navItem--active" to="/customer/chords">
             <span className="chordsPage__navIcon"><FiMusic /></span>
-            <span>My Chords</span>
+            <span>Chord Library</span>
           </Link>
 
           <Link className="chordsPage__navItem" to="/customer/reviews">
@@ -325,9 +367,7 @@ export default function CustomerMyChords() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="chordsPage__main">
-        {/* Top bar */}
         <div className="chordsPage__topbar">
           <button className="chordsPage__iconBtn" aria-label="Notifications">
             <FiBell />
@@ -348,10 +388,9 @@ export default function CustomerMyChords() {
           </div>
         </div>
 
-        {/* Header */}
         <div className="chordsPage__header">
           <div className="chordsHeader__row1">
-            <h1 className="chordsPage__title">My Chords</h1>
+            <h1 className="chordsPage__title">Chord Library</h1>
 
             <button className="uploadPillBtn" onClick={openUpload} disabled={uploading}>
               <FiUpload />
@@ -359,104 +398,194 @@ export default function CustomerMyChords() {
             </button>
           </div>
 
-          <div className="chordsHeader__row2">
-            <div className="searchBox searchBox--wide">
-              <FiSearch className="searchIcon" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search your chords..."
-                aria-label="Search chords"
-              />
-            </div>
-
-            <select
-              className="genreSelect"
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
+          <div className="chordTabs">
+            <button
+              className={`chordTabBtn ${activeTab === "my" ? "chordTabBtn--active" : ""}`}
+              onClick={() => setActiveTab("my")}
             >
-              <option>All Genres</option>
-              <option>Pop</option>
-              <option>Rock</option>
-              <option>Classical</option>
-              <option>Jazz</option>
-            </select>
-          </div>
-        </div>
+              My Chords
+            </button>
 
-        {/* Grid */}
-        <div className="chordsGrid">
-          {filtered.length === 0 ? (
-            <div className="emptyStateCard">
-              <div className="emptyIcon"><FiFileText /></div>
-              <div className="emptyTitle">No chords found</div>
-              <div className="emptyText">
-                {chords.length === 0
-                  ? "You haven’t uploaded any chords yet. Click “Upload Chords” to add your first one."
-                  : "Try changing the genre or search keyword."}
+            <button
+              className={`chordTabBtn ${activeTab === "explore" ? "chordTabBtn--active" : ""}`}
+              onClick={() => setActiveTab("explore")}
+            >
+              Explore Chords
+            </button>
+          </div>
+
+          {activeTab === "my" ? (
+            <div className="chordsHeader__row2">
+              <div className="searchBox searchBox--wide">
+                <FiSearch className="searchIcon" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search your chords..."
+                  aria-label="Search chords"
+                />
               </div>
 
-              <button className="emptyCTA" onClick={openUpload} disabled={uploading}>
-                Upload Chords
-              </button>
+              <select
+                className="genreSelect"
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+              >
+                {genres.map((g) => (
+                  <option key={g}>{g}</option>
+                ))}
+              </select>
             </div>
           ) : (
-            filtered.map((c) => {
-              const avg = getAvgRating(c);
-              const count = getReviewCount(c);
+            <div className="chordsHeader__row2">
+              <div className="searchBox searchBox--wide">
+                <FiSearch className="searchIcon" />
+                <input
+                  value={exploreSearch}
+                  onChange={(e) => setExploreSearch(e.target.value)}
+                  placeholder="Search chord names..."
+                  aria-label="Search available chords"
+                />
+              </div>
 
-              return (
-                <div
-                  className="chordCard"
-                  key={c._id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openPreview(c)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") openPreview(c);
-                  }}
-                >
-                  <img src={c.imageUrl} alt={c.title || "Chord"} />
-
-                  <div className="chordMeta">
-                    <div className="chordTitle">{c.title || "Untitled"}</div>
-
-                    <div className="cardRatingRow">
-                      {count === 0 ? (
-                        <span className="noReviewsText">No reviews yet</span>
-                      ) : (
-                        <>
-                          {renderStars(avg, 14)}
-                          <span className="ratingNumber">{avg.toFixed(1)}</span>
-                          <span className="reviewCountText">
-                            ({count} {count === 1 ? "review" : "reviews"})
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="chordGenre">{c.genre}</div>
-
-                    <button
-                      className="deleteChordBtn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteChord(c);
-                      }}
-                      disabled={deletingId === c._id}
-                      title="Delete chord"
-                    >
-                      <FiTrash2 />
-                      <span>{deletingId === c._id ? "Deleting..." : "Delete"}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })
+              <select
+                className="genreSelect"
+                value={exploreGenre}
+                onChange={(e) => setExploreGenre(e.target.value)}
+              >
+                {genres.map((g) => (
+                  <option key={g}>{g}</option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
 
-        {/* Footer */}
+        {activeTab === "my" ? (
+          <div className="chordsGrid">
+            {filteredMyChords.length === 0 ? (
+              <div className="emptyStateCard">
+                <div className="emptyIcon"><FiFileText /></div>
+                <div className="emptyTitle">No chords found</div>
+                <div className="emptyText">
+                  {chords.length === 0
+                    ? "You haven’t uploaded any chords yet. Click “Upload Chords” to add your first one."
+                    : "Try changing the genre or search keyword."}
+                </div>
+
+                <button className="emptyCTA" onClick={openUpload} disabled={uploading}>
+                  Upload Chords
+                </button>
+              </div>
+            ) : (
+              filteredMyChords.map((c) => {
+                const avg = getAvgRating(c);
+                const count = getReviewCount(c);
+
+                return (
+                  <div
+                    className="chordCard"
+                    key={c._id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openPreview(c)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") openPreview(c);
+                    }}
+                  >
+                    <img src={c.imageUrl} alt={c.title || "Chord"} />
+
+                    <div className="chordMeta">
+                      <div className="chordTitle">{c.title || "Untitled"}</div>
+
+                      <div className="cardRatingRow">
+                        {count === 0 ? (
+                          <span className="noReviewsText">No reviews yet</span>
+                        ) : (
+                          <>
+                            {renderStars(avg, 14)}
+                            <span className="ratingNumber">{avg.toFixed(1)}</span>
+                            <span className="reviewCountText">
+                              ({count} {count === 1 ? "review" : "reviews"})
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="chordGenre">{c.genre}</div>
+
+                      <button
+                        className="deleteChordBtn deleteChordBtn--cardOnly"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteChord(c);
+                        }}
+                        disabled={deletingId === c._id}
+                        title="Delete chord"
+                      >
+                        <FiTrash2 />
+                        <span>{deletingId === c._id ? "Deleting..." : "Delete"}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        ) : (
+          <div className="chordsGrid">
+            {allChords.length === 0 ? (
+              <div className="emptyStateCard">
+                <div className="emptyIcon"><FiMusic /></div>
+                <div className="emptyTitle">No available chords</div>
+                <div className="emptyText">
+                  No chords matched your search. Try another chord name or genre.
+                </div>
+              </div>
+            ) : (
+              allChords.map((c) => {
+                const avg = getAvgRating(c);
+                const count = getReviewCount(c);
+
+                return (
+                  <div
+                    className="chordCard chordCard--explore"
+                    key={c._id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openPreview(c)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") openPreview(c);
+                    }}
+                  >
+                    <img src={c.imageUrl} alt={c.title || "Chord"} />
+
+                    <div className="chordMeta">
+                      <div className="chordTitle">{c.title || "Untitled"}</div>
+
+                      <div className="cardRatingRow">
+                        {count === 0 ? (
+                          <span className="noReviewsText">No reviews yet</span>
+                        ) : (
+                          <>
+                            {renderStars(avg, 14)}
+                            <span className="ratingNumber">{avg.toFixed(1)}</span>
+                            <span className="reviewCountText">
+                              ({count} {count === 1 ? "review" : "reviews"})
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="chordGenre">{c.genre}</div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
         <footer className="chordsPage__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="chordsPage__footerLinks">
@@ -465,7 +594,6 @@ export default function CustomerMyChords() {
           </div>
         </footer>
 
-        {/* Upload Modal */}
         {isUploadOpen && (
           <div className="modalOverlay" onMouseDown={closeUpload}>
             <div className="modalCard" onMouseDown={(e) => e.stopPropagation()}>
@@ -523,23 +651,22 @@ export default function CustomerMyChords() {
           </div>
         )}
 
-        {/* Preview Modal */}
         {previewChord && (
-          <div className="modalOverlay" onMouseDown={closePreview}>
+          <div className="modalOverlay modalOverlay--full" onMouseDown={closePreview}>
             <div
-              className="previewCard previewCard--wide"
+              className="previewCard previewCard--fullscreen"
               onMouseDown={(e) => e.stopPropagation()}
             >
               <button className="previewClose" onClick={closePreview} aria-label="Close preview">
                 <FiX />
               </button>
 
-              <div className="previewGrid">
-                <div className="previewImgWrap">
+              <div className="previewGrid previewGrid--fullscreen">
+                <div className="previewImgWrap previewImgWrap--fullscreen">
                   <img src={previewChord.imageUrl} alt={previewChord.title || "Chord"} />
                 </div>
 
-                <div className="previewSide">
+                <div className="previewSide previewSide--fullscreen">
                   <div className="previewMeta">
                     <div className="previewTitle">{previewChord.title || "Untitled"}</div>
                     <div className="previewGenre">{previewChord.genre}</div>
@@ -547,6 +674,7 @@ export default function CustomerMyChords() {
                     {(() => {
                       const avg = getAvgRating(previewChord);
                       const count = getReviewCount(previewChord);
+
                       return (
                         <div className="previewRatingRow">
                           {count === 0 ? (
@@ -554,7 +682,9 @@ export default function CustomerMyChords() {
                           ) : (
                             <>
                               {renderStars(avg, 18)}
-                              <span className="ratingNumber ratingNumber--big">{avg.toFixed(1)}</span>
+                              <span className="ratingNumber ratingNumber--big">
+                                {avg.toFixed(1)}
+                              </span>
                               <span className="reviewCountText">
                                 ({count} {count === 1 ? "review" : "reviews"})
                               </span>
@@ -563,6 +693,29 @@ export default function CustomerMyChords() {
                         </div>
                       );
                     })()}
+
+                    <div className="previewActions">
+                      <button
+                        className="downloadChordBtn downloadChordBtn--large"
+                        onClick={() => handleDownloadChord(previewChord)}
+                      >
+                        <FiDownload />
+                        <span>Download Chord</span>
+                      </button>
+
+                      {previewChord.uid === uid && (
+                        <button
+                          className="deleteChordBtn deleteChordBtn--danger"
+                          onClick={() => handleDeleteChord(previewChord)}
+                          disabled={deletingId === previewChord._id}
+                        >
+                          <FiTrash2 />
+                          <span>
+                            {deletingId === previewChord._id ? "Deleting..." : "Delete chord"}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="reviewsBox">
@@ -603,17 +756,6 @@ export default function CustomerMyChords() {
                       </div>
                     )}
                   </div>
-
-                  <button
-                    className="deleteChordBtn deleteChordBtn--danger"
-                    onClick={() => handleDeleteChord(previewChord)}
-                    disabled={deletingId === previewChord._id}
-                  >
-                    <FiTrash2 />
-                    <span>
-                      {deletingId === previewChord._id ? "Deleting..." : "Delete chord"}
-                    </span>
-                  </button>
                 </div>
               </div>
             </div>

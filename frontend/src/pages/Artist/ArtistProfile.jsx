@@ -251,7 +251,7 @@ export default function ArtistProfile() {
             <span className="artistDash__navIcon">
                 <FiMusic />
             </span>
-            <span>My Chords</span>
+            <span>Chord Library</span>
             </a>
 
             <a className="artistDash__navItem" href="/artist/reviews">

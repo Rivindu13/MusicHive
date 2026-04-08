@@ -14,10 +14,15 @@ const reviewSchema = new mongoose.Schema(
 const chordSchema = new mongoose.Schema(
   {
     uid: { type: String, required: true, index: true },
-    role: { type: String, enum: ["ARTIST", "CUSTOMER"], required: true, index: true },
+    role: {
+      type: String,
+      enum: ["ARTIST", "CUSTOMER"],
+      required: true,
+      index: true,
+    },
 
-    title: { type: String, default: "" },
-    genre: { type: String, default: "" },
+    title: { type: String, default: "", trim: true },
+    genre: { type: String, default: "", trim: true },
     imageUrl: { type: String, required: true },
 
     reviews: { type: [reviewSchema], default: [] },
@@ -26,8 +31,8 @@ const chordSchema = new mongoose.Schema(
 );
 
 chordSchema.index({ uid: 1, role: 1, createdAt: -1 });
+chordSchema.index({ title: 1, genre: 1 });
 
-// ✅ IMPORTANT: prevent OverwriteModelError
 const Chord = mongoose.models.Chord || mongoose.model("Chord", chordSchema);
 
 export default Chord;

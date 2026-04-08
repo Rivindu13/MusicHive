@@ -1,5 +1,5 @@
-import React from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Hero from "./pages/Home/Hero";
@@ -24,43 +24,60 @@ import CustomerMyChords from "./pages/Customer/CustomerMyChords.jsx";
 import CustomerProfile from "./pages/Customer/CustomerProfile.jsx";
 import CustomerReviews from "./pages/Customer/CustomerReviews.jsx";
 
-
 import "./App.css";
 
+function HomePage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const sectionId = location.state?.scrollTo;
+    if (!sectionId) return;
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      navigate("/", { replace: true, state: {} });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [location, navigate]);
+
+  return (
+    <div className="publicPage">
+      <Hero />
+
+      <GradientWrapper className="no-bottom-border">
+        <BuiltForEveryone />
+        <HowItWorks />
+        <Security />
+      </GradientWrapper>
+
+      <GradientWrapper>
+        <ContactSection />
+      </GradientWrapper>
+    </div>
+  );
+}
 
 function App() {
   const location = useLocation();
 
-  // hide header/footer on signup page
   const hideLayout =
-  location.pathname.startsWith("/signup") ||
-  location.pathname.startsWith("/login") ||
-  location.pathname.startsWith("/artist") ||
-  location.pathname.startsWith("/customer");
+    location.pathname.startsWith("/signup") ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/artist") ||
+    location.pathname.startsWith("/customer");
 
   return (
     <>
       {!hideLayout && <Navbar />}
 
       <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <Hero />
-
-              <GradientWrapper className="no-bottom-border">
-                <BuiltForEveryone />
-                <HowItWorks />
-                <Security />
-              </GradientWrapper>
-
-              <GradientWrapper>
-                <ContactSection />
-              </GradientWrapper>
-            </>
-          }
-        />
+        <Route path="/" element={<HomePage />} />
 
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
@@ -76,7 +93,6 @@ function App() {
         <Route path="/customer/chords" element={<CustomerMyChords />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/reviews" element={<CustomerReviews />} />
-
       </Routes>
 
       {!hideLayout && <Footer />}

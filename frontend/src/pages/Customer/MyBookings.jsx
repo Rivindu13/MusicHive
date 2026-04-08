@@ -475,7 +475,7 @@ export default function CustomerMyBookingsPage() {
 
           <Link className="artistDash__navItem" to="/customer/chords">
             <span className="artistDash__navIcon"><FiMusic /></span>
-            <span>My Chords</span>
+            <span>Chord Library</span>
           </Link>
 
           <Link className="artistDash__navItem" to="/customer/reviews">

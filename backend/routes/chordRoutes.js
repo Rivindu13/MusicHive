@@ -1,41 +1,48 @@
-// routes/chordRoutes.js
 import express from "express";
-import Chord from "../models/Chord.js"; // ✅ needed for review routes
+import Chord from "../models/Chord.js";
 import {
   createChord,
   getChordsByArtist,
   getChordsByCustomer,
+  getAllChords,
   deleteChord,
 } from "../controllers/chordController.js";
 
 const router = express.Router();
 
 /**
- * ✅ Create chord (artist OR customer)
- * Body: { uid, role: "ARTIST"|"CUSTOMER", title, genre, imageUrl }
+ * Create chord
+ * POST /api/chords
  */
 router.post("/", createChord);
 
 /**
- * ✅ Get chords by artist (legacy / keep)
+ * Explore all chords
+ * GET /api/chords/explore?search=&genre=
+ */
+router.get("/explore", getAllChords);
+
+/**
+ * Artist chords
  * GET /api/chords/artist/:uid
  */
 router.get("/artist/:uid", getChordsByArtist);
 
 /**
- * ✅ Get chords by customer (new)
+ * Customer chords
  * GET /api/chords/customer/:uid
  */
 router.get("/customer/:uid", getChordsByCustomer);
 
 /**
- * ✅ Delete chord
+ * Delete chord
  * DELETE /api/chords/:id
+ * Body: { uid }
  */
 router.delete("/:id", deleteChord);
 
 /**
- * ✅ Add a review to a chord
+ * Add review
  * POST /api/chords/:id/reviews
  * Body: { uid, name, photoURL, rating, text }
  */
@@ -53,10 +60,11 @@ router.post("/:id/reviews", async (req, res) => {
     }
 
     const chord = await Chord.findById(req.params.id);
-    if (!chord) return res.status(404).json({ message: "Chord not found" });
+    if (!chord) {
+      return res.status(404).json({ message: "Chord not found" });
+    }
 
-    // prevent same user reviewing twice (optional)
-    const already = chord.reviews.find((r) => r.uid === uid);
+    const already = chord.reviews.find((r) => String(r.uid) === String(uid));
     if (already) {
       return res.status(400).json({ message: "You already reviewed this chord" });
     }
@@ -77,7 +85,7 @@ router.post("/:id/reviews", async (req, res) => {
 });
 
 /**
- * ✅ Delete a review (only that user) - optional
+ * Delete review
  * DELETE /api/chords/:id/reviews/:reviewId
  * Body: { uid }
  */
@@ -90,17 +98,22 @@ router.delete("/:id/reviews/:reviewId", async (req, res) => {
     }
 
     const chord = await Chord.findById(req.params.id);
-    if (!chord) return res.status(404).json({ message: "Chord not found" });
+    if (!chord) {
+      return res.status(404).json({ message: "Chord not found" });
+    }
 
     const review = chord.reviews.id(req.params.reviewId);
-    if (!review) return res.status(404).json({ message: "Review not found" });
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
 
-    if (review.uid !== uid) {
+    if (String(review.uid) !== String(uid)) {
       return res.status(403).json({ message: "Not allowed" });
     }
 
     review.deleteOne();
     await chord.save();
+
     return res.json(chord);
   } catch (err) {
     return res.status(500).json({ message: err.message });

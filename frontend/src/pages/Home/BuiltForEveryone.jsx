@@ -1,4 +1,3 @@
-// src/components/BuiltForEveryone.jsx
 import React from "react";
 import stageImage from "../../assets/stage.png";
 import Reveal from "../../components/Reveal";

@@ -207,7 +207,7 @@ export default function CustomerProfile() {
             <span className="artistDash__navIcon">
               <FiMusic />
             </span>
-            <span>My Chords</span>
+            <span>Chord Library</span>
           </Link>
 
           <Link className="artistDash__navItem" to="/customer/reviews">

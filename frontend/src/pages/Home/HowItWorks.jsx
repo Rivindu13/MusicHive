@@ -1,4 +1,3 @@
-// src/components/HowItWorks.jsx
 import React from "react";
 import Reveal from "../../components/Reveal";
 
@@ -8,7 +7,6 @@ const HowItWorks = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // store cursor position inside the card as CSS variables
     e.currentTarget.style.setProperty("--mouse-x", `${x}px`);
     e.currentTarget.style.setProperty("--mouse-y", `${y}px`);
   };
@@ -20,7 +18,6 @@ const HowItWorks = () => {
 
   return (
     <section className="how">
-      {/* title block fades in first */}
       <Reveal>
         <h2>How It Works</h2>
         <p className="how-sub">
@@ -28,7 +25,6 @@ const HowItWorks = () => {
         </p>
       </Reveal>
 
-      {/* cards – each has a small delay */}
       <div className="how-cards">
         <Reveal
           className="how-card"

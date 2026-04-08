@@ -145,7 +145,7 @@ export default function ArtistReviews() {
             <span className="artistDash__navIcon">
               <FiMusic />
             </span>
-            <span>My Chords</span>
+            <span>Chord Library</span>
           </a>
 
           <a
