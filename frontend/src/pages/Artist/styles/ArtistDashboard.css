@@ -21,6 +21,7 @@
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
   font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -28,7 +29,6 @@ body{
   background: radial-gradient(1200px 900px at 55% 25%, #2b2a78 0%, #1b1546 35%, #0c0b1a 70%, #06060f 100%);
 }
 
-/* ✅ NEW: stop whole-page scrolling; only main content should scroll */
 html, body{
   overflow: hidden;
 }
@@ -36,10 +36,8 @@ html, body{
 .artistDash{
   min-height:100vh;
   display:flex;
-
-  /* ✅ NEW */
-  height: 100vh;
-  overflow: hidden;
+  height:100vh;
+  overflow:hidden;
 }
 
 /* ===== Sidebar ===== */
@@ -48,13 +46,10 @@ html, body{
   background: linear-gradient(180deg, rgba(10,10,23,.92) 0%, rgba(8,8,18,.95) 100%);
   border-right:1px solid rgba(255,255,255,.06);
   padding:34px 18px 22px 18px;
-  position:relative;
-
-  /* ✅ NEW: lock sidebar height + keep pinned */
-  height: 100vh;
-  position: sticky;
-  top: 0;
-  overflow: hidden;
+  height:100vh;
+  position:sticky;
+  top:0;
+  overflow:hidden;
 }
 
 .artistDash__brand{
@@ -132,14 +127,11 @@ html, body{
   position:absolute;
   left:0;
   right:0;
-  bottom:78px;
+  bottom:22px;
   padding:0 26px;
   display:flex;
   flex-direction:column;
   gap:14px;
-
-  /* ✅ NEW: keep it visible without needing to scroll */
-  bottom: 22px;
 }
 
 .artistDash__sideAction{
@@ -157,51 +149,46 @@ html, body{
   background: rgba(255,255,255,.04);
 }
 
-/* Make buttons look exactly like sidebar links */
 button.artistDash__sideAction{
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  border: 0;
-  padding: 10px 10px;      /* match your .artistDash__sideAction padding */
-  margin: 0;
+  appearance:none;
+  -webkit-appearance:none;
+  background:transparent;
+  border:0;
+  padding:10px 10px;
+  margin:0;
   color: rgba(255,255,255,.78);
-  font: inherit;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-radius: 12px;
+  font:inherit;
+  width:100%;
+  text-align:left;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  border-radius:12px;
 }
 
-/* Hover same as <a> */
 button.artistDash__sideAction:hover{
   background: rgba(255,255,255,.04);
 }
 
-/* Optional: remove ugly focus ring but keep accessibility */
 button.artistDash__sideAction:focus{
-  outline: none;
-}
-button.artistDash__sideAction:focus-visible{
-  outline: 2px solid rgba(34,211,201,.45);
-  outline-offset: 2px;
+  outline:none;
 }
 
+button.artistDash__sideAction:focus-visible{
+  outline:2px solid rgba(34,211,201,.45);
+  outline-offset:2px;
+}
 
 /* ===== Main ===== */
 .artistDash__main{
   flex:1;
   display:flex;
   flex-direction:column;
-  padding: 20px 42px 18px 42px;
-
-  /* ✅ NEW: only main scrolls */
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  padding:20px 42px 18px 42px;
+  height:100vh;
+  overflow-y:auto;
+  overflow-x:hidden;
 }
 
 /* Top bar */
@@ -225,7 +212,10 @@ button.artistDash__sideAction:focus-visible{
   cursor:pointer;
 }
 
-.artistDash__iconBtn svg{ width:22px; height:22px; }
+.artistDash__iconBtn svg{
+  width:22px;
+  height:22px;
+}
 
 .artistDash__user{
   display:flex;
@@ -244,12 +234,11 @@ button.artistDash__sideAction:focus-visible{
   height:46px;
   border-radius:50%;
   background-color: rgba(255,255,255,.88);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  overflow: hidden;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  overflow:hidden;
 }
-
 
 .artistDash__onlineDot{
   position:absolute;
@@ -267,44 +256,126 @@ button.artistDash__sideAction:focus-visible{
   color: rgba(255,255,255,.92);
 }
 
-/* Welcome */
-.artistDash__welcome {
-  margin-top: 16px;
-  margin-bottom: 12px;
+/* Hero */
+.artistHero{
+  margin-top:34px;
+  margin-bottom:14px;
 }
 
-.artistDash__welcomeRow{
+.artistHero__row{
   display:flex;
   align-items:center;
-  gap:18px;
+  gap:14px;
 }
 
-.artistDash__title{
+.artistHero__title{
   margin:0;
   font-size:42px;
-  font-weight:800;
+  font-weight:900;
   letter-spacing:.2px;
 }
 
-.artistDash__titleLine{
-  height:4px;
-  flex:0 0 280px;
-  border-radius:10px;
-  background: rgba(255,255,255,.92);
-  transform: translateY(6px);
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+.artistHero__name{
+  font-weight:900;
 }
 
-.artistDash__subtitle{
-  margin-top: 6px;    /* tighter spacing */
-  margin-bottom: 0;
-  font-size:18px;
+.artistHero__sub{
+  margin:10px 0 0;
   color: rgba(255,255,255,.55);
+  font-weight:600;
+  font-size:16px;
+}
+
+/* Price alert */
+.artistDash__priceAlert{
+  margin:10px 0 4px;
+  padding:14px 16px;
+  border-radius:14px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  border:1px solid rgba(255,193,7,.25);
+  background: rgba(255,193,7,.12);
+}
+
+.artistDash__priceAlertLeft{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.artistDash__priceAlertIcon{
+  font-size:20px;
+  color:#ffd666;
+  display:flex;
+  align-items:center;
+}
+
+.artistDash__priceAlertText h3{
+  margin:0 0 4px;
+  font-size:16px;
+  color: rgba(255,255,255,.96);
+}
+
+.artistDash__priceAlertText p{
+  margin:0;
+  font-size:13px;
+  font-weight:500;
+  color: rgba(255,255,255,.72);
+}
+
+.artistDash__priceAlertBtn{
+  border:0;
+  padding:10px 16px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  font-size:14px;
+  color:white;
+  background: linear-gradient(90deg, rgba(124,58,237,1), rgba(34,211,201,1));
+  box-shadow: 0 10px 22px rgba(0,0,0,.35);
+  white-space:nowrap;
+}
+
+/* States */
+.artistDash__state{
+  margin:10px 0 4px;
+  padding:12px 14px;
+  border-radius:12px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.artistDash__state--success{
+  background: rgba(34,211,201,.12);
+  color: rgba(255,255,255,.94);
+  border-color: rgba(34,211,201,.24);
+}
+
+.artistDash__state--error{
+  background: rgba(255,0,0,.12);
+  color: rgba(255,255,255,.94);
+  border-color: rgba(255,0,0,.20);
+}
+
+.artistDash__empty{
+  border-radius:14px;
+  padding:18px;
+  text-align:center;
+  color: rgba(255,255,255,.65);
+  background: rgba(12,12,22,.28);
+  border:1px solid rgba(255,255,255,.06);
+  font-weight:700;
 }
 
 /* Content area */
 .artistDash__content{
-  margin-top:0px;
+  margin-top:0;
   display:flex;
   flex-direction:column;
   gap:18px;
@@ -314,9 +385,8 @@ button.artistDash__sideAction:focus-visible{
 .glassCard{
   border-radius:18px;
   padding:20px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
-  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.06) 100%);
+  border:1px solid rgba(255,255,255,.10);
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
 }
@@ -347,7 +417,10 @@ button.artistDash__sideAction:focus-visible{
   opacity:.9;
 }
 
-.glassCard__headerIcon svg{ width:20px; height:20px; }
+.glassCard__headerIcon svg{
+  width:20px;
+  height:20px;
+}
 
 .glassCard__headerTitle{
   font-size:22px;
@@ -387,7 +460,7 @@ button.artistDash__sideAction:focus-visible{
   border-radius:16px;
   padding:14px 14px;
   background: rgba(12,12,22,.28);
-  border: 1px solid rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.06);
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -397,7 +470,7 @@ button.artistDash__sideAction:focus-visible{
   display:flex;
   align-items:center;
   gap:16px;
-  min-width: 420px;
+  min-width:420px;
 }
 
 .requestRow__avatar{
@@ -469,20 +542,25 @@ button.artistDash__sideAction:focus-visible{
 
 .btn--decline{
   background: rgba(90,90,90,.55);
-  border: 1px solid rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.10);
+}
+
+.btn:disabled{
+  opacity:.65;
+  cursor:not-allowed;
 }
 
 /* Upcoming bookings box */
 .glassCard--upcoming{
   padding:18px;
-  min-height: 420px;
+  min-height:420px;
 }
 
 .upcomingBody{
-  height: 340px;
+  height:340px;
   border-radius:16px;
   background: rgba(0,0,0,.12);
-  border: 1px solid rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.05);
   margin-top:10px;
 }
 
@@ -513,77 +591,35 @@ button.artistDash__sideAction:focus-visible{
 
 /* Small screens */
 @media (max-width: 1100px){
-  .artistDash__sidebar{ width:280px; }
-  .artistDash__main{ padding:24px 24px 14px 24px; }
-  .requestRow{ flex-direction:column; align-items:flex-start; gap:10px; }
-  .requestRow__left{ min-width:auto; }
-  .requestRow__right{ width:100%; justify-content:space-between; }
-}
+  .artistDash__sidebar{
+    width:280px;
+  }
 
-.artistHero {
-  margin-top: 34px;
-  margin-bottom: 14px;
-}
+  .artistDash__main{
+    padding:24px 24px 14px 24px;
+  }
 
-.artistHero__row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+  .requestRow{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
 
-.artistHero__title {
-  margin: 0;
-  font-size: 42px;
-  font-weight: 900;
-  letter-spacing: 0.2px;
-}
+  .requestRow__left{
+    min-width:auto;
+  }
 
-.artistHero__name {
-  font-weight: 900;
-}
+  .requestRow__right{
+    width:100%;
+    justify-content:space-between;
+  }
 
-.artistHero__sub {
-  margin: 10px 0 0;
-  color: rgba(255,255,255,.55);
-  font-weight: 600;
-  font-size: 16px;
-}
+  .artistDash__priceAlert{
+    flex-direction:column;
+    align-items:flex-start;
+  }
 
-.artistDash__state {
-  margin: 10px 0 4px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(255,255,255,.08);
+  .artistDash__priceAlertBtn{
+    width:100%;
+  }
 }
-
-.artistDash__state--success {
-  background: rgba(34,211,201,.12);
-  color: rgba(255,255,255,.94);
-  border-color: rgba(34,211,201,.24);
-}
-
-.artistDash__state--error {
-  background: rgba(255,0,0,.12);
-  color: rgba(255,255,255,.94);
-  border-color: rgba(255,0,0,.20);
-}
-
-.artistDash__empty {
-  border-radius: 14px;
-  padding: 18px;
-  text-align: center;
-  color: rgba(255,255,255,.65);
-  background: rgba(12,12,22,.28);
-  border: 1px solid rgba(255,255,255,.06);
-  font-weight: 700;
-}
-
-.btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-

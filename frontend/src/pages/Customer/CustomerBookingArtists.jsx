@@ -30,11 +30,13 @@ function ymd(dateObj) {
   const d = String(dateObj.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
 function addDays(dateObj, days) {
   const d = new Date(dateObj);
   d.setDate(d.getDate() + days);
   return d;
 }
+
 function humanDate(ymdStr) {
   try {
     const d = new Date(ymdStr);
@@ -48,9 +50,11 @@ function humanDate(ymdStr) {
     return ymdStr;
   }
 }
+
 function slotLabel(slotType) {
   return slotType === "MORNING" ? "Morning" : "Evening";
 }
+
 function statusLabel(status) {
   if (status === "OPEN") return "Open";
   if (status === "DISABLED") return "Disabled";
@@ -59,11 +63,17 @@ function statusLabel(status) {
   if (status === "RESERVED") return "Reserved";
   return status || "Open";
 }
+
 function formatMMSS(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const mm = String(Math.floor(total / 60)).padStart(2, "0");
   const ss = String(total % 60).padStart(2, "0");
   return `${mm}:${ss}`;
+}
+
+function hasValidArtistPrice(artist) {
+  const price = artist?.artistProfile?.pricePerHour;
+  return typeof price === "number" && !Number.isNaN(price) && price > 0;
 }
 
 function Stars({ value = 0 }) {
@@ -206,7 +216,12 @@ export default function CustomerBookingArtists() {
           throw new Error(data.message || "Failed to load artists");
         }
 
-        setArtists(Array.isArray(data.data) ? data.data : []);
+        const fetchedArtists = Array.isArray(data.data) ? data.data : [];
+
+        // ✅ Only keep artists with a valid price set
+        const artistsWithPrice = fetchedArtists.filter(hasValidArtistPrice);
+
+        setArtists(artistsWithPrice);
       } catch (err) {
         setArtists([]);
         setError(err.message || "Something went wrong");
@@ -246,7 +261,6 @@ export default function CustomerBookingArtists() {
     } catch {}
   }
 
-  // ✅ FIXED: closeDrawer with flag
   const closeDrawer = async ({ releaseHold = true } = {}) => {
     if (releaseHold) {
       await releaseHeldSlot();
@@ -276,7 +290,6 @@ export default function CustomerBookingArtists() {
   };
 
   async function openDrawerFor(uid) {
-    // switching artists -> release old hold
     await releaseHeldSlot();
 
     setDrawerOpen(true);
@@ -339,7 +352,6 @@ export default function CustomerBookingArtists() {
     setSlotsErr("");
     setHoldErr("");
 
-    // reset selection + hold on reload
     await releaseHeldSlot();
     setSelectedDate(null);
     setSelectedSlotType(null);
@@ -372,7 +384,6 @@ export default function CustomerBookingArtists() {
     }
   }
 
-  // close drawer with ESC
   useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (e) => {
@@ -396,7 +407,6 @@ export default function CustomerBookingArtists() {
     try {
       const idToken = await getIdTokenOrThrow();
 
-      // release old hold if different
       if (heldSlotId && heldSlotId !== slotObj._id) {
         await fetch(`${API_BASE}/api/availability/${heldSlotId}/release`, {
           method: "PATCH",
@@ -439,7 +449,6 @@ export default function CustomerBookingArtists() {
     }
   }
 
-  // countdown
   useEffect(() => {
     if (!heldUntil) {
       setHoldLeftMs(0);
@@ -466,7 +475,6 @@ export default function CustomerBookingArtists() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heldUntil, openUid]);
 
-  // release on unload (best effort)
   useEffect(() => {
     const onUnload = () => {
       if (!heldSlotId) return;
@@ -488,7 +496,6 @@ export default function CustomerBookingArtists() {
 
   return (
     <div className="artistDash customerBookingArtistsPage">
-      {/* ===== Sidebar ===== */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -542,9 +549,7 @@ export default function CustomerBookingArtists() {
         </div>
       </aside>
 
-      {/* ===== Main ===== */}
       <main className="artistDash__main">
-        {/* Top bar */}
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn"><FiBell /></button>
           <button className="artistDash__iconBtn"><FiHeart /></button>
@@ -561,7 +566,6 @@ export default function CustomerBookingArtists() {
           </div>
         </div>
 
-        {/* Header */}
         <section className="cbaHeader">
           <h1 className="cbaTitle">Book a Band/Artist</h1>
 
@@ -592,20 +596,18 @@ export default function CustomerBookingArtists() {
           </div>
         </section>
 
-        {/* Artist Grid */}
         <section className="cbaGrid">
           {loading && <div className="cbaEmpty">Loading artists...</div>}
           {!loading && error && <div className="cbaEmpty">{error}</div>}
           {!loading && !error && artists.length === 0 && (
-            <div className="cbaEmpty">No artists found. Try another search.</div>
+            <div className="cbaEmpty">
+              No artists with pricing found. Try another search.
+            </div>
           )}
 
           {!loading && !error &&
             artists.map((a) => {
-              const price =
-                typeof a?.artistProfile?.pricePerHour === "number"
-                  ? `LKR ${a.artistProfile.pricePerHour.toLocaleString()} per event`
-                  : "Price not set";
+              const price = `LKR ${a.artistProfile.pricePerHour.toLocaleString()} per event`;
 
               return (
                 <article className="cbaCard" key={a.uid}>
@@ -648,7 +650,6 @@ export default function CustomerBookingArtists() {
             })}
         </section>
 
-        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
@@ -658,7 +659,6 @@ export default function CustomerBookingArtists() {
         </footer>
       </main>
 
-      {/* ================= Drawer ================= */}
       {drawerOpen && (
         <div className="cbaDrawerOverlay" onMouseDown={onOverlayClick}>
           <aside className="cbaDrawer" role="dialog" aria-modal="true">
@@ -689,7 +689,9 @@ export default function CustomerBookingArtists() {
                     <div className="cbaProfileName">{selectedArtist.name || "Artist"}</div>
                     <div className="cbaProfileSub">
                       {(selectedArtist.role || "").toUpperCase()}{" "}
-                      {selectedArtist.artistProfile?.location ? `• ${selectedArtist.artistProfile.location}` : ""}
+                      {selectedArtist.artistProfile?.location
+                        ? `• ${selectedArtist.artistProfile.location}`
+                        : ""}
                     </div>
 
                     <div className="cbaProfileRatingRow">
@@ -784,7 +786,6 @@ export default function CustomerBookingArtists() {
                   </button>
                 </div>
 
-                {/* Hold banner */}
                 {heldSlotId && heldUntil && holdLeftMs > 0 && (
                   <div className="cbaDrawer__state">
                     Held for you ({formatMMSS(holdLeftMs)} left) - 10 minutes
@@ -792,7 +793,6 @@ export default function CustomerBookingArtists() {
                 )}
                 {holdErr && <div className="cbaDrawer__state">{holdErr}</div>}
 
-                {/* Availability section */}
                 {showAvailability && (
                   <div className="cbaAvailWrap">
                     <div className="cbaAvailHeader">
@@ -888,7 +888,6 @@ export default function CustomerBookingArtists() {
               </div>
             )}
 
-            {/* Reviews */}
             <div className="cbaReviewsSection">
               <div className="cbaReviewsTitle">
                 <FiStar /> Reviews

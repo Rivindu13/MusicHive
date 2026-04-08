@@ -65,7 +65,11 @@ function isWithinNextTwoDays(dateStr) {
   if (!dateStr) return false;
 
   const today = new Date();
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayOnly = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
 
   const bookingDay = toDateOnly(dateStr);
   const twoDaysLater = new Date(todayOnly);
@@ -98,6 +102,9 @@ export default function ArtistDashboard() {
 
   const firstName = fullName.split(" ")[0];
   const artistUid = profile?.uid || profile?.userUid || profile?.id || null;
+
+  const rawArtistPrice = profile?.artistProfile?.pricePerHour ?? null;
+  const hasArtistPrice = Number(rawArtistPrice) > 0;
 
   const [authReady, setAuthReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -229,7 +236,9 @@ export default function ArtistDashboard() {
   }
 
   async function rejectBooking(bookingId) {
-    const confirmed = window.confirm("Are you sure you want to decline this booking?");
+    const confirmed = window.confirm(
+      "Are you sure you want to decline this booking?"
+    );
     if (!confirmed) return;
 
     try {
@@ -267,9 +276,7 @@ export default function ArtistDashboard() {
   }
 
   const pendingRequests = useMemo(() => {
-    return items
-      .filter((b) => b.status === "PENDING")
-      .slice(0, 3);
+    return items.filter((b) => b.status === "PENDING").slice(0, 3);
   }, [items]);
 
   const pendingCount = useMemo(() => {
@@ -306,7 +313,10 @@ export default function ArtistDashboard() {
         </div>
 
         <nav className="artistDash__nav">
-          <Link className="artistDash__navItem artistDash__navItem--active" to="/artist/dashboard">
+          <Link
+            className="artistDash__navItem artistDash__navItem--active"
+            to="/artist/dashboard"
+          >
             <span className="artistDash__navIcon">
               <FiHome />
             </span>
@@ -358,7 +368,11 @@ export default function ArtistDashboard() {
 
       <main className="artistDash__main">
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" aria-label="Notifications" type="button">
+          <button
+            className="artistDash__iconBtn"
+            aria-label="Notifications"
+            type="button"
+          >
             <FiBell />
           </button>
 
@@ -395,6 +409,32 @@ export default function ArtistDashboard() {
           </p>
         </section>
 
+        {!hasArtistPrice && (
+          <div className="artistDash__priceAlert">
+            <div className="artistDash__priceAlertLeft">
+              <span className="artistDash__priceAlertIcon">
+                <FiAlertTriangle />
+              </span>
+
+              <div className="artistDash__priceAlertText">
+                <h3>Set your hourly rate to start receiving paid bookings.</h3>
+                <p>
+                  Add your pricing in your profile so customer booking payments
+                  work correctly.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="artistDash__priceAlertBtn"
+              onClick={() => navigate("/artist/profile")}
+            >
+              Set Price
+            </button>
+          </div>
+        )}
+
         {err && (
           <div className="artistDash__state artistDash__state--error">
             <FiAlertTriangle /> {err}
@@ -427,14 +467,18 @@ export default function ArtistDashboard() {
 
             <div className="glassCard__list">
               {loading ? (
-                <div className="artistDash__empty">Loading booking requests...</div>
+                <div className="artistDash__empty">
+                  Loading booking requests...
+                </div>
               ) : pendingRequests.length === 0 ? (
                 <div className="artistDash__empty">No new booking requests.</div>
               ) : (
                 pendingRequests.map((r) => {
                   const customerName = r.customer?.name || "Customer";
                   const customerPhoto = r.customer?.photoURL || "";
-                  const subtitle = `${customerName} • ${humanDate(r.date)}${r.slotType ? ` • ${slotTypeLabel(r.slotType)}` : ""}`;
+                  const subtitle = `${customerName} • ${humanDate(r.date)}${
+                    r.slotType ? ` • ${slotTypeLabel(r.slotType)}` : ""
+                  }`;
 
                   return (
                     <div className="requestRow" key={r._id}>
@@ -452,8 +496,11 @@ export default function ArtistDashboard() {
                               : {}
                           }
                         />
+
                         <div className="requestRow__texts">
-                          <div className="requestRow__title">{getBookingTitle(r)}</div>
+                          <div className="requestRow__title">
+                            {getBookingTitle(r)}
+                          </div>
                           <div className="requestRow__sub">{subtitle}</div>
                         </div>
                       </div>
@@ -477,13 +524,16 @@ export default function ArtistDashboard() {
                           >
                             {actionLoadingId === r._id ? "Working..." : "Accept"}
                           </button>
+
                           <button
                             className="btn btn--decline"
                             type="button"
                             onClick={() => rejectBooking(r._id)}
                             disabled={actionLoadingId === r._id}
                           >
-                            {actionLoadingId === r._id ? "Working..." : "Decline"}
+                            {actionLoadingId === r._id
+                              ? "Working..."
+                              : "Decline"}
                           </button>
                         </div>
                       </div>
@@ -506,7 +556,9 @@ export default function ArtistDashboard() {
 
             <div className="glassCard__list">
               {loading ? (
-                <div className="artistDash__empty">Loading upcoming bookings...</div>
+                <div className="artistDash__empty">
+                  Loading upcoming bookings...
+                </div>
               ) : upcomingBookings.length === 0 ? (
                 <div className="artistDash__empty">
                   No upcoming bookings for the next 2 days.
@@ -515,7 +567,9 @@ export default function ArtistDashboard() {
                 upcomingBookings.map((b) => {
                   const customerName = b.customer?.name || "Customer";
                   const customerPhoto = b.customer?.photoURL || "";
-                  const subtitle = `${customerName} • ${humanDate(b.date)}${b.slotType ? ` • ${slotTypeLabel(b.slotType)}` : ""}`;
+                  const subtitle = `${customerName} • ${humanDate(b.date)}${
+                    b.slotType ? ` • ${slotTypeLabel(b.slotType)}` : ""
+                  }`;
 
                   return (
                     <div className="requestRow" key={b._id}>
@@ -533,8 +587,11 @@ export default function ArtistDashboard() {
                               : {}
                           }
                         />
+
                         <div className="requestRow__texts">
-                          <div className="requestRow__title">{getBookingTitle(b)}</div>
+                          <div className="requestRow__title">
+                            {getBookingTitle(b)}
+                          </div>
                           <div className="requestRow__sub">{subtitle}</div>
                         </div>
                       </div>
