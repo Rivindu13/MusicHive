@@ -1,4 +1,3 @@
-// CustomerBookingPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -24,7 +23,6 @@ import { auth } from "../../firebase";
 
 const API_BASE = "http://localhost:5000";
 
-/* helpers */
 function ymd(dateObj) {
   const y = dateObj.getFullYear();
   const m = String(dateObj.getMonth() + 1).padStart(2, "0");
@@ -54,6 +52,7 @@ function statusLabel(status) {
   if (status === "DISABLED") return "Disabled";
   if (status === "BOOKED") return "Booked";
   if (status === "HELD") return "Held";
+  if (status === "HELD_BY_ME") return "Held by you";
   if (status === "RESERVED") return "Reserved";
   return status || "Open";
 }
@@ -92,7 +91,6 @@ export default function CustomerBookingPage() {
 
   const initialSlotId = location.state?.slotId || null;
   const initialHeldUntil = location.state?.heldUntil || null;
-
   const initialDate = location.state?.date || null;
   const initialSlotType = location.state?.slotType || null;
 
@@ -159,9 +157,9 @@ export default function CustomerBookingPage() {
     return await user.getIdToken();
   }
 
-  async function fetchAvailabilityOnce() {
+  async function fetchAvailability(force = false) {
     if (!artistUid) return;
-    if (hasLoadedSlots) return;
+    if (hasLoadedSlots && !force) return;
 
     setSlotsLoading(true);
     setSlotsErr("");
@@ -173,8 +171,14 @@ export default function CustomerBookingPage() {
         body: JSON.stringify({ artistUid, daysAhead: 14 }),
       });
 
+      const idToken = await getIdTokenOrThrow();
       const res = await fetch(
-        `${API_BASE}/api/availability/artist/${artistUid}?from=${range.from}&to=${range.to}`
+        `${API_BASE}/api/availability/artist/${artistUid}?from=${range.from}&to=${range.to}`,
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
       );
       const data = await res.json();
 
@@ -182,8 +186,22 @@ export default function CustomerBookingPage() {
         throw new Error(data.message || "Failed to load availability");
       }
 
-      setSlots(Array.isArray(data.data) ? data.data : []);
+      const nextSlots = Array.isArray(data.data) ? data.data : [];
+      setSlots(nextSlots);
       setHasLoadedSlots(true);
+
+      const mine = nextSlots.find((s) => s.statusForUser === "HELD_BY_ME");
+      if (mine) {
+        setHeldSlotId(mine._id);
+        setHeldUntil(mine.heldUntil);
+        setSelectedDate(mine.date);
+        setSelectedSlotType(mine.slotType);
+      } else if (heldSlotId) {
+        setHeldSlotId(null);
+        setHeldUntil(null);
+        setSelectedDate(null);
+        setSelectedSlotType(null);
+      }
     } catch (e) {
       setSlots([]);
       setSlotsErr(e.message || "Failed to load availability");
@@ -193,84 +211,13 @@ export default function CustomerBookingPage() {
   }
 
   async function refreshAvailability() {
-    if (!artistUid) return;
-    try {
-      const r2 = await fetch(
-        `${API_BASE}/api/availability/artist/${artistUid}?from=${range.from}&to=${range.to}`
-      );
-      const d2 = await r2.json();
-      if (r2.ok && d2.success) {
-        setSlots(Array.isArray(d2.data) ? d2.data : []);
-        setHasLoadedSlots(true);
-      }
-    } catch {}
-  }
-
-  // ✅ NEW: refresh hold when arriving from previous page
-  async function refreshHoldBySlotId(slotId) {
-    if (!slotId) return;
-    setHoldErr("");
-    setHolding(true);
-
-    try {
-      const idToken = await getIdTokenOrThrow();
-
-      const res = await fetch(`${API_BASE}/api/availability/${slotId}/hold`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Slot hold refresh failed");
-      }
-
-      const updated = data.data;
-      setHeldSlotId(updated._id);
-      setHeldUntil(updated.heldUntil);
-      setSelectedDate(updated.date);
-      setSelectedSlotType(updated.slotType);
-
-      await refreshAvailability();
-    } catch (e) {
-      setHoldErr(e.message || "Slot is not held (expired). Pick again.");
-      setHeldSlotId(null);
-      setHeldUntil(null);
-      setSelectedDate(null);
-      setSelectedSlotType(null);
-      await refreshAvailability();
-      setShowSlots(true);
-      fetchAvailabilityOnce();
-    } finally {
-      setHolding(false);
-    }
+    await fetchAvailability(true);
   }
 
   useEffect(() => {
-    if (initialSlotId) {
-      refreshHoldBySlotId(initialSlotId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchAvailability(true);
+  }, [artistUid]);
 
-  // load slots only when needed
-  useEffect(() => {
-    if (!artistUid) return;
-
-    if (!heldSlotId) {
-      setShowSlots(true);
-      fetchAvailabilityOnce();
-      return;
-    }
-
-    if (showSlots) fetchAvailabilityOnce();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artistUid, showSlots]);
-
-  // countdown
   useEffect(() => {
     if (!heldUntil) {
       setHoldLeftMs(0);
@@ -294,7 +241,6 @@ export default function CustomerBookingPage() {
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heldUntil]);
 
   async function releaseHeld(slotId) {
@@ -309,6 +255,12 @@ export default function CustomerBookingPage() {
         },
       });
     } catch {}
+
+    setHeldSlotId(null);
+    setHeldUntil(null);
+    setHoldLeftMs(0);
+    setSelectedDate(null);
+    setSelectedSlotType(null);
   }
 
   async function holdSlot(slotObj) {
@@ -364,25 +316,6 @@ export default function CustomerBookingPage() {
     }
   }
 
-  // unload release (best effort)
-  useEffect(() => {
-    const onUnload = () => {
-      if (!heldSlotId) return;
-      try {
-        const url = `${API_BASE}/api/availability/${heldSlotId}/release`;
-        if (navigator.sendBeacon) {
-          const blob = new Blob([], { type: "application/json" });
-          navigator.sendBeacon(url, blob);
-        } else {
-          fetch(url, { method: "PATCH", keepalive: true }).catch(() => {});
-        }
-      } catch {}
-    };
-
-    window.addEventListener("beforeunload", onUnload);
-    return () => window.removeEventListener("beforeunload", onUnload);
-  }, [heldSlotId]);
-
   async function submitBooking() {
     setSubmitErr("");
     setSuccess(null);
@@ -390,9 +323,9 @@ export default function CustomerBookingPage() {
     if (!artistUid) return;
 
     if (!heldSlotId || !heldUntil || holdLeftMs <= 0) {
-      setSubmitErr("Your hold expired. Please select an OPEN slot again.");
+      setSubmitErr("Your hold expired. Please select a slot again.");
       setShowSlots(true);
-      await fetchAvailabilityOnce();
+      await refreshAvailability();
       return;
     }
 
@@ -445,7 +378,6 @@ export default function CustomerBookingPage() {
 
   return (
     <div className="artistDash customerBookingPage">
-      {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -454,9 +386,7 @@ export default function CustomerBookingPage() {
 
         <nav className="artistDash__nav">
           <Link className="artistDash__navItem" to="/customer/dashboard">
-            <span className="artistDash__navIcon">
-              <FiHome />
-            </span>
+            <span className="artistDash__navIcon"><FiHome /></span>
             <span>Overview</span>
           </Link>
 
@@ -464,9 +394,7 @@ export default function CustomerBookingPage() {
             className="artistDash__navItem artistDash__navItem--active"
             to="/customer/book-artists"
           >
-            <span className="artistDash__navIcon">
-              <FiCalendar />
-            </span>
+            <span className="artistDash__navIcon"><FiCalendar /></span>
             <span>Booking Artists</span>
           </Link>
 
@@ -476,25 +404,19 @@ export default function CustomerBookingPage() {
           </Link>
 
           <Link className="artistDash__navItem" to="/customer/chords">
-            <span className="artistDash__navIcon">
-              <FiMusic />
-            </span>
+            <span className="artistDash__navIcon"><FiMusic /></span>
             <span>Chord Library</span>
           </Link>
 
           <Link className="artistDash__navItem" to="/customer/reviews">
-            <span className="artistDash__navIcon">
-              <FiStar />
-            </span>
+            <span className="artistDash__navIcon"><FiStar /></span>
             <span>Reviews</span>
           </Link>
         </nav>
 
         <div className="artistDash__sideBottom">
           <Link className="artistDash__sideAction" to="/customer/profile">
-            <span className="artistDash__navIcon">
-              <FiUser />
-            </span>
+            <span className="artistDash__navIcon"><FiUser /></span>
             <span>Profile</span>
           </Link>
 
@@ -503,32 +425,22 @@ export default function CustomerBookingPage() {
             className="artistDash__sideAction"
             onClick={handleLogout}
           >
-            <span className="artistDash__navIcon">
-              <FiLogOut />
-            </span>
+            <span className="artistDash__navIcon"><FiLogOut /></span>
             <span>Log out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main */}
       <main className="artistDash__main">
-        {/* Top bar */}
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn">
-            <FiBell />
-          </button>
-          <button className="artistDash__iconBtn">
-            <FiHeart />
-          </button>
+          <button className="artistDash__iconBtn"><FiBell /></button>
+          <button className="artistDash__iconBtn"><FiHeart /></button>
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">
               <div
                 className="artistDash__avatar"
-                style={
-                  profilePic ? { backgroundImage: `url(${profilePic})` } : {}
-                }
+                style={profilePic ? { backgroundImage: `url(${profilePic})` } : {}}
               />
               <span className="artistDash__onlineDot" />
             </div>
@@ -536,15 +448,11 @@ export default function CustomerBookingPage() {
           </div>
         </div>
 
-        {/* Header */}
         <section className="cbpHeader">
           <button
             className="cbpBack"
             type="button"
-            onClick={async () => {
-              await releaseHeld(heldSlotId);
-              navigate(-1);
-            }}
+            onClick={() => navigate(-1)}
           >
             <FiArrowLeft /> Back
           </button>
@@ -552,19 +460,16 @@ export default function CustomerBookingPage() {
           <div className="cbpTitleWrap">
             <h1 className="cbpTitle">Confirm Booking</h1>
             <div className="cbpSub">
-              Select a slot (it will be held for 10 minutes), then request booking.
+              Select a slot and request booking. Your held slot remains yours until the 10 minutes end or you cancel it.
             </div>
           </div>
         </section>
 
-        {/* Artist summary card */}
         <section className="cbpArtistCard">
           <div
             className="cbpArtistImg"
             style={{
-              backgroundImage: `url(${
-                artist?.photoURL || "https://via.placeholder.com/120"
-              })`,
+              backgroundImage: `url(${artist?.photoURL || "https://via.placeholder.com/120"})`,
             }}
           />
 
@@ -585,7 +490,6 @@ export default function CustomerBookingPage() {
           </div>
         </section>
 
-        {/* Hold banner */}
         {heldSlotId && heldUntil && holdLeftMs > 0 && (
           <section className="cbpSection">
             <div className="cbpState">
@@ -593,6 +497,7 @@ export default function CustomerBookingPage() {
             </div>
           </section>
         )}
+
         {holdErr && (
           <section className="cbpSection">
             <div className="cbpState cbpState--error">
@@ -601,7 +506,6 @@ export default function CustomerBookingPage() {
           </section>
         )}
 
-        {/* Selected slot summary + optional expansion */}
         <section className="cbpSection">
           <div className="cbpSectionTop">
             <div className="cbpSectionTitle">Selected Slot</div>
@@ -612,7 +516,7 @@ export default function CustomerBookingPage() {
               onClick={async () => {
                 const next = !showSlots;
                 setShowSlots(next);
-                if (next) await fetchAvailabilityOnce();
+                if (next) await fetchAvailability(true);
               }}
             >
               {showSlots ? "Hide" : "Change time"}
@@ -627,14 +531,14 @@ export default function CustomerBookingPage() {
                     {humanDate(selectedDate)} • {slotTypeLabel(selectedSlotType)}
                   </div>
                   <div className="cbpSelectedSmall">
-                    Click “Change time” to pick another OPEN slot.
+                    You can keep this held slot, choose another one, or cancel it.
                   </div>
                 </>
               ) : (
                 <>
                   <div className="cbpSelectedBig">No slot selected</div>
                   <div className="cbpSelectedSmall">
-                    Expand and pick an OPEN slot (it will be held for 10 minutes).
+                    Expand and pick a slot.
                   </div>
                 </>
               )}
@@ -646,19 +550,29 @@ export default function CustomerBookingPage() {
                 className="cbpMiniPrimary"
                 onClick={async () => {
                   setShowSlots(true);
-                  await fetchAvailabilityOnce();
+                  await fetchAvailability(true);
                 }}
               >
                 Select time
               </button>
-            ) : null}
+            ) : (
+              <button
+                type="button"
+                className="cbpMiniPrimary"
+                onClick={async () => {
+                  await releaseHeld(heldSlotId);
+                  await refreshAvailability();
+                }}
+              >
+                Cancel hold
+              </button>
+            )}
           </div>
 
           {showSlots && (
             <div className="cbpSlotsWrap">
               <div className="cbpMiniHint">
-                Availability • {humanDate(range.from)} → {humanDate(range.to)}{" "}
-                (only OPEN slots are selectable)
+                Availability • {humanDate(range.from)} → {humanDate(range.to)}
               </div>
 
               {slotsLoading && (
@@ -681,8 +595,14 @@ export default function CustomerBookingPage() {
                     const m = row.MORNING;
                     const e = row.EVENING;
 
-                    const mStatus = m?.status || "OPEN";
-                    const eStatus = e?.status || "OPEN";
+                    const mStatus = m?.statusForUser || m?.status || "OPEN";
+                    const eStatus = e?.statusForUser || e?.status || "OPEN";
+
+                    const isMyMorningHold = mStatus === "HELD_BY_ME";
+                    const isMyEveningHold = eStatus === "HELD_BY_ME";
+
+                    const mSelectable = mStatus === "OPEN" || isMyMorningHold;
+                    const eSelectable = eStatus === "OPEN" || isMyEveningHold;
 
                     const mSelected =
                       selectedDate === row.date && selectedSlotType === "MORNING";
@@ -700,13 +620,22 @@ export default function CustomerBookingPage() {
                           <button
                             type="button"
                             className={`cbpSlot ${
-                              mStatus !== "OPEN" ? "cbpSlot--disabled" : ""
+                              !mSelectable ? "cbpSlot--disabled" : ""
                             } ${mSelected ? "cbpSlot--selected" : ""}`}
                             onClick={() => {
-                              if (mStatus !== "OPEN") return;
+                              if (!mSelectable) return;
+
+                              if (isMyMorningHold) {
+                                setHeldSlotId(m._id);
+                                setHeldUntil(m.heldUntil);
+                                setSelectedDate(m.date);
+                                setSelectedSlotType(m.slotType);
+                                return;
+                              }
+
                               holdSlot(m);
                             }}
-                            disabled={mStatus !== "OPEN" || holding}
+                            disabled={!mSelectable || holding}
                             title={statusLabel(mStatus)}
                           >
                             <div className="cbpSlotTitle">Morning</div>
@@ -720,13 +649,22 @@ export default function CustomerBookingPage() {
                           <button
                             type="button"
                             className={`cbpSlot ${
-                              eStatus !== "OPEN" ? "cbpSlot--disabled" : ""
+                              !eSelectable ? "cbpSlot--disabled" : ""
                             } ${eSelected ? "cbpSlot--selected" : ""}`}
                             onClick={() => {
-                              if (eStatus !== "OPEN") return;
+                              if (!eSelectable) return;
+
+                              if (isMyEveningHold) {
+                                setHeldSlotId(e._id);
+                                setHeldUntil(e.heldUntil);
+                                setSelectedDate(e.date);
+                                setSelectedSlotType(e.slotType);
+                                return;
+                              }
+
                               holdSlot(e);
                             }}
-                            disabled={eStatus !== "OPEN" || holding}
+                            disabled={!eSelectable || holding}
                             title={statusLabel(eStatus)}
                           >
                             <div className="cbpSlotTitle">Evening</div>
@@ -746,7 +684,6 @@ export default function CustomerBookingPage() {
           )}
         </section>
 
-        {/* Note + Submit */}
         <section className="cbpSection">
           <div className="cbpSectionTitle">Booking Note</div>
 
@@ -792,7 +729,6 @@ export default function CustomerBookingPage() {
           )}
         </section>
 
-        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">

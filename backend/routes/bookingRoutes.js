@@ -195,9 +195,28 @@ router.post("/request", requireAuth, async (req, res) => {
     }
 
     if (!slot.heldUntil || slot.heldUntil < now) {
+      await AvailabilitySlot.updateOne(
+        { _id: slotId, status: "HELD", heldUntil: { $lt: now } },
+        { $set: { status: "OPEN", heldBy: null, heldUntil: null } }
+      );
+
       return res
         .status(409)
         .json({ success: false, message: "Hold expired. Please select again." });
+    }
+
+    const existingActiveBooking = await Booking.findOne({
+      artistUid: slot.artistUid,
+      date: slot.date,
+      slotType: slot.slotType,
+      status: { $in: ["PENDING", "ACCEPTED", "CONFIRMED"] },
+    });
+
+    if (existingActiveBooking) {
+      return res.status(409).json({
+        success: false,
+        message: "This slot already has an active booking",
+      });
     }
 
     const reservedSlot = await AvailabilitySlot.findOneAndUpdate(
@@ -223,10 +242,13 @@ router.post("/request", requireAuth, async (req, res) => {
         .json({ success: false, message: "Slot could not be reserved" });
     }
 
-    // Save artist's current price into the booking
     const artistUser = await User.findOne({ uid: reservedSlot.artistUid }).lean();
 
     if (!artistUser) {
+      reservedSlot.status = "OPEN";
+      reservedSlot.bookingId = null;
+      await reservedSlot.save();
+
       return res.status(404).json({
         success: false,
         message: "Artist not found",
@@ -236,6 +258,10 @@ router.post("/request", requireAuth, async (req, res) => {
     const artistPrice = artistUser.artistProfile?.pricePerHour;
 
     if (typeof artistPrice !== "number" || artistPrice <= 0) {
+      reservedSlot.status = "OPEN";
+      reservedSlot.bookingId = null;
+      await reservedSlot.save();
+
       return res.status(400).json({
         success: false,
         message: "Artist price is not set",
@@ -478,7 +504,6 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
 
 /**
  * POST /api/bookings/:id/init-payment
- * Customer starts PayHere payment
  */
 router.post("/:id/init-payment", requireAuth, async (req, res) => {
   try {
@@ -523,7 +548,6 @@ router.post("/:id/init-payment", requireAuth, async (req, res) => {
     const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
     const publicNotifyBase = process.env.PUBLIC_NOTIFY_BASE_URL;
 
-
     if (!merchantId || !merchantSecret || !publicNotifyBase) {
       return res.status(500).json({
         success: false,
@@ -541,7 +565,6 @@ router.post("/:id/init-payment", requireAuth, async (req, res) => {
       currency,
       merchantSecret,
     });
-
 
     booking.payhereOrderId = orderId;
     booking.paymentMessage = "Payment initiated";
@@ -585,7 +608,6 @@ router.post("/:id/init-payment", requireAuth, async (req, res) => {
 
 /**
  * POST /api/bookings/payhere/notify
- * PayHere server callback
  */
 router.post("/payhere/notify", async (req, res) => {
   try {
@@ -662,7 +684,6 @@ router.post("/payhere/notify", async (req, res) => {
 
 /**
  * GET /api/bookings/:id/payment-status
- * Frontend checks latest stored payment state after redirect
  */
 router.get("/:id/payment-status", requireAuth, async (req, res) => {
   try {
@@ -695,7 +716,6 @@ router.get("/:id/payment-status", requireAuth, async (req, res) => {
 
 /**
  * PATCH /api/bookings/:id/markPaid
- * Disable old unsafe direct route
  */
 router.patch("/:id/markPaid", requireAuth, async (req, res) => {
   return res.status(400).json({
@@ -706,7 +726,6 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
 
 /**
  * PATCH /api/bookings/:id/cancel
- * Customer cancels own booking
  */
 router.patch("/:id/cancel", requireAuth, async (req, res) => {
   try {
@@ -735,7 +754,6 @@ router.patch("/:id/cancel", requireAuth, async (req, res) => {
 
     booking.status = "CANCELLED";
 
-    // optional payment handling
     if (booking.paymentStatus === "PAID") {
       booking.paymentMessage = "Booking cancelled after payment";
     } else {

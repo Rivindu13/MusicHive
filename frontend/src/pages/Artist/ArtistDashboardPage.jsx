@@ -106,7 +106,9 @@ export default function ArtistDashboard() {
   const rawArtistPrice = profile?.artistProfile?.pricePerHour ?? null;
   const hasArtistPrice = Number(rawArtistPrice) > 0;
 
-  const [authReady, setAuthReady] = useState(false);
+  const [authReady, setAuthReady] = useState(
+    !!localStorage.getItem("profile") || !!auth.currentUser
+  );
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
@@ -114,13 +116,21 @@ export default function ArtistDashboard() {
   const [actionLoadingId, setActionLoadingId] = useState("");
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setAuthReady(true);
+    const stored = localStorage.getItem("profile");
 
-      const stored = localStorage.getItem("profile");
-      if (!stored && !user) {
+    if (stored || auth.currentUser) {
+      setAuthReady(true);
+    }
+
+    const unsub = onAuthStateChanged(auth, (user) => {
+      const savedProfile = localStorage.getItem("profile");
+
+      if (!savedProfile && !user) {
         navigate("/", { replace: true });
+        return;
       }
+
+      setAuthReady(true);
     });
 
     return () => unsub();
@@ -293,16 +303,6 @@ export default function ArtistDashboard() {
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(0, 5);
   }, [items]);
-
-  if (!authReady) {
-    return (
-      <div className="artistDash">
-        <main className="artistDash__main">
-          <div className="artistDash__empty">Loading your session...</div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="artistDash">

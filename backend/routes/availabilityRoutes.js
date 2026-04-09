@@ -4,11 +4,52 @@ const router = express.Router();
 import AvailabilitySlot from "../models/AvailabilitySlots.js";
 import User from "../models/User.js";
 
-import { SLOTS, SLOT_TIMES, DAYS_AHEAD, HOLD_MINUTES } from "../config/bookingConstants.js";
+import {
+  SLOTS,
+  SLOT_TIMES,
+  DAYS_AHEAD,
+  HOLD_MINUTES,
+} from "../config/bookingConstants.js";
 import { addDays, toYMD } from "../utils/date.js";
-
-// Firebase auth middleware
 import { requireAuth } from "../middleware/requireAuth.js";
+
+/* ---------------- helpers ---------------- */
+async function releaseExpiredHeldSlots(query = {}) {
+  const now = new Date();
+
+  await AvailabilitySlot.updateMany(
+    {
+      ...query,
+      status: "HELD",
+      heldUntil: { $lt: now },
+    },
+    {
+      $set: {
+        status: "OPEN",
+        heldBy: null,
+        heldUntil: null,
+      },
+    }
+  );
+}
+
+function decorateSlotsForUser(slots, currentUid) {
+  return slots.map((slot) => {
+    const heldByCurrentUser =
+      !!currentUid &&
+      slot.status === "HELD" &&
+      !!slot.heldBy &&
+      String(slot.heldBy) === String(currentUid) &&
+      !!slot.heldUntil &&
+      new Date(slot.heldUntil) > new Date();
+
+    return {
+      ...slot,
+      heldByCurrentUser,
+      statusForUser: heldByCurrentUser ? "HELD_BY_ME" : slot.status,
+    };
+  });
+}
 
 /**
  * POST /api/availability/ensure
@@ -32,7 +73,7 @@ router.post("/ensure", async (req, res) => {
     }
 
     const start = new Date();
-    const startDate = addDays(start, 1); // tomorrow
+    const startDate = addDays(start, 1);
     const endDate = addDays(start, horizon);
 
     const ops = [];
@@ -88,11 +129,13 @@ router.post("/ensure", async (req, res) => {
 
 /**
  * GET /api/availability/artist/:artistUid?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * Protected so we can know which HELD slots belong to current user.
  */
-router.get("/artist/:artistUid", async (req, res) => {
+router.get("/artist/:artistUid", requireAuth, async (req, res) => {
   try {
     const { artistUid } = req.params;
     const { from, to } = req.query;
+    const currentUid = req.user.uid;
 
     const query = { artistUid };
     if (from || to) {
@@ -101,9 +144,13 @@ router.get("/artist/:artistUid", async (req, res) => {
       if (to) query.date.$lte = to;
     }
 
-    const slots = await AvailabilitySlot.find(query)
+    await releaseExpiredHeldSlots(query);
+
+    const rawSlots = await AvailabilitySlot.find(query)
       .sort({ date: 1, slotType: 1 })
       .lean();
+
+    const slots = decorateSlotsForUser(rawSlots, currentUid);
 
     return res.json({ success: true, data: slots });
   } catch (err) {
@@ -112,13 +159,41 @@ router.get("/artist/:artistUid", async (req, res) => {
 });
 
 /**
- * ✅ NEW
- * PATCH /api/availability/:slotId/hold   (customer clicks slot pill)
- * Rules:
- * - only OPEN slot can be held
- * - or if HELD but expired => can be held
- * - if already held by same customer => extend/refresh timer
- * - DISABLED/BOOKED/RESERVED cannot be held
+ * GET /api/availability/mine/held
+ * Active held slots for current customer
+ */
+router.get("/mine/held", requireAuth, async (req, res) => {
+  try {
+    const customerUid = req.user.uid;
+    const now = new Date();
+
+    await releaseExpiredHeldSlots();
+
+    const slots = await AvailabilitySlot.find({
+      status: "HELD",
+      heldBy: customerUid,
+      heldUntil: { $gt: now },
+    })
+      .sort({ heldUntil: 1, date: 1, slotType: 1 })
+      .lean();
+
+    const data = slots.map((slot) => ({
+      ...slot,
+      heldByCurrentUser: true,
+      statusForUser: "HELD_BY_ME",
+    }));
+
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+/**
+ * PATCH /api/availability/:slotId/hold
+ * - OPEN slot can be held
+ * - expired HELD slot can be taken
+ * - same user can refresh own hold
  */
 router.patch("/:slotId/hold", requireAuth, async (req, res) => {
   try {
@@ -134,34 +209,44 @@ router.patch("/:slotId/hold", requireAuth, async (req, res) => {
         status: { $in: ["OPEN", "HELD"] },
         $or: [
           { status: "OPEN" },
-          // expired hold can be taken
           { status: "HELD", heldUntil: { $lt: now } },
-          // same customer can refresh
           { status: "HELD", heldBy: customerUid },
         ],
       },
       {
-        $set: { status: "HELD", heldBy: customerUid, heldUntil },
-        $setOnInsert: {},
+        $set: {
+          status: "HELD",
+          heldBy: customerUid,
+          heldUntil,
+          bookingId: null,
+        },
       },
       { new: true }
     );
 
     if (!slot) {
-      return res.status(409).json({ success: false, message: "Slot not available to hold" });
+      return res.status(409).json({
+        success: false,
+        message: "Slot not available to hold",
+      });
     }
 
-    // if slot was HELD by someone else & not expired, it won't match query anyway
-    return res.json({ success: true, data: slot });
+    return res.json({
+      success: true,
+      data: {
+        ...slot.toObject(),
+        heldByCurrentUser: true,
+        statusForUser: "HELD_BY_ME",
+      },
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
 
 /**
- * ✅ OPTIONAL (recommended)
- * PATCH /api/availability/:slotId/release  (customer unselects)
- * Only releases if customer is the holder and still HELD
+ * PATCH /api/availability/:slotId/release
+ * Only releases if current customer owns the held slot
  */
 router.patch("/:slotId/release", requireAuth, async (req, res) => {
   try {
@@ -175,7 +260,10 @@ router.patch("/:slotId/release", requireAuth, async (req, res) => {
     );
 
     if (!slot) {
-      return res.status(404).json({ success: false, message: "No held slot to release" });
+      return res.status(404).json({
+        success: false,
+        message: "No held slot to release",
+      });
     }
 
     return res.json({ success: true, data: slot });
@@ -185,12 +273,9 @@ router.patch("/:slotId/release", requireAuth, async (req, res) => {
 });
 
 /**
- * PATCH /api/availability/:slotId/toggle (artist)
+ * PATCH /api/availability/:slotId/toggle
  * Body: { status: "OPEN" | "DISABLED" }
- * Rules:
- * - Only owner can toggle
- * - Cannot disable if BOOKED
- * - If HELD but expired => reset to OPEN first
+ * Artist only
  */
 router.patch("/:slotId/toggle", requireAuth, async (req, res) => {
   try {
@@ -210,7 +295,6 @@ router.patch("/:slotId/toggle", requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
-    // ✅ if held but expired, reset it
     if (slot.status === "HELD" && slot.heldUntil && slot.heldUntil < new Date()) {
       slot.status = "OPEN";
       slot.heldUntil = null;
@@ -218,11 +302,11 @@ router.patch("/:slotId/toggle", requireAuth, async (req, res) => {
       slot.bookingId = null;
     }
 
-    // cannot disable booked slot
     if (slot.status === "BOOKED" && status === "DISABLED") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Cannot disable a booked slot" });
+      return res.status(400).json({
+        success: false,
+        message: "Cannot disable a booked slot",
+      });
     }
 
     slot.status = status;
