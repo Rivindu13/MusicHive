@@ -646,3 +646,50 @@
   border-color: rgba(255,255,255,.45);
   box-shadow: 0 0 0 2px rgba(255,255,255,.12) inset;
 }
+
+.customerBookingArtistsPage .cbaWishBtn{
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: .18s ease;
+  flex: 0 0 auto;
+}
+
+.customerBookingArtistsPage .cbaWishBtn:hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.24);
+}
+
+.customerBookingArtistsPage .cbaWishBtn--active{
+  color: #ff5a8a;
+  border-color: rgba(255,90,138,.38);
+  background: rgba(255,90,138,.12);
+}
+
+.customerBookingArtistsPage .cbaCard__actions .cbaWishBtn{
+  margin-left: auto;
+}
+
+.customerBookingArtistsPage .cbaCard__actions .cbaBtn{
+  margin-left: 0;
+}
+
+.customerBookingArtistsPage .cbaProfileNameRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customerBookingArtistsPage .cbaWishBtn--drawer{
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}

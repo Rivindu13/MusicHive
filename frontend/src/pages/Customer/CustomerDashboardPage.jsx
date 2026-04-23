@@ -334,7 +334,12 @@ export default function CustomerDashboardPage() {
             <FiBell />
           </button>
 
-          <button className="artistDash__iconBtn" aria-label="Wishlist" type="button">
+          <button
+            className="artistDash__iconBtn"
+            type="button"
+            onClick={() => navigate("/customer/wishlist")}
+            title="Wishlist"
+            >
             <FiHeart />
           </button>
 

@@ -372,7 +372,12 @@ export default function CustomerMyChords() {
           <button className="chordsPage__iconBtn" aria-label="Notifications">
             <FiBell />
           </button>
-          <button className="chordsPage__iconBtn" aria-label="Favorites">
+          <button
+            className="artistDash__iconBtn"
+            type="button"
+            onClick={() => navigate("/customer/wishlist")}
+            title="Wishlist"
+            >
             <FiHeart />
           </button>
 

@@ -111,6 +111,9 @@ export default function CustomerBookingArtists() {
     JSON.parse(localStorage.getItem("profile")) ||
     null;
 
+  const preopenArtistUid = location.state?.openArtistUid || null;
+  const autoShowAvailability = !!location.state?.autoShowAvailability;
+
   const profilePic = profile?.photoURL || null;
   const fullName =
     profile?.name ||
@@ -119,12 +122,17 @@ export default function CustomerBookingArtists() {
     profile?.customerName ||
     "Customer";
 
+  const currentUid = profile?.uid || null;
+
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("All Genres");
 
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [wishlist, setWishlist] = useState([]);
+  const [wishlistBusyUid, setWishlistBusyUid] = useState(null);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openUid, setOpenUid] = useState(null);
@@ -178,10 +186,74 @@ export default function CustomerBookingArtists() {
     return await user.getIdToken();
   }
 
+  function isWished(artistUid) {
+    return wishlist.includes(artistUid);
+  }
+
+  async function loadWishlist(uid = currentUid) {
+    if (!uid) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/users/${uid}/wishlist`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to load wishlist");
+      }
+
+      setWishlist(Array.isArray(data.data) ? data.data : []);
+    } catch (err) {
+      console.error("Failed to load wishlist:", err);
+      setWishlist([]);
+    }
+  }
+
+  async function toggleWishlist(artistUid) {
+    if (!currentUid) {
+      alert("Please log in first");
+      return;
+    }
+
+    if (!artistUid) return;
+
+    setWishlistBusyUid(artistUid);
+    try {
+      const res = await fetch(`${API_BASE}/api/users/wishlist/toggle`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uid: currentUid,
+          artistUid,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to update wishlist");
+      }
+
+      setWishlist(Array.isArray(data.data) ? data.data : []);
+    } catch (err) {
+      console.error("Failed to toggle wishlist:", err);
+      alert(err.message || "Failed to update wishlist");
+    } finally {
+      setWishlistBusyUid(null);
+    }
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
   }, [navigate]);
+
+  useEffect(() => {
+    if (currentUid) {
+      loadWishlist(currentUid);
+    }
+  }, [currentUid]);
 
   const handleLogout = async () => {
     try {
@@ -533,6 +605,31 @@ export default function CustomerBookingArtists() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!preopenArtistUid) return;
+
+    const run = async () => {
+      await openDrawerFor(preopenArtistUid);
+
+      if (autoShowAvailability) {
+        await loadAvailabilityForArtist(preopenArtistUid);
+      }
+
+      navigate(location.pathname, {
+        replace: true,
+        state: { profile },
+      });
+    };
+
+    run();
+  }, [
+    preopenArtistUid,
+    autoShowAvailability,
+    navigate,
+    location.pathname,
+    profile,
+  ]);
+
   return (
     <div className="artistDash customerBookingArtistsPage">
       <aside className="artistDash__sidebar">
@@ -591,7 +688,14 @@ export default function CustomerBookingArtists() {
       <main className="artistDash__main">
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn"><FiBell /></button>
-          <button className="artistDash__iconBtn"><FiHeart /></button>
+          <button
+            className="artistDash__iconBtn"
+            type="button"
+            onClick={() => navigate("/customer/wishlist")}
+            title="Wishlist"
+          >
+            <FiHeart />
+          </button>
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">
@@ -647,6 +751,8 @@ export default function CustomerBookingArtists() {
           {!loading && !error &&
             artists.map((a) => {
               const price = `LKR ${a.artistProfile.pricePerHour.toLocaleString()} per event`;
+              const wished = isWished(a.uid);
+              const busy = wishlistBusyUid === a.uid;
 
               return (
                 <article className="cbaCard" key={a.uid}>
@@ -674,6 +780,16 @@ export default function CustomerBookingArtists() {
                       <div className="cbaCard__meta">{price}</div>
 
                       <div className="cbaCard__actions">
+                        <button
+                          type="button"
+                          className={`cbaWishBtn ${wished ? "cbaWishBtn--active" : ""}`}
+                          onClick={() => toggleWishlist(a.uid)}
+                          disabled={busy}
+                          title={wished ? "Remove from wishlist" : "Add to wishlist"}
+                        >
+                          <FiHeart />
+                        </button>
+
                         <button
                           className="cbaBtn cbaBtn--outline"
                           onClick={() => openDrawerFor(a.uid)}
@@ -725,7 +841,26 @@ export default function CustomerBookingArtists() {
                     }}
                   />
                   <div className="cbaProfileHeadTexts">
-                    <div className="cbaProfileName">{selectedArtist.name || "Artist"}</div>
+                    <div className="cbaProfileNameRow">
+                      <div className="cbaProfileName">{selectedArtist.name || "Artist"}</div>
+
+                      <button
+                        type="button"
+                        className={`cbaWishBtn cbaWishBtn--drawer ${
+                          isWished(selectedArtist.uid) ? "cbaWishBtn--active" : ""
+                        }`}
+                        onClick={() => toggleWishlist(selectedArtist.uid)}
+                        disabled={wishlistBusyUid === selectedArtist.uid}
+                        title={
+                          isWished(selectedArtist.uid)
+                            ? "Remove from wishlist"
+                            : "Add to wishlist"
+                        }
+                      >
+                        <FiHeart />
+                      </button>
+                    </div>
+
                     <div className="cbaProfileSub">
                       {(selectedArtist.role || "").toUpperCase()}{" "}
                       {selectedArtist.artistProfile?.location

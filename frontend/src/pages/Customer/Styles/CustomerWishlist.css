@@ -1,0 +1,434 @@
+.customerWishlistPage .cwHeader{
+  margin-top: 34px;
+}
+
+.customerWishlistPage .cwTitle{
+  margin: 0 0 8px 0;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.customerWishlistPage .cwSub{
+  margin: 0 0 18px 0;
+  color: rgba(255,255,255,.68);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.customerWishlistPage .cwGrid{
+  margin-top: 14px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  padding-bottom: 12px;
+}
+
+.customerWishlistPage .cwEmpty{
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+}
+
+.customerWishlistPage .cwCard{
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  overflow: hidden;
+}
+
+.customerWishlistPage .cwCard__top{
+  padding: 10px 12px 0 12px;
+}
+
+.customerWishlistPage .cwCard__genre{
+  font-size: 10px;
+  font-weight: 900;
+  color: rgba(255,255,255,.75);
+}
+
+.customerWishlistPage .cwCard__body{
+  display:flex;
+  gap: 12px;
+  padding: 10px 12px 14px 12px;
+  align-items:flex-start;
+}
+
+.customerWishlistPage .cwCard__img{
+  width: 84px;
+  height: 64px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerWishlistPage .cwCard__texts{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+.customerWishlistPage .cwCard__name{
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.customerWishlistPage .cwCard__meta{
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.60);
+}
+
+.customerWishlistPage .cwCard__actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.customerWishlistPage .cwCard__actions .cwBtn{
+  margin-left: auto;
+}
+
+.customerWishlistPage .cwWishBtn{
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: .18s ease;
+  flex: 0 0 auto;
+}
+
+.customerWishlistPage .cwWishBtn:hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.24);
+}
+
+.customerWishlistPage .cwWishBtn--active{
+  color: #ff5a8a;
+  border-color: rgba(255,90,138,.38);
+  background: rgba(255,90,138,.12);
+}
+
+.customerWishlistPage .cwBtn{
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 10px;
+  cursor:pointer;
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+.customerWishlistPage .cwBtn--outline{
+  background: rgba(255,255,255,.90);
+  color: rgba(36, 78, 255, 1);
+}
+
+@media (max-width: 1100px){
+  .customerWishlistPage .cwGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.customerWishlistPage .cwDrawerOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.customerWishlistPage .cwDrawer{
+  width: min(520px, 94vw);
+  height: 100vh;
+  background: rgba(14, 14, 30, .92);
+  border-left: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 30px 90px rgba(0,0,0,.65);
+  backdrop-filter: blur(12px);
+  padding: 16px 16px 18px 16px;
+  overflow-y: auto;
+}
+
+.customerWishlistPage .cwDrawer__top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 10px 8px 14px 8px;
+}
+
+.customerWishlistPage .cwDrawer__title{
+  font-weight: 900;
+  letter-spacing: .2px;
+  font-size: 16px;
+  color: rgba(255,255,255,.92);
+}
+
+.customerWishlistPage .cwDrawer__close{
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+
+.customerWishlistPage .cwDrawer__state{
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.75);
+  font-weight: 800;
+  margin: 6px 6px 10px 6px;
+}
+
+.customerWishlistPage .cwProfileCard{
+  margin: 0 6px 14px 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  padding: 14px;
+}
+
+.customerWishlistPage .cwProfileCard__head{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+}
+
+.customerWishlistPage .cwProfileAvatar{
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.18);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerWishlistPage .cwProfileHeadTexts{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+  flex: 1;
+}
+
+.customerWishlistPage .cwProfileNameRow{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customerWishlistPage .cwProfileName{
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.customerWishlistPage .cwWishBtn--drawer{
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.customerWishlistPage .cwProfileSub{
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.62);
+}
+
+.customerWishlistPage .cwProfileRatingRow{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.customerWishlistPage .cwProfileRatingText{
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.70);
+}
+
+.customerWishlistPage .cwProfileFields{
+  margin-top: 12px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.customerWishlistPage .cwField{
+  display:grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  align-items:flex-start;
+}
+
+.customerWishlistPage .cwField__label{
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.80);
+}
+
+.customerWishlistPage .cwField__value{
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+
+.customerWishlistPage .cwField__value--box{
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
+  min-height: 86px;
+  white-space: pre-wrap;
+}
+
+.customerWishlistPage .cwProfileActions{
+  display:flex;
+  justify-content:space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.customerWishlistPage .cwBigBtn{
+  flex: 1;
+  padding: 12px 12px;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 11px;
+  border: 1px solid rgba(255,255,255,.14);
+  cursor:pointer;
+}
+
+.customerWishlistPage .cwBigBtn--secondary{
+  background: rgba(34,211,201,.85);
+  color: #062422;
+  border-color: rgba(34,211,201,.35);
+}
+
+.customerWishlistPage .cwBigBtn--primary{
+  background: rgba(255,159,10,.95);
+  color: #1c1200;
+  border-color: rgba(255,159,10,.35);
+}
+
+.customerWishlistPage .cwReviewsSection{
+  margin: 0 6px 18px 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  padding: 14px;
+}
+
+.customerWishlistPage .cwReviewsTitle{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.customerWishlistPage .cwReviewsList{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+.customerWishlistPage .cwReviewCard{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.14);
+  padding: 12px;
+}
+
+.customerWishlistPage .cwReviewTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.customerWishlistPage .cwReviewAvatar{
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.20);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255,255,255,.12);
+  flex: 0 0 auto;
+}
+
+.customerWishlistPage .cwReviewInfo{
+  flex: 1;
+  display:flex;
+  flex-direction:column;
+  gap: 2px;
+}
+
+.customerWishlistPage .cwReviewName{
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.customerWishlistPage .cwReviewMeta{
+  font-weight: 800;
+  font-size: 10px;
+  color: rgba(255,255,255,.55);
+}
+
+.customerWishlistPage .cwReviewRating{
+  flex: 0 0 auto;
+}
+
+.customerWishlistPage .cwStars{
+  display:flex;
+  gap: 2px;
+  line-height: 1;
+}
+
+.customerWishlistPage .cwStar{
+  font-size: 12px;
+  color: rgba(255,255,255,.25);
+}
+
+.customerWishlistPage .cwStar--full{
+  color: rgba(255, 215, 90, .95);
+}
+
+.customerWishlistPage .cwStar--half{
+  color: rgba(255, 215, 90, .65);
+}
+
+.customerWishlistPage .cwReviewComment{
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255,255,255,.72);
+}
+
+.customerWishlistPage .cwReviewComment--muted{
+  color: rgba(255,255,255,.45);
+}

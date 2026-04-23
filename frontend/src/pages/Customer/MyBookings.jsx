@@ -500,7 +500,14 @@ export default function CustomerMyBookingsPage() {
       <main className="artistDash__main">
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn" type="button"><FiBell /></button>
-          <button className="artistDash__iconBtn" type="button"><FiHeart /></button>
+          <button
+            className="artistDash__iconBtn"
+            type="button"
+            onClick={() => navigate("/customer/wishlist")}
+            title="Wishlist"
+            >
+            <FiHeart />
+          </button>
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">

@@ -10,6 +10,7 @@ import {
   FiStar,
   FiUser,
   FiLogOut,
+  FiHeart,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
@@ -120,7 +121,6 @@ export default function OrganizerReviews() {
 
   return (
     <div className="artistDash organizerReviewsPage">
-      {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -188,11 +188,20 @@ export default function OrganizerReviews() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="artistDash__main">
         <div className="artistDash__topbar">
           <button className="artistDash__iconBtn" aria-label="Notifications">
             <FiBell />
+          </button>
+
+          <button
+            className="artistDash__iconBtn"
+            type="button"
+            onClick={() => navigate("/customer/wishlist")}
+            title="Wishlist"
+            aria-label="Wishlist"
+          >
+            <FiHeart />
           </button>
 
           <div className="artistDash__user">
@@ -215,7 +224,6 @@ export default function OrganizerReviews() {
           </div>
         </div>
 
-        {/* Header */}
         <section className="reviewsHeroCard">
           <div className="reviewsHeroCard__left">
             <h1 className="reviewsHeroCard__title">Reviews</h1>
@@ -238,7 +246,6 @@ export default function OrganizerReviews() {
           </div>
         </section>
 
-        {/* Reviews list */}
         <section className="reviewsStack">
           {loading && (
             <div className="reviewsEmptyState">Loading reviews...</div>
@@ -290,7 +297,6 @@ export default function OrganizerReviews() {
             ))}
         </section>
 
-        {/* Footer */}
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">

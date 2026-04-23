@@ -14,6 +14,14 @@ const userSchema = new mongoose.Schema({
   photoURL: { type: String, default: null },
 
   // =========================
+  // ⭐ Wishlist (NEW)
+  // =========================
+  wishlist: {
+    type: [String], // artist UIDs
+    default: [],
+  },
+
+  // =========================
   // Artist / Band profile
   // =========================
   artistProfile: {

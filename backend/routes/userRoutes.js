@@ -24,6 +24,7 @@ router.post("/", async (req, res) => {
         role,
         name: name || "",
         photoURL: photoURL || null,
+        wishlist: [],
       });
     }
 
@@ -78,6 +79,202 @@ router.get("/artists", async (req, res) => {
 });
 
 /**
+ * Get wishlist by user uid
+ */
+router.get("/:uid/wishlist", async (req, res) => {
+  try {
+    const user = await User.findOne({ uid: req.params.uid }).select("uid role wishlist");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: user.wishlist || [],
+    });
+  } catch (err) {
+    console.error("GET /users/:uid/wishlist error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
+
+/**
+ * Toggle wishlist
+ * POST /api/users/wishlist/toggle
+ */
+router.post("/wishlist/toggle", async (req, res) => {
+  try {
+    const { uid, artistUid } = req.body;
+
+    if (!uid || !artistUid) {
+      return res.status(400).json({
+        success: false,
+        message: "uid and artistUid are required",
+      });
+    }
+
+    const user = await User.findOne({ uid });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.role !== "organizer") {
+      return res.status(403).json({
+        success: false,
+        message: "Only organizers can use wishlist",
+      });
+    }
+
+    const artist = await User.findOne({
+      uid: artistUid,
+      role: { $in: ["artist", "band"] },
+    }).select("uid");
+
+    if (!artist) {
+      return res.status(404).json({
+        success: false,
+        message: "Artist not found",
+      });
+    }
+
+    if (!Array.isArray(user.wishlist)) {
+      user.wishlist = [];
+    }
+
+    const alreadySaved = user.wishlist.includes(artistUid);
+
+    if (alreadySaved) {
+      user.wishlist = user.wishlist.filter((id) => id !== artistUid);
+    } else {
+      user.wishlist.push(artistUid);
+    }
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: alreadySaved
+        ? "Removed from wishlist"
+        : "Added to wishlist",
+      data: user.wishlist,
+      wished: !alreadySaved,
+    });
+  } catch (err) {
+    console.error("POST /users/wishlist/toggle error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
+
+/**
+ * Remove one artist from wishlist
+ * POST /api/users/wishlist/remove
+ */
+router.post("/wishlist/remove", async (req, res) => {
+  try {
+    const { uid, artistUid } = req.body;
+
+    if (!uid || !artistUid) {
+      return res.status(400).json({
+        success: false,
+        message: "uid and artistUid are required",
+      });
+    }
+
+    const user = await User.findOne({ uid });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!Array.isArray(user.wishlist)) {
+      user.wishlist = [];
+    }
+
+    user.wishlist = user.wishlist.filter((id) => id !== artistUid);
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Removed from wishlist",
+      data: user.wishlist,
+    });
+  } catch (err) {
+    console.error("POST /users/wishlist/remove error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
+
+/**
+ * Get full artist objects for a user's wishlist
+ * GET /api/users/:uid/wishlist/artists
+ */
+router.get("/:uid/wishlist/artists", async (req, res) => {
+  try {
+    const user = await User.findOne({ uid: req.params.uid }).select("wishlist");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const wishlistIds = Array.isArray(user.wishlist) ? user.wishlist : [];
+
+    if (wishlistIds.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const artists = await User.find({
+      uid: { $in: wishlistIds },
+      role: { $in: ["artist", "band"] },
+    })
+      .select(
+        "uid name role photoURL artistProfile.location artistProfile.genres artistProfile.pricePerHour artistProfile.instruments artistProfile.bio"
+      )
+      .lean();
+
+    const sortedArtists = wishlistIds
+      .map((id) => artists.find((artist) => artist.uid === id))
+      .filter(Boolean);
+
+    return res.json({
+      success: true,
+      data: sortedArtists,
+    });
+  } catch (err) {
+    console.error("GET /users/:uid/wishlist/artists error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
+
+/**
  * Get single user by uid
  */
 router.get("/:uid", async (req, res) => {
@@ -115,9 +312,6 @@ router.patch("/:uid/profile", async (req, res) => {
       organizerProfile = {},
     } = req.body;
 
-    // =========================
-    // Top-level common fields
-    // =========================
     if (typeof name === "string") {
       user.name = name.trim();
     }
@@ -126,9 +320,6 @@ router.patch("/:uid/profile", async (req, res) => {
       user.photoURL = photoURL;
     }
 
-    // =========================
-    // Artist / Band update
-    // =========================
     if ((user.role === "artist" || user.role === "band") && artistProfile) {
       if (typeof artistProfile.bio === "string") {
         user.artistProfile.bio = artistProfile.bio;
@@ -188,9 +379,6 @@ router.patch("/:uid/profile", async (req, res) => {
       }
     }
 
-    // =========================
-    // Organizer update
-    // =========================
     if (user.role === "organizer" && organizerProfile) {
       if (typeof organizerProfile.phone === "string") {
         user.organizerProfile.phone = organizerProfile.phone;

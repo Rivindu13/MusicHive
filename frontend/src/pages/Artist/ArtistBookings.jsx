@@ -11,13 +11,6 @@ import {
   FiStar,
   FiUser,
   FiLogOut,
-  FiMail,
-  FiPhone,
-  FiMapPin,
-  FiGlobe,
-  FiBriefcase,
-  FiTag,
-  FiDollarSign,
   FiFileText,
   FiChevronDown,
   FiChevronUp,
@@ -128,6 +121,11 @@ export default function ArtistBookings() {
   }, [navigate]);
 
   useEffect(() => {
+    console.log("profile:", profile);
+    console.log("artistUid:", artistUid);
+  }, [profile, artistUid]);
+
+  useEffect(() => {
     if (activeTab !== "REQUESTS") {
       setSelectedRequestId(null);
     }
@@ -152,23 +150,39 @@ export default function ArtistBookings() {
 
   const groupedByDate = useMemo(() => {
     const map = new Map();
+
     for (const s of slots) {
-      if (!map.has(s.date)) map.set(s.date, { MORNING: null, EVENING: null });
+      if (!s?.date) continue;
+      if (!map.has(s.date)) {
+        map.set(s.date, { MORNING: null, EVENING: null });
+      }
       map.get(s.date)[s.slotType] = s;
     }
+
     const dates = Array.from(map.keys()).sort();
     return dates.map((d) => ({ date: d, ...map.get(d) }));
   }, [slots]);
 
   async function ensureSlots() {
-    if (!artistUid) return;
+    if (!artistUid) {
+      console.error("No artistUid found in profile");
+      return;
+    }
+
     setEnsuring(true);
     try {
-      await fetch(`${API_BASE}/api/availability/ensure`, {
+      const res = await authFetch(`${API_BASE}/api/availability/ensure`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ artistUid }),
       });
+
+      const data = await res.json();
+      console.log("ensureSlots response:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Ensure slots failed");
+      }
     } catch (e) {
       console.error("Ensure slots failed:", e);
     } finally {
@@ -177,14 +191,33 @@ export default function ArtistBookings() {
   }
 
   async function loadSlots() {
-    if (!artistUid) return;
+    if (!artistUid) {
+      console.error("No artistUid found in profile");
+      return;
+    }
+
     setLoadingSlots(true);
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${API_BASE}/api/availability/artist/${artistUid}?from=${range.from}&to=${range.to}`
       );
+
       const data = await res.json();
-      setSlots(Array.isArray(data.data) ? data.data : []);
+      console.log("loadSlots response:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Load slots failed");
+      }
+
+      const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data.data)
+        ? data.data
+        : Array.isArray(data.slots)
+        ? data.slots
+        : [];
+
+      setSlots(rows);
     } catch (e) {
       console.error("Load slots failed:", e);
       setSlots([]);
@@ -222,10 +255,15 @@ export default function ArtistBookings() {
   async function loadUpcoming() {
     if (!artistUid) return;
     setLoadingUpcoming(true);
+
     try {
       const [acceptedRes, confirmedRes] = await Promise.all([
-        authFetch(`${API_BASE}/api/bookings/artist/${artistUid}?status=ACCEPTED`),
-        authFetch(`${API_BASE}/api/bookings/artist/${artistUid}?status=CONFIRMED`),
+        authFetch(
+          `${API_BASE}/api/bookings/artist/${artistUid}?status=ACCEPTED`
+        ),
+        authFetch(
+          `${API_BASE}/api/bookings/artist/${artistUid}?status=CONFIRMED`
+        ),
       ]);
 
       const accepted = await acceptedRes.json();
@@ -248,12 +286,16 @@ export default function ArtistBookings() {
   }
 
   useEffect(() => {
-    if (!artistUid) return;
+    if (!artistUid) {
+      console.error("artistUid is missing from profile");
+      return;
+    }
+
     (async () => {
       await ensureSlots();
       await loadSlots();
     })();
-  }, [artistUid]);
+  }, [artistUid, range.from, range.to]);
 
   useEffect(() => {
     if (!artistUid) return;
@@ -267,7 +309,7 @@ export default function ArtistBookings() {
 
     const nextStatus = slot.status === "OPEN" ? "DISABLED" : "OPEN";
 
-    const prevSlots = slots;
+    const prevSlots = [...slots];
     setSlots((old) =>
       old.map((s) => (s._id === slot._id ? { ...s, status: nextStatus } : s))
     );
@@ -411,7 +453,9 @@ export default function ArtistBookings() {
 
         <nav className="artistDash__nav">
           <a className="artistDash__navItem" href="/artist/dashboard">
-            <span className="artistDash__navIcon"><FiHome /></span>
+            <span className="artistDash__navIcon">
+              <FiHome />
+            </span>
             <span>Overview</span>
           </a>
 
@@ -419,24 +463,32 @@ export default function ArtistBookings() {
             className="artistDash__navItem artistDash__navItem--active"
             href="/artist/bookings"
           >
-            <span className="artistDash__navIcon"><FiCalendar /></span>
+            <span className="artistDash__navIcon">
+              <FiCalendar />
+            </span>
             <span>Bookings</span>
           </a>
 
           <a className="artistDash__navItem" href="/artist/chords">
-            <span className="artistDash__navIcon"><FiMusic /></span>
+            <span className="artistDash__navIcon">
+              <FiMusic />
+            </span>
             <span>Chord Library</span>
           </a>
 
           <a className="artistDash__navItem" href="/artist/reviews">
-            <span className="artistDash__navIcon"><FiStar /></span>
+            <span className="artistDash__navIcon">
+              <FiStar />
+            </span>
             <span>Reviews</span>
           </a>
         </nav>
 
         <div className="artistDash__sideBottom">
           <a className="artistDash__sideAction" href="/artist/profile">
-            <span className="artistDash__navIcon"><FiUser /></span>
+            <span className="artistDash__navIcon">
+              <FiUser />
+            </span>
             <span>Profile</span>
           </a>
 
@@ -445,7 +497,9 @@ export default function ArtistBookings() {
             className="artistDash__sideAction"
             onClick={handleLogout}
           >
-            <span className="artistDash__navIcon"><FiLogOut /></span>
+            <span className="artistDash__navIcon">
+              <FiLogOut />
+            </span>
             <span>Log out</span>
           </button>
         </div>
@@ -480,7 +534,9 @@ export default function ArtistBookings() {
         <section className="bookingsHeroCard">
           <div className="bookingsHeroCard__left">
             <h1 className="bookingsHeroCard__title">Bookings</h1>
-            <p className="bookingsHeroCard__sub">Availability • Requests • Accepted</p>
+            <p className="bookingsHeroCard__sub">
+              Availability • Requests • Accepted
+            </p>
           </div>
 
           <div className="bookingsHeroCard__right">
@@ -508,7 +564,9 @@ export default function ArtistBookings() {
           <div className="bookingsTabs">
             <button
               type="button"
-              className={`bookingsTab ${activeTab === "AVAILABILITY" ? "bookingsTab--active" : ""}`}
+              className={`bookingsTab ${
+                activeTab === "AVAILABILITY" ? "bookingsTab--active" : ""
+              }`}
               onClick={() => setActiveTab("AVAILABILITY")}
             >
               Availability
@@ -516,7 +574,9 @@ export default function ArtistBookings() {
 
             <button
               type="button"
-              className={`bookingsTab ${activeTab === "REQUESTS" ? "bookingsTab--active" : ""}`}
+              className={`bookingsTab ${
+                activeTab === "REQUESTS" ? "bookingsTab--active" : ""
+              }`}
               onClick={() => setActiveTab("REQUESTS")}
             >
               Requests
@@ -527,7 +587,9 @@ export default function ArtistBookings() {
 
             <button
               type="button"
-              className={`bookingsTab ${activeTab === "UPCOMING" ? "bookingsTab--active" : ""}`}
+              className={`bookingsTab ${
+                activeTab === "UPCOMING" ? "bookingsTab--active" : ""
+              }`}
               onClick={() => setActiveTab("UPCOMING")}
             >
               Accepted
@@ -544,7 +606,8 @@ export default function ArtistBookings() {
 
               {!loadingSlots && groupedByDate.length === 0 && (
                 <div className="bookingsEmptyState">
-                  No slots found. Click Refresh to generate slots for the next 30 days.
+                  No slots found. Click Refresh to generate slots for the next 30
+                  days.
                 </div>
               )}
 
@@ -556,7 +619,9 @@ export default function ArtistBookings() {
                         <div className="availabilityRowCard__day">
                           {humanDate(row.date)}
                         </div>
-                        <div className="availabilityRowCard__ymd">{row.date}</div>
+                        <div className="availabilityRowCard__ymd">
+                          {row.date}
+                        </div>
                       </div>
 
                       <div className="availabilityRowCard__slots">
@@ -566,7 +631,9 @@ export default function ArtistBookings() {
                             row.MORNING?.status || "OPEN"
                           ).toLowerCase()}`}
                           onClick={() => toggleSlot(row.MORNING)}
-                          disabled={!row.MORNING || row.MORNING.status === "BOOKED"}
+                          disabled={
+                            !row.MORNING || row.MORNING.status === "BOOKED"
+                          }
                         >
                           <span className="slotChip__title">Morning</span>
                           <span className="slotChip__meta">
@@ -583,7 +650,9 @@ export default function ArtistBookings() {
                             row.EVENING?.status || "OPEN"
                           ).toLowerCase()}`}
                           onClick={() => toggleSlot(row.EVENING)}
-                          disabled={!row.EVENING || row.EVENING.status === "BOOKED"}
+                          disabled={
+                            !row.EVENING || row.EVENING.status === "BOOKED"
+                          }
                         >
                           <span className="slotChip__title">Evening</span>
                           <span className="slotChip__meta">
@@ -608,7 +677,9 @@ export default function ArtistBookings() {
               )}
 
               {!loadingRequests && requests.length === 0 && (
-                <div className="bookingsEmptyState">No pending requests right now.</div>
+                <div className="bookingsEmptyState">
+                  No pending requests right now.
+                </div>
               )}
 
               {!loadingRequests && requests.length > 0 && (
@@ -620,7 +691,9 @@ export default function ArtistBookings() {
 
                     return (
                       <div
-                        className={`requestExpandCard ${isOpen ? "requestExpandCard--open" : ""}`}
+                        className={`requestExpandCard ${
+                          isOpen ? "requestExpandCard--open" : ""
+                        }`}
                         key={b._id}
                       >
                         <button
@@ -648,7 +721,9 @@ export default function ArtistBookings() {
                               </div>
 
                               <div className="requestExpandCard__meta">
-                                <span>{safeText(customer.name, "Unknown customer")}</span>
+                                <span>
+                                  {safeText(customer.name, "Unknown customer")}
+                                </span>
                                 <span className="requestExpandCard__dot">•</span>
                                 <span>
                                   {safeText(
@@ -715,7 +790,9 @@ export default function ArtistBookings() {
                                 <div className="detailItem">
                                   <span className="detailItem__label">Price</span>
                                   <span className="detailItem__value">
-                                    {b.price != null ? `Rs. ${b.price}` : "Not set"}
+                                    {b.price != null
+                                      ? `Rs. ${b.price}`
+                                      : "Not set"}
                                   </span>
                                 </div>
 
@@ -802,7 +879,9 @@ export default function ArtistBookings() {
                             </span>
                             <span className="upcomingRowCard__dot">•</span>
                             Status:{" "}
-                            <span className="upcomingRowCard__status">{b.status}</span>
+                            <span className="upcomingRowCard__status">
+                              {b.status}
+                            </span>
                           </div>
 
                           {b.canReviewOrganizer && (
