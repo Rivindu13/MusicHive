@@ -12,6 +12,7 @@ import availabilityRoutes from "./routes/availabilityRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import { startHoldExpiryJob } from "./jobs/holdExpiryJobs.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 
 startHoldExpiryJob();
@@ -34,6 +35,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 app.listen(5000, () => console.log("Backend running on port 5000"));

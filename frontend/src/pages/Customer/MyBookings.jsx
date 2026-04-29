@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-
+import NotificationBell from "../../components/NotificationBell";
 import "../Artist/styles/ArtistDashboard.css";
 import "./Styles/MyBookings.css";
 
@@ -499,7 +499,7 @@ export default function CustomerMyBookingsPage() {
 
       <main className="artistDash__main">
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" type="button"><FiBell /></button>
+          <NotificationBell uid={profile?.uid} />
           <button
             className="artistDash__iconBtn"
             type="button"

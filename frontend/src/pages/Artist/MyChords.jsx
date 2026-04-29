@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import NotificationBell from "../../components/NotificationBell";
 import { storage, auth } from "../../firebase";
 import { signOut } from "firebase/auth";
 import {
@@ -446,9 +447,7 @@ export default function MyChords() {
 
       <main className="chordsPage__main">
         <div className="chordsPage__topbar">
-          <button className="chordsPage__iconBtn" aria-label="Notifications">
-            <FiBell />
-          </button>
+          <NotificationBell uid={uid} buttonClassName="chordsPage__iconBtn" />
 
           <div className="chordsPage__user">
             <div className="chordsPage__avatarWrap">

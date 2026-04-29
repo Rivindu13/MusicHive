@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
+import NotificationBell from "../../components/NotificationBell";
 import "../Artist/styles/ArtistDashboard.css";
 import "./Styles/CustomerProfile.css";
 
@@ -246,9 +246,7 @@ export default function CustomerProfile() {
       <main className="artistDash__main">
         {/* Topbar */}
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" aria-label="Notifications">
-            <FiBell />
-          </button>
+          <NotificationBell uid={profile?.uid} />
 
           <button
             className="artistDash__iconBtn"

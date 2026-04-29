@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./styles/ArtistBookings.css";
 import { authFetch } from "../../utils/authFetch";
+import NotificationBell from "../../components/NotificationBell";
 
 import {
   FiBell,
@@ -507,9 +508,7 @@ export default function ArtistBookings() {
 
       <main className="artistDash__main">
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" aria-label="Notifications">
-            <FiBell />
-          </button>
+          <NotificationBell uid={profile?.uid} />
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">

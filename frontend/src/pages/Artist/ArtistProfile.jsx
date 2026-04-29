@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import NotificationBell from "../../components/NotificationBell";
 import "./styles/ArtistDashboard.css"; // keep your dashboard layout styles
 import "./styles/ArtistProfile.css";   // NEW profile styles
 
@@ -289,9 +289,7 @@ export default function ArtistProfile() {
       <main className="artistDash__main">
         {/* Top bar */}
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" aria-label="Notifications">
-            <FiBell />
-          </button>
+          <NotificationBell uid={profile?.uid} />
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">

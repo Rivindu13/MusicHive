@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
+import NotificationBell from "../../components/NotificationBell";
 import { storage, auth } from "../../firebase";
 import { signOut } from "firebase/auth";
 import {
@@ -258,6 +259,12 @@ export default function CustomerMyChords() {
     try {
       const res = await fetch(`${API_BASE}/api/chords/${chord._id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          uid,
+        }),
       });
 
       const data = await res.json();
@@ -369,9 +376,7 @@ export default function CustomerMyChords() {
 
       <main className="chordsPage__main">
         <div className="chordsPage__topbar">
-          <button className="chordsPage__iconBtn" aria-label="Notifications">
-            <FiBell />
-          </button>
+          <NotificationBell uid={uid} buttonClassName="chordsPage__iconBtn" />
           <button
             className="artistDash__iconBtn"
             type="button"

@@ -623,3 +623,95 @@ button.artistDash__sideAction:focus-visible{
     width:100%;
   }
 }
+
+.notificationWrap {
+  position: relative;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff3b3b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notificationPopup {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 320px;
+  background: #111;
+  color: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  z-index: 9999;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.35);
+}
+
+.notificationPopup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.notificationPopup__header h4 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.notificationPopup__header button {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.notificationPopup__empty {
+  text-align: center;
+  color: #aaa;
+  margin: 18px 0;
+  font-size: 14px;
+}
+
+.notificationPopup__item {
+  padding: 12px;
+  border-radius: 10px;
+  background: #1f1f1f;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.notificationPopup__item:hover {
+  background: #2a2a2a;
+}
+
+.notificationPopup__item strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.notificationPopup__item p {
+  margin: 0;
+  color: #ddd;
+  font-size: 13px;
+}
+
+.notificationPopup__item span {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #999;
+}

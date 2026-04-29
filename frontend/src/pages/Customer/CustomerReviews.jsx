@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./Styles/CustomerReviews.css";
-
+import NotificationBell from "../../components/NotificationBell";
 import {
   FiBell,
   FiHome,
@@ -190,9 +190,7 @@ export default function OrganizerReviews() {
 
       <main className="artistDash__main">
         <div className="artistDash__topbar">
-          <button className="artistDash__iconBtn" aria-label="Notifications">
-            <FiBell />
-          </button>
+          <NotificationBell uid={profile?.uid} />
 
           <button
             className="artistDash__iconBtn"

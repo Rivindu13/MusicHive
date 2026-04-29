@@ -10,6 +10,7 @@ import Review from "../models/review.js";
 import { BOOKING_PENDING_HOURS } from "../config/bookingConstants.js";
 import { tomorrowYMD } from "../utils/date.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { createNotification } from "../controllers/notificationController.js";
 
 function isValidYMD(s) {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -76,7 +77,11 @@ function mapArtist(user) {
 function isPastBookingDate(ymd) {
   if (!ymd) return false;
   const today = new Date();
-  const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const localToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
 
   const [year, month, day] = ymd.split("-").map(Number);
   const bookingDay = new Date(year, month - 1, day);
@@ -121,7 +126,13 @@ function formatAmount(amount) {
   return Number(amount || 0).toFixed(2);
 }
 
-function generatePayHereHash({ merchantId, orderId, amount, currency, merchantSecret }) {
+function generatePayHereHash({
+  merchantId,
+  orderId,
+  amount,
+  currency,
+  merchantSecret,
+}) {
   const hashedSecret = crypto
     .createHash("md5")
     .update(merchantSecret)
@@ -167,31 +178,42 @@ router.post("/request", requireAuth, async (req, res) => {
     const { slotId, note } = req.body || {};
 
     if (!slotId) {
-      return res.status(400).json({ success: false, message: "slotId is required" });
+      return res.status(400).json({
+        success: false,
+        message: "slotId is required",
+      });
     }
 
     const now = new Date();
 
     const slot = await AvailabilitySlot.findById(slotId);
     if (!slot) {
-      return res.status(404).json({ success: false, message: "Slot not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Slot not found",
+      });
     }
 
     const minDate = tomorrowYMD();
     if (!isValidYMD(slot.date) || slot.date < minDate) {
-      return res
-        .status(400)
-        .json({ success: false, message: `Booking allowed from ${minDate}` });
+      return res.status(400).json({
+        success: false,
+        message: `Booking allowed from ${minDate}`,
+      });
     }
 
     if (slot.status !== "HELD") {
-      return res.status(409).json({ success: false, message: "Slot is not held" });
+      return res.status(409).json({
+        success: false,
+        message: "Slot is not held",
+      });
     }
 
     if (!slot.heldBy || slot.heldBy !== customerUid) {
-      return res
-        .status(403)
-        .json({ success: false, message: "This slot is not held by you" });
+      return res.status(403).json({
+        success: false,
+        message: "This slot is not held by you",
+      });
     }
 
     if (!slot.heldUntil || slot.heldUntil < now) {
@@ -200,9 +222,10 @@ router.post("/request", requireAuth, async (req, res) => {
         { $set: { status: "OPEN", heldBy: null, heldUntil: null } }
       );
 
-      return res
-        .status(409)
-        .json({ success: false, message: "Hold expired. Please select again." });
+      return res.status(409).json({
+        success: false,
+        message: "Hold expired. Please select again.",
+      });
     }
 
     const existingActiveBooking = await Booking.findOne({
@@ -237,12 +260,15 @@ router.post("/request", requireAuth, async (req, res) => {
     );
 
     if (!reservedSlot) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Slot could not be reserved" });
+      return res.status(409).json({
+        success: false,
+        message: "Slot could not be reserved",
+      });
     }
 
-    const artistUser = await User.findOne({ uid: reservedSlot.artistUid }).lean();
+    const artistUser = await User.findOne({
+      uid: reservedSlot.artistUid,
+    }).lean();
 
     if (!artistUser) {
       reservedSlot.status = "OPEN";
@@ -286,12 +312,25 @@ router.post("/request", requireAuth, async (req, res) => {
     reservedSlot.bookingId = booking._id;
     await reservedSlot.save();
 
+    // 🔔 Notification for artist
+    await createNotification({
+      recipientUid: booking.artistUid,
+      senderUid: booking.customerUid,
+      type: "NEW_BOOKING",
+      title: "New Booking Request",
+      message: "You have received a new booking request.",
+      link: "/artist/bookings",
+    });
+
     return res.status(201).json({
       success: true,
       data: { booking, slot: reservedSlot },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -301,34 +340,46 @@ router.post("/request", requireAuth, async (req, res) => {
 router.patch("/:id/accept", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
+
     if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
     }
 
     if (booking.artistUid !== req.user.uid) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     if (booking.status !== "PENDING") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Booking must be PENDING" });
+      return res.status(400).json({
+        success: false,
+        message: "Booking must be PENDING",
+      });
     }
 
     if (booking.expiresAt && booking.expiresAt < new Date()) {
       booking.status = "EXPIRED";
       await booking.save();
-      return res
-        .status(409)
-        .json({ success: false, message: "Booking request expired" });
+
+      return res.status(409).json({
+        success: false,
+        message: "Booking request expired",
+      });
     }
 
     if (isPastBookingDate(booking.date)) {
       booking.status = "EXPIRED";
       await booking.save();
-      return res
-        .status(409)
-        .json({ success: false, message: "Booking request date has passed" });
+
+      return res.status(409).json({
+        success: false,
+        message: "Booking request date has passed",
+      });
     }
 
     const slot = await AvailabilitySlot.findOne({
@@ -340,7 +391,10 @@ router.patch("/:id/accept", requireAuth, async (req, res) => {
     });
 
     if (!slot) {
-      return res.status(400).json({ success: false, message: "Slot link mismatch" });
+      return res.status(400).json({
+        success: false,
+        message: "Slot link mismatch",
+      });
     }
 
     booking.status = "ACCEPTED";
@@ -351,9 +405,25 @@ router.patch("/:id/accept", requireAuth, async (req, res) => {
     slot.heldBy = null;
     await slot.save();
 
-    return res.json({ success: true, data: { booking, slot } });
+    // 🔔 Notification for customer / event planner
+    await createNotification({
+      recipientUid: booking.customerUid,
+      senderUid: booking.artistUid,
+      type: "BOOKING_ACCEPTED",
+      title: "Booking Accepted",
+      message: "Your booking request has been accepted by the artist.",
+      link: "/customer/my-bookings",
+    });
+
+    return res.json({
+      success: true,
+      data: { booking, slot },
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -363,18 +433,26 @@ router.patch("/:id/accept", requireAuth, async (req, res) => {
 router.patch("/:id/reject", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
+
     if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
     }
 
     if (booking.artistUid !== req.user.uid) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     if (booking.status !== "PENDING") {
-      return res
-        .status(400)
-        .json({ success: false, message: "Booking must be PENDING" });
+      return res.status(400).json({
+        success: false,
+        message: "Booking must be PENDING",
+      });
     }
 
     const slot = await AvailabilitySlot.findOne({
@@ -395,9 +473,15 @@ router.patch("/:id/reject", requireAuth, async (req, res) => {
       await slot.save();
     }
 
-    return res.json({ success: true, data: { booking } });
+    return res.json({
+      success: true,
+      data: { booking },
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -410,7 +494,10 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
     const { status } = req.query;
 
     if (uid !== req.user.uid) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     await expireOldPendingBookingsForArtist(uid);
@@ -420,7 +507,9 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
 
     const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
 
-    const customerUids = [...new Set(bookings.map((b) => b.customerUid).filter(Boolean))];
+    const customerUids = [
+      ...new Set(bookings.map((b) => b.customerUid).filter(Boolean)),
+    ];
 
     const customers = await User.find({ uid: { $in: customerUids } })
       .select(
@@ -431,7 +520,13 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
     const customerMap = new Map(customers.map((u) => [u.uid, mapCustomer(u)]));
 
     let artistReviewBookingIds = [];
-    if (["ACCEPTED", "CONFIRMED", "COMPLETED"].includes(String(status).toUpperCase()) || !status) {
+
+    if (
+      ["ACCEPTED", "CONFIRMED", "COMPLETED"].includes(
+        String(status).toUpperCase()
+      ) ||
+      !status
+    ) {
       const reviews = await Review.find({
         reviewerUid: uid,
         reviewerRole: "ARTIST",
@@ -444,7 +539,9 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
 
     const enriched = bookings.map((booking) => {
       const isPast = isPastBookingDate(booking.date);
-      const artistReviewGiven = artistReviewBookingIds.includes(String(booking._id));
+      const artistReviewGiven = artistReviewBookingIds.includes(
+        String(booking._id)
+      );
 
       return {
         ...booking,
@@ -458,9 +555,15 @@ router.get("/artist/:uid", requireAuth, async (req, res) => {
       };
     });
 
-    return res.json({ success: true, data: enriched });
+    return res.json({
+      success: true,
+      data: enriched,
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -473,7 +576,10 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
     const { status } = req.query;
 
     if (uid !== req.user.uid) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     const query = { customerUid: uid };
@@ -481,7 +587,9 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
 
     const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
 
-    const artistUids = [...new Set(bookings.map((b) => b.artistUid).filter(Boolean))];
+    const artistUids = [
+      ...new Set(bookings.map((b) => b.artistUid).filter(Boolean)),
+    ];
 
     const artists = await User.find({ uid: { $in: artistUids } })
       .select(
@@ -496,9 +604,15 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
       artist: artistMap.get(booking.artistUid) || null,
     }));
 
-    return res.json({ success: true, data: enriched });
+    return res.json({
+      success: true,
+      data: enriched,
+    });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -508,12 +622,19 @@ router.get("/customer/:uid", requireAuth, async (req, res) => {
 router.post("/:id/init-payment", requireAuth, async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
+
     if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
     }
 
     if (booking.customerUid !== req.user.uid) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     if (booking.status !== "ACCEPTED") {
@@ -538,8 +659,12 @@ router.post("/:id/init-payment", requireAuth, async (req, res) => {
     }
 
     const user = await User.findOne({ uid: booking.customerUid }).lean();
+
     if (!user) {
-      return res.status(404).json({ success: false, message: "Customer not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
     }
 
     const merchantId = process.env.PAYHERE_MERCHANT_ID;
@@ -602,7 +727,10 @@ router.post("/:id/init-payment", requireAuth, async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 
@@ -654,6 +782,7 @@ router.post("/payhere/notify", async (req, res) => {
     }
 
     const booking = await Booking.findOne({ payhereOrderId: order_id });
+
     if (!booking) {
       return res.status(404).send("Booking not found");
     }
@@ -690,11 +819,17 @@ router.get("/:id/payment-status", requireAuth, async (req, res) => {
     const booking = await Booking.findById(req.params.id).lean();
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
     }
 
     if (booking.customerUid !== req.user.uid) {
-      return res.status(403).json({ success: false, message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     return res.json({
@@ -710,7 +845,10 @@ router.get("/:id/payment-status", requireAuth, async (req, res) => {
       },
     });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 });
 

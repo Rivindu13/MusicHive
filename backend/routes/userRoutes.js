@@ -1,7 +1,18 @@
 import express from "express";
 import User from "../models/User.js";
+import { bucket } from "../config/firebaseAdmin.js";
 
 const router = express.Router();
+
+function getFirebasePathFromUrl(fileUrl) {
+  try {
+    const decodedUrl = decodeURIComponent(fileUrl);
+    const match = decodedUrl.match(/\/o\/(.+?)\?/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Create user
@@ -83,7 +94,9 @@ router.get("/artists", async (req, res) => {
  */
 router.get("/:uid/wishlist", async (req, res) => {
   try {
-    const user = await User.findOne({ uid: req.params.uid }).select("uid role wishlist");
+    const user = await User.findOne({ uid: req.params.uid }).select(
+      "uid role wishlist"
+    );
 
     if (!user) {
       return res.status(404).json({
@@ -164,9 +177,7 @@ router.post("/wishlist/toggle", async (req, res) => {
 
     return res.json({
       success: true,
-      message: alreadySaved
-        ? "Removed from wishlist"
-        : "Added to wishlist",
+      message: alreadySaved ? "Removed from wishlist" : "Added to wishlist",
       data: user.wishlist,
       wished: !alreadySaved,
     });
@@ -316,7 +327,22 @@ router.patch("/:uid/profile", async (req, res) => {
       user.name = name.trim();
     }
 
+    // Delete old Firebase profile photo when new photoURL is saved
     if (typeof photoURL === "string" || photoURL === null) {
+      const oldPhotoURL = user.photoURL;
+
+      if (oldPhotoURL && oldPhotoURL !== photoURL) {
+        const oldFilePath = getFirebasePathFromUrl(oldPhotoURL);
+
+        if (oldFilePath) {
+          try {
+            await bucket.file(oldFilePath).delete();
+          } catch (firebaseErr) {
+            console.log("Old profile photo delete failed:", firebaseErr.message);
+          }
+        }
+      }
+
       user.photoURL = photoURL;
     }
 

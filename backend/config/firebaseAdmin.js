@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { getStorage } from "firebase-admin/storage";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -16,7 +17,11 @@ const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
+    storageBucket: "musichive-8f11c.firebasestorage.app",
   });
 }
 
+const bucket = getStorage().bucket();
+
+export { bucket };
 export default admin;
