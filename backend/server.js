@@ -21,7 +21,9 @@ import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import adminArtistRoutes from "./routes/adminArtistRoutes.js";
-
+import adminBookingRoutes from "./routes/adminBookingRoutes.js";
+import adminChordRoutes from "./routes/adminChordRoutes.js";
+import adminReviewRoutes from "./routes/adminReviewRoutes.js";
 
 startHoldExpiryJob();
 
@@ -49,5 +51,9 @@ app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/artists", adminArtistRoutes);
+app.use("/api/admin/bookings", adminBookingRoutes);
+app.use("/api/admin/chords", adminChordRoutes);
+app.use("/api/admin/reviews", adminReviewRoutes);
+
 
 app.listen(5000, () => console.log("Backend running on port 5000"));
