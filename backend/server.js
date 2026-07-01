@@ -2,8 +2,11 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import dns from "dns";
 
 dotenv.config();
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 import userRoutes from "./routes/userRoutes.js";
 import chordRoutes from "./routes/chordRoutes.js";
