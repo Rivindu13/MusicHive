@@ -70,4 +70,41 @@ export const deleteArtist = async (artistId) => {
   return response.data;
 };
 
+export const getBookings = async () => {
+  const response = await adminAxios.get("/admin/bookings");
+  return response.data.data;
+};
+
+export const updateBookingStatus = async (bookingId, status) => {
+  const response = await adminAxios.patch(`/admin/bookings/${bookingId}/status`, {
+    status,
+  });
+  return response.data;
+};
+
+export const deleteBooking = async (bookingId) => {
+  const response = await adminAxios.delete(`/admin/bookings/${bookingId}`);
+  return response.data;
+};
+
+export const getChords = async () => {
+  const response = await adminAxios.get("/admin/chords");
+  return response.data.data;
+};
+
+export const deleteChord = async (chordId) => {
+  const response = await adminAxios.delete(`/admin/chords/${chordId}`);
+  return response.data;
+};
+
+export const getReviews = async () => {
+  const response = await adminAxios.get("/admin/reviews");
+  return response.data.data;
+};
+
+export const deleteReview = async (reviewId) => {
+  const response = await adminAxios.delete(`/admin/reviews/${reviewId}`);
+  return response.data;
+};
+
 export default adminAxios;
