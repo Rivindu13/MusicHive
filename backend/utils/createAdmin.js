@@ -5,7 +5,7 @@ import Admin from "../models/admin.js";
 
 dotenv.config();
 
-const createAdmin = async () => {
+const createOrUpdateAdmin = async () => {
   try {
     if (!process.env.MONGO_URI) {
       throw new Error("MONGO_URI is missing in .env file");
@@ -16,30 +16,39 @@ const createAdmin = async () => {
     }
 
     await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB connected");
 
-    const existingAdmin = await Admin.findOne({
-      email: process.env.ADMIN_EMAIL.toLowerCase(),
-    });
+    const email = process.env.ADMIN_EMAIL.toLowerCase();
+    const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+
+    const existingAdmin = await Admin.findOne({ email });
 
     if (existingAdmin) {
-      console.log("Admin already exists:", existingAdmin.email);
+      existingAdmin.name = process.env.ADMIN_NAME || existingAdmin.name;
+      existingAdmin.password = hashedPassword;
+      existingAdmin.isActive = true;
+      existingAdmin.role = "admin";
+
+      await existingAdmin.save();
+
+      console.log("Admin already existed. Password reset successfully:", email);
       process.exit(0);
     }
 
-    const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
-
     const admin = await Admin.create({
       name: process.env.ADMIN_NAME || "MusicHive Admin",
-      email: process.env.ADMIN_EMAIL.toLowerCase(),
+      email,
       password: hashedPassword,
+      role: "admin",
+      isActive: true,
     });
 
     console.log("Admin created successfully:", admin.email);
     process.exit(0);
   } catch (error) {
-    console.error("Failed to create admin:", error.message);
+    console.error("Failed to create/update admin:", error.message);
     process.exit(1);
   }
 };
 
-createAdmin();
+createOrUpdateAdmin();
