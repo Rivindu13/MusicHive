@@ -1,9 +1,21 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
-  uid: { type: String, required: true, unique: true },
-  email: { type: String, required: true },
-  name: { type: String, default: "" },
+  uid: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  },
+
+  email: { 
+    type: String, 
+    required: true 
+  },
+
+  name: { 
+    type: String, 
+    default: "" 
+  },
 
   role: {
     type: String,
@@ -11,10 +23,27 @@ const userSchema = new mongoose.Schema({
     enum: ["artist", "band", "organizer"],
   },
 
-  photoURL: { type: String, default: null },
+  photoURL: { 
+    type: String, 
+    default: null 
+  },
 
   // =========================
-  // ⭐ Wishlist (NEW)
+  // Admin account control
+  // =========================
+  isBlocked: {
+    type: Boolean,
+    default: false,
+  },
+
+  status: {
+    type: String,
+    enum: ["active", "blocked"],
+    default: "active",
+  },
+
+  // =========================
+  // Wishlist
   // =========================
   wishlist: {
     type: [String], // artist UIDs
@@ -129,7 +158,10 @@ const userSchema = new mongoose.Schema({
     },
   },
 
-  createdAt: { type: Date, default: Date.now },
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  },
 });
 
 // prevent OverwriteModelError

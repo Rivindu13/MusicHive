@@ -13,7 +13,9 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import { startHoldExpiryJob } from "./jobs/holdExpiryJobs.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-
+import adminAuthRoutes from "./routes/adminAuthRoutes.js";
+import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
+import adminUserRoutes from "./routes/adminUserRoutes.js";
 
 startHoldExpiryJob();
 
@@ -37,5 +39,8 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/admin/users", adminUserRoutes);
 
 app.listen(5000, () => console.log("Backend running on port 5000"));
