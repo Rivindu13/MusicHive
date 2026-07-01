@@ -207,4 +207,150 @@ body {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .admin-page-subtitle {
+    margin-top: -14px;
+    margin-bottom: 24px;
+    color: var(--mh-muted);
+    font-size: 14px;
+  }
+
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .table-toolbar input,
+  .table-toolbar select {
+    min-width: 220px;
+    padding: 12px 14px;
+    border: 1px solid var(--mh-border);
+    border-radius: 10px;
+    outline: none;
+    background: white;
+  }
+
+  .table-toolbar input {
+    flex: 1;
+  }
+
+  .table-toolbar input:focus,
+  .table-toolbar select:focus {
+    border-color: var(--mh-secondary);
+  }
+
+  .table-toolbar button {
+    background: var(--mh-primary);
+    color: white;
+    border: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .table-toolbar button:hover {
+    color: var(--mh-secondary);
+  }
+
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--mh-border);
+    text-align: left;
+    font-size: 14px;
+  }
+
+  .admin-table th {
+    color: var(--mh-muted);
+    font-weight: 700;
+    background: #fafafa;
+  }
+
+  .empty-table {
+    text-align: center;
+    color: var(--mh-muted);
+    padding: 30px;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .status-badge.active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-badge.blocked {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .small-btn {
+    background: var(--mh-primary);
+    color: white;
+    border: none;
+    padding: 8px 11px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .small-btn:hover {
+    color: var(--mh-secondary);
+  }
+
+  .small-btn.danger {
+    background: #991b1b;
+    color: white;
+  }
+
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .user-cell img,
+  .user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+  }
+
+  .user-cell img {
+    object-fit: cover;
+  }
+
+  .user-avatar {
+    background: var(--mh-primary);
+    color: var(--mh-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
 }
