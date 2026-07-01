@@ -50,4 +50,24 @@ export const deleteUser = async (userId) => {
   return response.data;
 };
 
+export const getArtists = async () => {
+  const response = await adminAxios.get("/admin/artists");
+  return response.data.data;
+};
+
+export const blockArtist = async (artistId) => {
+  const response = await adminAxios.patch(`/admin/artists/${artistId}/block`);
+  return response.data;
+};
+
+export const unblockArtist = async (artistId) => {
+  const response = await adminAxios.patch(`/admin/artists/${artistId}/unblock`);
+  return response.data;
+};
+
+export const deleteArtist = async (artistId) => {
+  const response = await adminAxios.delete(`/admin/artists/${artistId}`);
+  return response.data;
+};
+
 export default adminAxios;
