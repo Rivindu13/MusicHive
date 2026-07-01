@@ -289,7 +289,7 @@ export default function ArtistProfile() {
       <main className="artistDash__main">
         {/* Top bar */}
         <div className="artistDash__topbar">
-          <NotificationBell uid={profile?.uid} />
+          <NotificationBell uid={uid} />
 
           <div className="artistDash__user">
             <div className="artistDash__avatarWrap">

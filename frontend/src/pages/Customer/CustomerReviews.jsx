@@ -156,7 +156,7 @@ export default function OrganizerReviews() {
             <span>Chord Library</span>
           </Link>
 
-          <Link className="artistDash__navItem" to="/customer/reviews">
+          <Link className="artistDash__navItem artistDash__navItem--active" to="/customer/reviews">
             <span className="artistDash__navIcon">
               <FiStar />
             </span>
@@ -166,7 +166,7 @@ export default function OrganizerReviews() {
 
         <div className="artistDash__sideBottom">
           <Link
-            className="artistDash__sideAction artistDash__navItem--active"
+            className="artistDash__sideAction"
             to="/customer/profile"
           >
             <span className="artistDash__navIcon">
