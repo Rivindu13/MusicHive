@@ -30,4 +30,24 @@ export const getDashboardStats = async () => {
   return response.data.data;
 };
 
+export const getUsers = async () => {
+  const response = await adminAxios.get("/admin/users");
+  return response.data.data;
+};
+
+export const blockUser = async (userId) => {
+  const response = await adminAxios.patch(`/admin/users/${userId}/block`);
+  return response.data;
+};
+
+export const unblockUser = async (userId) => {
+  const response = await adminAxios.patch(`/admin/users/${userId}/unblock`);
+  return response.data;
+};
+
+export const deleteUser = async (userId) => {
+  const response = await adminAxios.delete(`/admin/users/${userId}`);
+  return response.data;
+};
+
 export default adminAxios;

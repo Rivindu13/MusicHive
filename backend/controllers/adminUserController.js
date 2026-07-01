@@ -9,18 +9,13 @@ export const getAllUsers = async (req, res) => {
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: "i" } },
-        { fullName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
+        { uid: { $regex: search, $options: "i" } },
       ];
     }
 
     if (role) {
-      filter.$or = [
-        { role },
-        { userRole: role },
-        { accountType: role },
-        { userType: role },
-      ];
+      filter.role = role;
     }
 
     if (status) {
