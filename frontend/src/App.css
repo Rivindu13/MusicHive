@@ -1496,3 +1496,9 @@ body,
   overflow-y: auto;
 }
 
+.input-error {
+  color: #ff4d4f;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}

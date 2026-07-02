@@ -12,20 +12,89 @@ const ContactSection = () => {
     message: "",
   });
 
+  const [errors, setErrors] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = {
+      name: "",
+      email: "",
+      message: "",
+    };
+
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+      valid = false;
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+      valid = false;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      valid = false;
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Enter a valid email address";
+      valid = false;
+    }
+
+    // Message validation
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+      valid = false;
+    } else if (formData.message.trim().length < 10) {
+      newErrors.message = "Message must be at least 10 characters";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear the error for the current field while typing
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateForm()) return;
+
     try {
       await axios.post("http://localhost:5000/api/contact", formData);
+
       alert("Message sent successfully!");
-      setFormData({ name: "", email: "", message: "" });
+
+      setFormData({
+        name: "",
+        email: "",
+        message: "",
+      });
+
+      setErrors({
+        name: "",
+        email: "",
+        message: "",
+      });
     } catch (err) {
       alert("Failed to send message");
     }
@@ -37,6 +106,7 @@ const ContactSection = () => {
         <div className="contact-inner">
           <div className="contact-form">
             <h2>Contact us.</h2>
+
             <form onSubmit={handleSubmit}>
               <label>
                 Name
@@ -46,8 +116,10 @@ const ContactSection = () => {
                   placeholder="Your name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
                 />
+                {errors.name && (
+                  <p className="input-error">{errors.name}</p>
+                )}
               </label>
 
               <label>
@@ -58,8 +130,10 @@ const ContactSection = () => {
                   placeholder="Your email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
                 />
+                {errors.email && (
+                  <p className="input-error">{errors.email}</p>
+                )}
               </label>
 
               <label>
@@ -70,8 +144,10 @@ const ContactSection = () => {
                   rows={4}
                   value={formData.message}
                   onChange={handleChange}
-                  required
                 />
+                {errors.message && (
+                  <p className="input-error">{errors.message}</p>
+                )}
               </label>
 
               <button className="btn btn-gradient" type="submit">
@@ -84,7 +160,9 @@ const ContactSection = () => {
             <h2>
               Ready to Make <br /> Music Magic?
             </h2>
+
             <p>Join MusicHive Today</p>
+
             <button
               className="btn btn-gradient btn-animate"
               onClick={() => navigate("/signup")}
