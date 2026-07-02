@@ -936,32 +936,17 @@ section {
 /* Rainbow Border */
 .login-card {
   position: absolute;
-  top: 0;
-  left: 0;
-
+  inset: 0;
   width: 100%;
-  height: 100%;
-  padding: 6px; 
-
+  height: auto;
+  padding: 6px;
   border-radius: 32px;
   border: 2px solid transparent;
-
   background:
     linear-gradient(#0c0824, #1a1440, #1a6472) padding-box,
-    linear-gradient(
-      135deg,
-      #ff4fd8,
-      #ff8a00,
-      #ffe600,
-      #52ffb8,
-      #2dd4ff,
-      #7c2cff,
-      #ff4fd8
-    ) border-box;
-
+    linear-gradient(135deg, #ff4fd8, #ff8a00, #ffe600, #52ffb8, #2dd4ff, #7c2cff, #ff4fd8) border-box;
   background-size: 100% 100%, 400% 400%;
   animation: rainbowMove 6s linear infinite;
-
   z-index: 0;
   pointer-events: none;
 }
@@ -980,7 +965,7 @@ section {
   position: relative;
 
   width: calc(100% - 4px);
-  height: calc(100% - 4px);
+  height: auto;
   margin: 0 auto;
 
   padding: 36px;
@@ -993,7 +978,6 @@ section {
   z-index: 1;
   text-align: center;
 }
-s
 
 
 
@@ -1484,4 +1468,31 @@ s
   }
 }
 
+.login-page {
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0c0824, #1a1440, #1a6472);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 50px 0 80px;
+}
+
+.login-card-wrapper {
+  position: relative;
+  width: 380px;
+  max-width: calc(100% - 32px);
+  padding: 2px 0;
+  margin: 0 auto 80px;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+  height: 100%;
+  overflow-y: auto;
+}
 
