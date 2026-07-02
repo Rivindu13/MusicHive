@@ -115,4 +115,9 @@ export const deleteReview = async (reviewId) => {
   return response.data;
 };
 
+export const getAdminProfile = async () => {
+  const response = await adminAxios.get("/admin/auth/profile");
+  return response.data.admin;
+};
+
 export default adminAxios;

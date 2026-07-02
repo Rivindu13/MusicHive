@@ -22,7 +22,20 @@ const menuItems = [
 const Sidebar = () => {
   return (
     <aside className="admin-sidebar">
-      <div className="admin-logo">MusicHive</div>
+      <div className="admin-brand">
+        <div className="admin-brand-logo-wrap">
+          <img
+            src="/musichive-logo.png"
+            alt="MusicHive Logo"
+            className="admin-brand-logo"
+          />
+        </div>
+
+        <div>
+          <span className="admin-brand-title">MusicHive</span>
+          <p className="admin-brand-subtitle">Admin Panel</p>
+        </div>
+      </div>
 
       <nav className="admin-menu">
         {menuItems.map((item) => {
@@ -30,8 +43,8 @@ const Sidebar = () => {
 
           return (
             <NavLink key={item.path} to={item.path}>
-              <Icon size={18} style={{ marginRight: "10px" }} />
-              {item.name}
+              <Icon size={19} />
+              <span>{item.name}</span>
             </NavLink>
           );
         })}

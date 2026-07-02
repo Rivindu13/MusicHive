@@ -110,7 +110,9 @@ const Users = () => {
             <option value="organizer">Organizer</option>
           </select>
 
-          <button onClick={loadUsers}>Refresh</button>
+          <button className="refresh-btn" onClick={loadUsers}>
+            ↻ Refresh
+          </button>
         </div>
 
         {loading ? (
