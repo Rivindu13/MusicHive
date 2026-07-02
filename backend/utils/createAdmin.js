@@ -1,9 +1,13 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
+import dns from "dns";
 import Admin from "../models/admin.js";
 
 dotenv.config();
+
+// Force Node.js to use public DNS servers for MongoDB Atlas SRV lookup
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const createOrUpdateAdmin = async () => {
   try {
@@ -15,7 +19,11 @@ const createOrUpdateAdmin = async () => {
       throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required in .env file");
     }
 
+    console.log("Trying to connect to MongoDB...");
+    console.log("Using DNS servers:", dns.getServers());
+
     await mongoose.connect(process.env.MONGO_URI);
+
     console.log("MongoDB connected");
 
     const email = process.env.ADMIN_EMAIL.toLowerCase();

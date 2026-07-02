@@ -2,8 +2,11 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import dns from "dns";
 
 dotenv.config();
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 import userRoutes from "./routes/userRoutes.js";
 import chordRoutes from "./routes/chordRoutes.js";
@@ -13,9 +16,14 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import { startHoldExpiryJob } from "./jobs/holdExpiryJobs.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+
 import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
+import adminArtistRoutes from "./routes/adminArtistRoutes.js";
+import adminBookingRoutes from "./routes/adminBookingRoutes.js";
+import adminChordRoutes from "./routes/adminChordRoutes.js";
+import adminReviewRoutes from "./routes/adminReviewRoutes.js";
 
 startHoldExpiryJob();
 
@@ -42,5 +50,10 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/artists", adminArtistRoutes);
+app.use("/api/admin/bookings", adminBookingRoutes);
+app.use("/api/admin/chords", adminChordRoutes);
+app.use("/api/admin/reviews", adminReviewRoutes);
+
 
 app.listen(5000, () => console.log("Backend running on port 5000"));
