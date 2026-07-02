@@ -12,8 +12,15 @@ import Settings from "./pages/Settings";
 
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 function App() {
+  const savedAdmin = localStorage.getItem("adminUser");
+  const adminUser = savedAdmin ? JSON.parse(savedAdmin) : null;
+
+  const defaultRedirect =
+    adminUser?.role === "manager" ? "/bookings" : "/dashboard";
+
   return (
     <BrowserRouter>
       <Routes>
@@ -27,14 +34,70 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="users" element={<Users />} />
-          <Route path="artists" element={<Artists />} />
-          <Route path="bookings" element={<Bookings />} />
-          <Route path="chords" element={<Chords />} />
-          <Route path="reviews" element={<Reviews />} />
-          <Route path="settings" element={<Settings />} />
+          <Route index element={<Navigate to={defaultRedirect} replace />} />
+
+          <Route
+            path="dashboard"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <Dashboard />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="users"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <Users />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="artists"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <Artists />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="bookings"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
+                <Bookings />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="chords"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <Chords />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="reviews"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin"]}>
+                <Reviews />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="settings"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
+                <Settings />
+              </RoleProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>
