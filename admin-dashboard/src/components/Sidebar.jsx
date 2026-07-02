@@ -8,6 +8,7 @@ import {
   Star,
   Settings,
 } from "lucide-react";
+import logo from "../assets/musichive-logo.png";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -22,7 +23,10 @@ const menuItems = [
 const Sidebar = () => {
   return (
     <aside className="admin-sidebar">
-      <div className="admin-logo">MusicHive</div>
+      <div className="admin-brand">
+        <img src={logo} alt="MusicHive Logo" className="admin-brand-logo" />
+        <span>MusicHive</span>
+      </div>
 
       <nav className="admin-menu">
         {menuItems.map((item) => {
@@ -30,8 +34,8 @@ const Sidebar = () => {
 
           return (
             <NavLink key={item.path} to={item.path}>
-              <Icon size={18} style={{ marginRight: "10px" }} />
-              {item.name}
+              <Icon size={19} />
+              <span>{item.name}</span>
             </NavLink>
           );
         })}
