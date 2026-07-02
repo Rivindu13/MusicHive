@@ -82,6 +82,14 @@ export const updateBookingStatus = async (bookingId, status) => {
   return response.data;
 };
 
+export const updateBookingPaymentStatus = async (bookingId, paymentStatus) => {
+  const response = await adminAxios.patch(
+    `/admin/bookings/${bookingId}/payment-status`,
+    { paymentStatus }
+  );
+  return response.data;
+};
+
 export const deleteBooking = async (bookingId) => {
   const response = await adminAxios.delete(`/admin/bookings/${bookingId}`);
   return response.data;

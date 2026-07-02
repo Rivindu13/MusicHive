@@ -22,13 +22,6 @@ const Reviews = () => {
     loadReviews();
   }, []);
 
-  const getValue = (review, keys, fallback = "N/A") => {
-    for (const key of keys) {
-      if (review[key]) return review[key];
-    }
-    return fallback;
-  };
-
   const handleDelete = async (reviewId) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this review?"
@@ -44,16 +37,29 @@ const Reviews = () => {
     }
   };
 
-  const filteredReviews = reviews.filter((review) =>
-    JSON.stringify(review).toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredReviews = reviews.filter((review) => {
+    const searchableText = [
+      review.reviewerName,
+      review.reviewerRole,
+      review.revieweeRole,
+      review.reviewer?.email,
+      review.reviewee?.name,
+      review.reviewee?.email,
+      review.eventType,
+      review.comment,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search.toLowerCase());
+  });
 
   return (
     <div>
       <div className="page-header">
         <h1 className="admin-page-title">Review Management</h1>
         <p className="admin-page-subtitle">
-          View and moderate reviews submitted by MusicHive users.
+          View and moderate reviews submitted after paid bookings.
         </p>
       </div>
 
@@ -61,7 +67,7 @@ const Reviews = () => {
         <div className="table-toolbar">
           <input
             type="text"
-            placeholder="Search reviews..."
+            placeholder="Search by reviewer, reviewee, comment..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -77,7 +83,8 @@ const Reviews = () => {
               <thead>
                 <tr>
                   <th>Reviewer</th>
-                  <th>Artist/Band</th>
+                  <th>Review For</th>
+                  <th>Event</th>
                   <th>Rating</th>
                   <th>Comment</th>
                   <th>Created</th>
@@ -88,24 +95,49 @@ const Reviews = () => {
               <tbody>
                 {filteredReviews.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="empty-table">
+                    <td colSpan="7" className="empty-table">
                       No reviews found.
                     </td>
                   </tr>
                 ) : (
                   filteredReviews.map((review) => (
                     <tr key={review._id}>
-                      <td>{getValue(review, ["reviewerName", "userName", "customerName"])}</td>
-                      <td>{getValue(review, ["artistName", "bandName", "performerName"])}</td>
-                      <td>{getValue(review, ["rating", "stars"], "0")} / 5</td>
-                      <td className="comment-cell">
-                        {getValue(review, ["comment", "review", "message"])}
+                      <td>
+                        <strong>{review.reviewerName}</strong>
+                        <br />
+                        <span className="muted-small">
+                          {review.reviewerRole} ·{" "}
+                          {review.reviewer?.email || review.reviewerUid}
+                        </span>
                       </td>
+
+                      <td>
+                        <strong>{review.reviewee?.name || "Unknown"}</strong>
+                        <br />
+                        <span className="muted-small">
+                          {review.revieweeRole} ·{" "}
+                          {review.reviewee?.email || review.revieweeUid}
+                        </span>
+                      </td>
+
+                      <td>{review.eventType || "Event"}</td>
+
+                      <td>
+                        <span className="rating-badge">
+                          ⭐ {review.rating} / 5
+                        </span>
+                      </td>
+
+                      <td className="comment-cell">
+                        {review.comment || "No comment"}
+                      </td>
+
                       <td>
                         {review.createdAt
                           ? new Date(review.createdAt).toLocaleDateString()
                           : "N/A"}
                       </td>
+
                       <td>
                         <button
                           className="small-btn danger"

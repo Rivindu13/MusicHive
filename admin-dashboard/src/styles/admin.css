@@ -490,6 +490,64 @@ select {
   line-height: 1.5;
 }
 
+.muted-small {
+  color: var(--mh-muted);
+  font-size: 12px;
+}
+
+.table-image {
+  width: 54px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--mh-border);
+}
+
+.small-select {
+  height: 34px;
+  border: 1px solid var(--mh-border);
+  border-radius: 8px;
+  padding: 0 8px;
+  background: white;
+  font-size: 12px;
+}
+
+.status-badge.PENDING,
+.status-badge.UNPAID {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.ACCEPTED,
+.status-badge.CONFIRMED,
+.status-badge.PAID {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.REJECTED,
+.status-badge.CANCELLED,
+.status-badge.EXPIRED,
+.status-badge.REFUNDED {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.comment-cell {
+  max-width: 360px;
+  white-space: normal !important;
+  line-height: 1.5;
+}
+
+.rating-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 @media (max-width: 900px) {
   .dashboard-grid {
     grid-template-columns: 1fr;

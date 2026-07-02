@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   getBookings,
   updateBookingStatus,
+  updateBookingPaymentStatus,
   deleteBooking,
 } from "../services/adminApi";
 
@@ -9,6 +10,7 @@ const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
   const loadBookings = async () => {
@@ -27,16 +29,18 @@ const Bookings = () => {
     loadBookings();
   }, []);
 
-  const getValue = (booking, keys, fallback = "N/A") => {
-    for (const key of keys) {
-      if (booking[key]) return booking[key];
-    }
-    return fallback;
-  };
-
   const handleStatusChange = async (bookingId, status) => {
     try {
       await updateBookingStatus(bookingId, status);
+      await loadBookings();
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handlePaymentStatusChange = async (bookingId, paymentStatus) => {
+    try {
+      await updateBookingPaymentStatus(bookingId, paymentStatus);
       await loadBookings();
     } catch (error) {
       alert(error.message);
@@ -59,13 +63,31 @@ const Bookings = () => {
   };
 
   const filteredBookings = bookings.filter((booking) => {
-    const text = JSON.stringify(booking).toLowerCase();
-    const matchesSearch = text.includes(search.toLowerCase());
-    const matchesStatus = statusFilter
-      ? booking.status === statusFilter
+    const searchableText = [
+      booking.artistUid,
+      booking.customerUid,
+      booking.artist?.name,
+      booking.customer?.name,
+      booking.artist?.email,
+      booking.customer?.email,
+      booking.date,
+      booking.slotType,
+      booking.status,
+      booking.paymentStatus,
+      booking.note,
+      booking.paymentRef,
+      booking.payhereOrderId,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch = searchableText.includes(search.toLowerCase());
+    const matchesStatus = statusFilter ? booking.status === statusFilter : true;
+    const matchesPayment = paymentFilter
+      ? booking.paymentStatus === paymentFilter
       : true;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesPayment;
   });
 
   return (
@@ -73,7 +95,7 @@ const Bookings = () => {
       <div className="page-header">
         <h1 className="admin-page-title">Booking Management</h1>
         <p className="admin-page-subtitle">
-          View, update, and manage MusicHive bookings.
+          View and manage artist booking requests, payments, and statuses.
         </p>
       </div>
 
@@ -81,7 +103,7 @@ const Bookings = () => {
         <div className="table-toolbar">
           <input
             type="text"
-            placeholder="Search bookings..."
+            placeholder="Search by artist, customer, date, status..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -90,12 +112,23 @@ const Bookings = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="rejected">Rejected</option>
+            <option value="">All booking statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="ACCEPTED">Accepted</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="EXPIRED">Expired</option>
+          </select>
+
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+          >
+            <option value="">All payments</option>
+            <option value="UNPAID">Unpaid</option>
+            <option value="PAID">Paid</option>
+            <option value="REFUNDED">Refunded</option>
           </select>
 
           <button onClick={loadBookings}>Refresh</button>
@@ -110,10 +143,11 @@ const Bookings = () => {
                 <tr>
                   <th>Customer</th>
                   <th>Artist/Band</th>
-                  <th>Event Date</th>
-                  <th>Location</th>
-                  <th>Amount</th>
-                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Slot</th>
+                  <th>Price</th>
+                  <th>Booking Status</th>
+                  <th>Payment</th>
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>
@@ -122,92 +156,100 @@ const Bookings = () => {
               <tbody>
                 {filteredBookings.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="empty-table">
+                    <td colSpan="9" className="empty-table">
                       No bookings found.
                     </td>
                   </tr>
                 ) : (
-                  filteredBookings.map((booking) => {
-                    const customer = getValue(booking, [
-                      "customerName",
-                      "organizerName",
-                      "userName",
-                      "clientName",
-                    ]);
+                  filteredBookings.map((booking) => (
+                    <tr key={booking._id}>
+                      <td>
+                        <strong>{booking.customer?.name || "Unknown"}</strong>
+                        <br />
+                        <span className="muted-small">
+                          {booking.customer?.email || booking.customerUid}
+                        </span>
+                      </td>
 
-                    const artist = getValue(booking, [
-                      "artistName",
-                      "bandName",
-                      "performerName",
-                    ]);
+                      <td>
+                        <strong>{booking.artist?.name || "Unknown"}</strong>
+                        <br />
+                        <span className="muted-small">
+                          {booking.artist?.email || booking.artistUid}
+                        </span>
+                      </td>
 
-                    const eventDate = getValue(booking, [
-                      "eventDate",
-                      "bookingDate",
-                      "date",
-                    ]);
+                      <td>{booking.date || "N/A"}</td>
+                      <td>{booking.slotType || "N/A"}</td>
 
-                    const location = getValue(booking, [
-                      "location",
-                      "eventLocation",
-                      "venue",
-                    ]);
+                      <td>
+                        {booking.amountPaid || booking.price
+                          ? `Rs. ${booking.amountPaid || booking.price}`
+                          : "N/A"}
+                      </td>
 
-                    const amount = getValue(booking, [
-                      "amount",
-                      "totalAmount",
-                      "price",
-                      "paymentAmount",
-                    ]);
+                      <td>
+                        <span className={`status-badge ${booking.status}`}>
+                          {booking.status}
+                        </span>
+                      </td>
 
-                    return (
-                      <tr key={booking._id}>
-                        <td>{customer}</td>
-                        <td>{artist}</td>
-                        <td>
-                          {eventDate !== "N/A"
-                            ? new Date(eventDate).toLocaleDateString()
-                            : "N/A"}
-                        </td>
-                        <td>{location}</td>
-                        <td>{amount !== "N/A" ? `Rs. ${amount}` : "N/A"}</td>
-                        <td>
-                          <span className={`status-badge ${booking.status || "pending"}`}>
-                            {booking.status || "pending"}
-                          </span>
-                        </td>
-                        <td>
-                          {booking.createdAt
-                            ? new Date(booking.createdAt).toLocaleDateString()
-                            : "N/A"}
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            <select
-                              className="small-select"
-                              value={booking.status || "pending"}
-                              onChange={(e) =>
-                                handleStatusChange(booking._id, e.target.value)
-                              }
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="confirmed">Confirmed</option>
-                              <option value="completed">Completed</option>
-                              <option value="cancelled">Cancelled</option>
-                              <option value="rejected">Rejected</option>
-                            </select>
+                      <td>
+                        <span
+                          className={`status-badge ${booking.paymentStatus}`}
+                        >
+                          {booking.paymentStatus}
+                        </span>
+                      </td>
 
-                            <button
-                              className="small-btn danger"
-                              onClick={() => handleDelete(booking._id)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                      <td>
+                        {booking.createdAt
+                          ? new Date(booking.createdAt).toLocaleDateString()
+                          : "N/A"}
+                      </td>
+
+                      <td>
+                        <div className="action-buttons">
+                          <select
+                            className="small-select"
+                            value={booking.status}
+                            onChange={(e) =>
+                              handleStatusChange(booking._id, e.target.value)
+                            }
+                          >
+                            <option value="PENDING">Pending</option>
+                            <option value="ACCEPTED">Accepted</option>
+                            <option value="REJECTED">Rejected</option>
+                            <option value="CONFIRMED">Confirmed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                            <option value="EXPIRED">Expired</option>
+                          </select>
+
+                          <select
+                            className="small-select"
+                            value={booking.paymentStatus}
+                            onChange={(e) =>
+                              handlePaymentStatusChange(
+                                booking._id,
+                                e.target.value
+                              )
+                            }
+                          >
+                            <option value="UNPAID">Unpaid</option>
+                            <option value="PAID">Paid</option>
+                            <option value="REFUNDED">Refunded</option>
+                          </select>
+
+                          <button
+                            className="small-btn danger"
+                            onClick={() => handleDelete(booking._id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>

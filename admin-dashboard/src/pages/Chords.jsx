@@ -22,13 +22,6 @@ const Chords = () => {
     loadChords();
   }, []);
 
-  const getValue = (chord, keys, fallback = "N/A") => {
-    for (const key of keys) {
-      if (chord[key]) return chord[key];
-    }
-    return fallback;
-  };
-
   const handleDelete = async (chordId) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this chord?"
@@ -44,16 +37,27 @@ const Chords = () => {
     }
   };
 
-  const filteredChords = chords.filter((chord) =>
-    JSON.stringify(chord).toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredChords = chords.filter((chord) => {
+    const searchableText = [
+      chord.title,
+      chord.genre,
+      chord.uid,
+      chord.role,
+      chord.owner?.name,
+      chord.owner?.email,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search.toLowerCase());
+  });
 
   return (
     <div>
       <div className="page-header">
         <h1 className="admin-page-title">Chord Management</h1>
         <p className="admin-page-subtitle">
-          View and manage chords uploaded by artists and bands.
+          View and manage chord posts uploaded by artists and customers.
         </p>
       </div>
 
@@ -61,7 +65,7 @@ const Chords = () => {
         <div className="table-toolbar">
           <input
             type="text"
-            placeholder="Search chords..."
+            placeholder="Search by title, genre, owner..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -76,10 +80,12 @@ const Chords = () => {
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th>Image</th>
                   <th>Title</th>
-                  <th>Artist</th>
                   <th>Genre</th>
-                  <th>Key</th>
+                  <th>Owner</th>
+                  <th>Role</th>
+                  <th>Reviews</th>
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>
@@ -88,17 +94,35 @@ const Chords = () => {
               <tbody>
                 {filteredChords.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="empty-table">
+                    <td colSpan="8" className="empty-table">
                       No chords found.
                     </td>
                   </tr>
                 ) : (
                   filteredChords.map((chord) => (
                     <tr key={chord._id}>
-                      <td>{getValue(chord, ["title", "songTitle", "name"])}</td>
-                      <td>{getValue(chord, ["artistName", "uploadedBy", "artist"])}</td>
-                      <td>{getValue(chord, ["genre", "category"])}</td>
-                      <td>{getValue(chord, ["key", "songKey", "scale"])}</td>
+                      <td>
+                        {chord.imageUrl ? (
+                          <img
+                            src={chord.imageUrl}
+                            alt={chord.title}
+                            className="table-image"
+                          />
+                        ) : (
+                          "N/A"
+                        )}
+                      </td>
+                      <td>{chord.title || "Untitled"}</td>
+                      <td>{chord.genre || "N/A"}</td>
+                      <td>
+                        <strong>{chord.owner?.name || "Unknown"}</strong>
+                        <br />
+                        <span className="muted-small">
+                          {chord.owner?.email || chord.uid}
+                        </span>
+                      </td>
+                      <td>{chord.role}</td>
+                      <td>{chord.reviewCount}</td>
                       <td>
                         {chord.createdAt
                           ? new Date(chord.createdAt).toLocaleDateString()
