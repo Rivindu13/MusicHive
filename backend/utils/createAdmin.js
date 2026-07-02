@@ -6,7 +6,6 @@ import Admin from "../models/admin.js";
 
 dotenv.config();
 
-// Force Node.js to use public DNS servers for MongoDB Atlas SRV lookup
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 const createOrUpdateAdmin = async () => {
@@ -32,10 +31,11 @@ const createOrUpdateAdmin = async () => {
     const existingAdmin = await Admin.findOne({ email });
 
     if (existingAdmin) {
+      existingAdmin.uid = process.env.ADMIN_UID || "admin_001";
       existingAdmin.name = process.env.ADMIN_NAME || existingAdmin.name;
       existingAdmin.password = hashedPassword;
-      existingAdmin.isActive = true;
       existingAdmin.role = "admin";
+      existingAdmin.isActive = true;
 
       await existingAdmin.save();
 
@@ -44,6 +44,7 @@ const createOrUpdateAdmin = async () => {
     }
 
     const admin = await Admin.create({
+      uid: process.env.ADMIN_UID || "admin_001",
       name: process.env.ADMIN_NAME || "MusicHive Admin",
       email,
       password: hashedPassword,

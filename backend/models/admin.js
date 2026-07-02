@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const adminSchema = new mongoose.Schema(
   {
+    uid: {
+      type: String,
+      unique: true,
+      trim: true,
+    },
+
     name: {
       type: String,
       required: true,
