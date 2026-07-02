@@ -4,12 +4,15 @@ import {
   getSingleReview,
   deleteReview,
 } from "../controllers/adminReviewController.js";
-import { protectAdmin } from "../middleware/adminAuthMiddleware.js";
+import {
+  protectAdmin,
+  authorizeAdminOnly,
+} from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", protectAdmin, getAllReviews);
-router.get("/:id", protectAdmin, getSingleReview);
-router.delete("/:id", protectAdmin, deleteReview);
+router.get("/", protectAdmin, authorizeAdminOnly, getAllReviews);
+router.get("/:id", protectAdmin, authorizeAdminOnly, getSingleReview);
+router.delete("/:id", protectAdmin, authorizeAdminOnly, deleteReview);
 
 export default router;

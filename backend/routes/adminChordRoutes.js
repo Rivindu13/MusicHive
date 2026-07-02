@@ -4,12 +4,15 @@ import {
   getSingleChord,
   deleteChord,
 } from "../controllers/adminChordController.js";
-import { protectAdmin } from "../middleware/adminAuthMiddleware.js";
+import {
+  protectAdmin,
+  authorizeAdminOnly,
+} from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", protectAdmin, getAllChords);
-router.get("/:id", protectAdmin, getSingleChord);
-router.delete("/:id", protectAdmin, deleteChord);
+router.get("/", protectAdmin, authorizeAdminOnly, getAllChords);
+router.get("/:id", protectAdmin, authorizeAdminOnly, getSingleChord);
+router.delete("/:id", protectAdmin, authorizeAdminOnly, deleteChord);
 
 export default router;

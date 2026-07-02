@@ -6,14 +6,30 @@ import {
   updatePaymentStatus,
   deleteBooking,
 } from "../controllers/adminBookingController.js";
-import { protectAdmin } from "../middleware/adminAuthMiddleware.js";
+import {
+  protectAdmin,
+  authorizeAdminOrManager,
+} from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", protectAdmin, getAllBookings);
-router.get("/:id", protectAdmin, getSingleBooking);
-router.patch("/:id/status", protectAdmin, updateBookingStatus);
-router.patch("/:id/payment-status", protectAdmin, updatePaymentStatus);
-router.delete("/:id", protectAdmin, deleteBooking);
+router.get("/", protectAdmin, authorizeAdminOrManager, getAllBookings);
+router.get("/:id", protectAdmin, authorizeAdminOrManager, getSingleBooking);
+
+router.patch(
+  "/:id/status",
+  protectAdmin,
+  authorizeAdminOrManager,
+  updateBookingStatus
+);
+
+router.patch(
+  "/:id/payment-status",
+  protectAdmin,
+  authorizeAdminOrManager,
+  updatePaymentStatus
+);
+
+router.delete("/:id", protectAdmin, authorizeAdminOrManager, deleteBooking);
 
 export default router;

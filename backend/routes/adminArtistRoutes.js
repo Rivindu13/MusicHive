@@ -6,14 +6,17 @@ import {
   unblockArtist,
   deleteArtist,
 } from "../controllers/adminArtistController.js";
-import { protectAdmin } from "../middleware/adminAuthMiddleware.js";
+import {
+  protectAdmin,
+  authorizeAdminOnly,
+} from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", protectAdmin, getAllArtists);
-router.get("/:id", protectAdmin, getSingleArtist);
-router.patch("/:id/block", protectAdmin, blockArtist);
-router.patch("/:id/unblock", protectAdmin, unblockArtist);
-router.delete("/:id", protectAdmin, deleteArtist);
+router.get("/", protectAdmin, authorizeAdminOnly, getAllArtists);
+router.get("/:id", protectAdmin, authorizeAdminOnly, getSingleArtist);
+router.patch("/:id/block", protectAdmin, authorizeAdminOnly, blockArtist);
+router.patch("/:id/unblock", protectAdmin, authorizeAdminOnly, unblockArtist);
+router.delete("/:id", protectAdmin, authorizeAdminOnly, deleteArtist);
 
 export default router;

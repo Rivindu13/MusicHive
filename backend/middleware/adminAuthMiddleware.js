@@ -38,6 +38,7 @@ export const protectAdmin = async (req, res, next) => {
     }
 
     req.admin = adminUser;
+
     next();
   } catch (error) {
     return res.status(401).json({
