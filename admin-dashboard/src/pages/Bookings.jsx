@@ -131,7 +131,9 @@ const Bookings = () => {
             <option value="REFUNDED">Refunded</option>
           </select>
 
-          <button onClick={loadBookings}>Refresh</button>
+          <button className="refresh-btn" onClick={loadBookings}>
+            ↻ Refresh
+          </button>
         </div>
 
         {loading ? (

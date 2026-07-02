@@ -11,7 +11,9 @@ const AdminLayout = () => {
         <Topbar />
 
         <div className="admin-content">
-          <Outlet />
+          <div className="admin-content-shell">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>

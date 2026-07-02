@@ -72,7 +72,9 @@ const Reviews = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <button onClick={loadReviews}>Refresh</button>
+          <button className="refresh-btn" onClick={loadReviews}>
+            ↻ Refresh
+          </button>
         </div>
 
         {loading ? (

@@ -1,66 +1,145 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiMail, FiEye, FiEyeOff } from "react-icons/fi";
 import { adminLogin } from "../services/adminApi";
 
+const FRONTEND_LOGIN_URL = "http://localhost:3000/login";
+
 const Login = () => {
+  const [email, setEmail] = useState("admin@musichive.com");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const validateEmail = (value) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const [error, setError] = useState("");
+    if (!value) return "Admin email is required.";
+    if (!emailRegex.test(value)) return "Enter a valid admin email address.";
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    return "";
   };
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+
+    const emailError = validateEmail(email);
+
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    if (!password) {
+      setError("Admin password is required.");
+      return;
+    }
 
     try {
-      const response = await adminLogin(formData.email, formData.password);
+      setLoading(true);
+      setError("");
+
+      const response = await adminLogin(email, password);
 
       localStorage.setItem("adminToken", response.token);
+      localStorage.setItem("adminUser", JSON.stringify(response.admin));
+      localStorage.setItem("rememberAdmin", rememberMe ? "true" : "false");
+
       navigate("/dashboard");
-    } catch (error) {
-      setError("Invalid admin email or password");
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          "Invalid admin email or password. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
-      <form className="login-card" onSubmit={handleLogin}>
-        <h1>MusicHive Admin</h1>
-        <p>Login to manage the platform</p>
+    <div className="admin-login-page">
+      <div className="admin-login-brand">
+        <img src="/musichive-logo.png" alt="MusicHive Logo" />
+      </div>
 
-        {error && <div className="login-error">{error}</div>}
+      <div className="admin-login-card">
+        <div className="admin-login-glow"></div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Admin email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
+        <div className="admin-login-inner">
+          <h1>
+            Welcome Back to <br /> MusicHive Admin
+          </h1>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Admin password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
+          <p className="admin-login-subtitle">
+            Login to manage users, artists, bookings, chords, and reviews.
+          </p>
 
-        <button type="submit">Login</button>
-      </form>
+          {error && <div className="admin-login-error">{error}</div>}
+
+          <form onSubmit={handleSubmit}>
+            <div className="admin-login-input-group">
+              <input
+                type="email"
+                placeholder="Admin Email"
+                value={email}
+                autoComplete="username"
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <FiMail className="admin-login-icon" />
+            </div>
+
+            <div className="admin-login-input-group">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Admin Password"
+                value={password}
+                autoComplete="current-password"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <button
+                type="button"
+                className="admin-password-toggle"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </button>
+            </div>
+
+            <div className="admin-login-row">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                Remember me
+              </label>
+
+              <span>Secure admin access</span>
+            </div>
+
+            <button className="admin-login-btn" type="submit" disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+
+          <div className="admin-login-divider">
+            <span></span>
+            <p>MusicHive administration portal</p>
+            <span></span>
+          </div>
+
+          <a href={FRONTEND_LOGIN_URL} className="admin-login-back">
+            ← Back to Main Login
+          </a>
+        </div>
+      </div>
     </div>
   );
 };

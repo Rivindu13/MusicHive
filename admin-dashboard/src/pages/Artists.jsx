@@ -113,7 +113,9 @@ const Artists = () => {
             <option value="band">Band</option>
           </select>
 
-          <button onClick={loadArtists}>Refresh</button>
+          <button className="refresh-btn" onClick={loadArtists}>
+            ↻ Refresh
+          </button>
         </div>
 
         {loading ? (

@@ -8,7 +8,6 @@ import {
   Star,
   Settings,
 } from "lucide-react";
-import logo from "../assets/musichive-logo.png";
 
 const menuItems = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -24,8 +23,18 @@ const Sidebar = () => {
   return (
     <aside className="admin-sidebar">
       <div className="admin-brand">
-        <img src={logo} alt="MusicHive Logo" className="admin-brand-logo" />
-        <span>MusicHive</span>
+        <div className="admin-brand-logo-wrap">
+          <img
+            src="/musichive-logo.png"
+            alt="MusicHive Logo"
+            className="admin-brand-logo"
+          />
+        </div>
+
+        <div>
+          <span className="admin-brand-title">MusicHive</span>
+          <p className="admin-brand-subtitle">Admin Panel</p>
+        </div>
       </div>
 
       <nav className="admin-menu">

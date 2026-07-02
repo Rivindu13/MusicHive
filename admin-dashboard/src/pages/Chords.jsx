@@ -70,7 +70,9 @@ const Chords = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <button onClick={loadChords}>Refresh</button>
+          <button className="refresh-btn" onClick={loadChords}>
+            ↻ Refresh
+          </button>
         </div>
 
         {loading ? (
