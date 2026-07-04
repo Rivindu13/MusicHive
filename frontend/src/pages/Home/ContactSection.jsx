@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Reveal from "../../components/Reveal";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import emailjs from "@emailjs/browser";
 
 const ContactSection = () => {
   const navigate = useNavigate();
@@ -80,7 +80,16 @@ const ContactSection = () => {
     if (!validateForm()) return;
 
     try {
-      await axios.post("http://localhost:5000/api/contact", formData);
+      await emailjs.send(
+        "service_w09se2o",
+        "template_mmztzzc",
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          message: formData.message,
+        },
+        "Y5XL7B74-K3IIuVvg"
+      );
 
       alert("Message sent successfully!");
 

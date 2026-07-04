@@ -14,7 +14,6 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import availabilityRoutes from "./routes/availabilityRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import { startHoldExpiryJob } from "./jobs/holdExpiryJobs.js";
-import contactRoutes from "./routes/contactRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 
 import adminAuthRoutes from "./routes/adminAuthRoutes.js";
@@ -44,7 +43,6 @@ app.use("/api/chords", chordRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
-app.use("/api/contact", contactRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 app.use("/api/admin/auth", adminAuthRoutes);
