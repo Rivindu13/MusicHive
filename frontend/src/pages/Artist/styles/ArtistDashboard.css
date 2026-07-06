@@ -454,7 +454,7 @@ button.artistDash__sideAction:focus-visible{
   gap:12px;
 }
 
-/* Request rows */
+/* Request rows - original layout kept */
 .requestRow{
   width:100%;
   border-radius:16px;
@@ -479,6 +479,10 @@ button.artistDash__sideAction:focus-visible{
   border-radius:50%;
   background: rgba(255,255,255,.88);
   opacity:.9;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  flex:0 0 auto;
 }
 
 .requestRow__texts{
@@ -548,6 +552,54 @@ button.artistDash__sideAction:focus-visible{
 .btn:disabled{
   opacity:.65;
   cursor:not-allowed;
+}
+
+/* Only fix the small dashboard request card actions, not upcoming cards */
+.glassCard--requests .requestRow{
+  overflow:hidden;
+  gap:12px;
+}
+
+.glassCard--requests .requestRow__left{
+  min-width:0;
+  flex:1;
+}
+
+.glassCard--requests .requestRow__texts{
+  min-width:0;
+}
+
+.glassCard--requests .requestRow__title,
+.glassCard--requests .requestRow__sub{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.glassCard--requests .requestRow__right{
+  flex-shrink:0;
+  gap:10px;
+}
+
+.glassCard--requests .requestRow__priceWrap{
+  min-width:90px;
+}
+
+.glassCard--requests .requestRow__actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+
+.glassCard--requests .requestRow__actions .btn{
+  width:88px;
+  height:38px;
+  padding:0 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
 }
 
 /* Upcoming bookings box */

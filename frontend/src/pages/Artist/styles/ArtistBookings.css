@@ -786,3 +786,67 @@
   justify-content:flex-end;
   gap: 10px;
 }
+
+/* ===== Review + Report action buttons ===== */
+.upcomingRowCard__actions{
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.reviewBtn,
+.reportBtn{
+  width: 108px;
+  height: 42px;
+  border-radius: 12px;
+  font-weight: 1000;
+  font-size: 12px;
+  letter-spacing: .2px;
+  cursor: pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space: nowrap;
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.reviewBtn{
+  border: 1px solid rgba(36, 78, 255, .75);
+  background: rgba(36, 78, 255, 1);
+  color: #fff;
+}
+
+.reviewBtn:hover{
+  background: rgba(29, 67, 214, 1);
+  border-color: rgba(29, 67, 214, .9);
+}
+
+.reportBtn{
+  background: rgba(255, 87, 87, .08);
+  border: 1px solid rgba(255, 87, 87, .75);
+  color: #ff5757;
+}
+
+.reportBtn:hover{
+  background: rgba(255, 87, 87, .18);
+  color: #fff;
+}
+
+.reviewBtn:active,
+.reportBtn:active{
+  transform: translateY(1px);
+}
+
+@media (max-width: 760px){
+  .upcomingRowCard__actions{
+    width: 100%;
+  }
+
+  .reviewBtn,
+  .reportBtn{
+    flex: 1;
+    width: auto;
+  }
+}

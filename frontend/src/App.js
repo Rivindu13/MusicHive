@@ -24,6 +24,7 @@ import CustomerMyChords from "./pages/Customer/CustomerMyChords.jsx";
 import CustomerProfile from "./pages/Customer/CustomerProfile.jsx";
 import CustomerReviews from "./pages/Customer/CustomerReviews.jsx";
 import CustomerWishlist from "./pages/Customer/CustomerWishlist.jsx";
+import CustomerReport from "./pages/Customer/CustomerReport.jsx";
 
 import "./App.css";
 
@@ -95,6 +96,8 @@ function App() {
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/customer/reviews" element={<CustomerReviews />} />
         <Route path="/customer/wishlist" element={<CustomerWishlist />} />
+        <Route path="/customer/report" element={<CustomerReport />} />
+        <Route path="/artist/report" element={<CustomerReport />} />
       </Routes>
 
       {!hideLayout && <Footer />}

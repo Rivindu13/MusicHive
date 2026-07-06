@@ -15,6 +15,9 @@ import availabilityRoutes from "./routes/availabilityRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import { startHoldExpiryJob } from "./jobs/holdExpiryJobs.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+
+
 
 import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
@@ -23,6 +26,7 @@ import adminArtistRoutes from "./routes/adminArtistRoutes.js";
 import adminBookingRoutes from "./routes/adminBookingRoutes.js";
 import adminChordRoutes from "./routes/adminChordRoutes.js";
 import adminReviewRoutes from "./routes/adminReviewRoutes.js";
+
 
 startHoldExpiryJob();
 
@@ -44,6 +48,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);

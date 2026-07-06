@@ -106,13 +106,15 @@
   align-items:center;
   justify-content:space-between;
   gap: 14px;
+  overflow: hidden;
 }
 
 .customerMyBookingsPage .cmbLeft{
   display:flex;
   align-items:center;
   gap: 12px;
-  min-width: 360px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .customerMyBookingsPage .cmbAvatar{
@@ -130,17 +132,24 @@
   display:flex;
   flex-direction:column;
   gap: 4px;
+  min-width: 0;
 }
 
 .customerMyBookingsPage .cmbName{
   font-weight: 900;
   font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .customerMyBookingsPage .cmbMeta{
   font-weight: 800;
   font-size: 11px;
   color: rgba(255,255,255,.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .customerMyBookingsPage .cmbDot{
@@ -151,30 +160,42 @@
 .customerMyBookingsPage .cmbRight{
   display:flex;
   align-items:center;
-  gap: 14px;
+  justify-content:flex-end;
+  gap: 12px;
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .customerMyBookingsPage .cmbPrice{
   font-weight: 900;
   color: rgba(34,211,201,.95);
-  min-width: 120px;
+  min-width: 90px;
   text-align: right;
+  white-space: nowrap;
 }
 
 .customerMyBookingsPage .cmbActions{
   display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items:center;
   justify-content:flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .customerMyBookingsPage .cmbBtn{
-  padding: 10px 12px;
-  border-radius: 12px;
+  height: 44px;
+  min-width: 90px;
+  padding: 0 14px;
+  border-radius: 14px;
   font-weight: 900;
-  font-size: 11px;
+  font-size: 12px;
   cursor:pointer;
   border: 1px solid rgba(255,255,255,.14);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  white-space: nowrap;
+  transition: .2s ease;
 }
 
 .customerMyBookingsPage .cmbBtn--primary{
@@ -183,15 +204,50 @@
   border-color: rgba(255,159,10,.35);
 }
 
+.customerMyBookingsPage .cmbBtn--primary:hover{
+  background: rgba(255,159,10,1);
+}
+
 .customerMyBookingsPage .cmbBtn--secondary{
+  width: 100px;
   background: rgba(36, 78, 255, 1);
   color: #fff;
   border-color: rgba(36, 78, 255, .6);
 }
 
+.customerMyBookingsPage .cmbBtn--secondary:hover{
+  background: rgba(29, 67, 214, 1);
+}
+
+.customerMyBookingsPage .cmbBtn--report{
+  width: 100px;
+  background: rgba(255, 87, 87, 0.08);
+  color: #ff5757;
+  border: 1px solid rgba(255, 87, 87, 0.75);
+}
+
+.customerMyBookingsPage .cmbBtn--report:hover{
+  background: rgba(255, 87, 87, 0.18);
+}
+
 .customerMyBookingsPage .cmbBtn--ghost{
   background: rgba(255,255,255,.06);
   color: rgba(255,255,255,.88);
+}
+
+.customerMyBookingsPage .cmbBtn--danger {
+  background: rgba(255, 0, 0, 0.15);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #fff;
+}
+
+.customerMyBookingsPage .cmbBtn--danger:hover {
+  background: rgba(255, 0, 0, 0.25);
+}
+
+.customerMyBookingsPage .cmbBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 /* Modal */
@@ -287,38 +343,65 @@
 }
 
 /* Responsive */
+@media (max-width: 1100px){
+  .customerMyBookingsPage .cmbBtn--secondary,
+  .customerMyBookingsPage .cmbBtn--report{
+    width: 92px;
+  }
+
+  .customerMyBookingsPage .cmbPrice{
+    min-width: 82px;
+  }
+}
+
 @media (max-width: 900px){
   .customerMyBookingsPage .cmbCard{
     flex-direction: column;
     align-items: flex-start;
+    overflow: visible;
   }
+
   .customerMyBookingsPage .cmbLeft{
+    width: 100%;
     min-width: auto;
   }
+
   .customerMyBookingsPage .cmbRight{
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
+
   .customerMyBookingsPage .cmbPrice{
     text-align: left;
     min-width: auto;
   }
+
+  .customerMyBookingsPage .cmbActions{
+    flex-wrap: wrap;
+  }
+
   .customerMyBookingsPage .cmbRefresh{
     margin-left: 0;
   }
 }
 
-.cmbBtn--danger {
-  background: rgba(255, 0, 0, 0.15);
-  border: 1px solid rgba(255, 0, 0, 0.3);
-  color: #fff;
-}
+@media (max-width: 560px){
+  .customerMyBookingsPage .cmbRight{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 
-.cmbBtn--danger:hover {
-  background: rgba(255, 0, 0, 0.25);
-}
+  .customerMyBookingsPage .cmbActions{
+    width: 100%;
+    justify-content: flex-start;
+  }
 
-.cmbBtn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+  .customerMyBookingsPage .cmbBtn--secondary,
+  .customerMyBookingsPage .cmbBtn--report,
+  .customerMyBookingsPage .cmbBtn{
+    width: calc(50% - 4px);
+    min-width: 0;
+  }
 }

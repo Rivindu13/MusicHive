@@ -15,7 +15,6 @@ import {
   FiFileText,
   FiChevronDown,
   FiChevronUp,
-  FiEdit3,
   FiX,
 } from "react-icons/fi";
 
@@ -78,6 +77,23 @@ function safeText(value, fallback = "—") {
   const txt = String(value).trim();
   return txt ? txt : fallback;
 }
+
+function isPastBookingDate(ymdStr) {
+  if (!ymdStr) return false;
+
+  const today = new Date();
+  const localToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
+  const [year, month, day] = String(ymdStr).split("-").map(Number);
+  const bookingDay = new Date(year, month - 1, day);
+
+  return bookingDay < localToday;
+}
+
 
 export default function ArtistBookings() {
   const location = useLocation();
@@ -399,6 +415,26 @@ export default function ArtistBookings() {
     setReviewTarget(booking);
     setReviewRating(5);
     setReviewComment("");
+  }
+
+  function openReportPage(booking) {
+    const customer = booking.customer || {};
+
+    navigate("/artist/report", {
+      state: {
+        bookingId: booking._id,
+        bookingDate: booking.date,
+        slotType: booking.slotType,
+        returnTo: "/artist/bookings",
+        profile,
+        reportedUser: {
+          uid: booking.customerUid,
+          name: customer.name || "Organizer",
+          email: customer.email || "",
+          role: "organizer",
+        },
+      },
+    });
   }
 
   function closeReviewModal() {
@@ -823,7 +859,7 @@ export default function ArtistBookings() {
 
                             <div className="requestDetailsActions">
                               <button
-                                className="actionBtn actionBtn--accept"
+                                className="reqbtn reqbtn--accept"
                                 type="button"
                                 onClick={() => acceptBooking(b._id)}
                               >
@@ -862,7 +898,12 @@ export default function ArtistBookings() {
 
               {!loadingUpcoming && upcoming.length > 0 && (
                 <div className="upcomingStack">
-                  {upcoming.map((b) => (
+                  {upcoming.map((b) => {
+                    const reportAllowed =
+                      ["ACCEPTED", "CONFIRMED"].includes(String(b.status).toUpperCase()) &&
+                      (b.isPastEvent || isPastBookingDate(b.date));
+
+                    return (
                     <div className="upcomingRowCard" key={b._id}>
                       <div className="upcomingRowCard__left">
                         <div className="upcomingRowCard__icon">✓</div>
@@ -883,16 +924,27 @@ export default function ArtistBookings() {
                             </span>
                           </div>
 
-                          {b.canReviewOrganizer && (
-                            <div className="upcomingRowCard__reviewWrap">
-                              <button
-                                type="button"
-                                className="reviewBtn"
-                                onClick={() => openReviewModal(b)}
-                              >
-                                <FiEdit3 />
-                                <span>Review organizer</span>
-                              </button>
+                          {(b.canReviewOrganizer || reportAllowed) && (
+                            <div className="upcomingRowCard__actions">
+                              {b.canReviewOrganizer && (
+                                <button
+                                  type="button"
+                                  className="reviewBtn"
+                                  onClick={() => openReviewModal(b)}
+                                >
+                                  REVIEW
+                                </button>
+                              )}
+
+                              {reportAllowed && (
+                                <button
+                                  type="button"
+                                  className="reportBtn"
+                                  onClick={() => openReportPage(b)}
+                                >
+                                  REPORT
+                                </button>
+                              )}
                             </div>
                           )}
 
@@ -914,7 +966,8 @@ export default function ArtistBookings() {
                         </span>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>

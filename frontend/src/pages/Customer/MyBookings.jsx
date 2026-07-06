@@ -52,6 +52,22 @@ function statusLabel(status) {
   return status || "—";
 }
 
+function isPastBookingDate(ymd) {
+  if (!ymd) return false;
+
+  const today = new Date();
+  const localToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+
+  const [year, month, day] = String(ymd).split("-").map(Number);
+  const bookingDay = new Date(year, month - 1, day);
+
+  return bookingDay < localToday;
+}
+
 function waitForAuthReady() {
   return new Promise((resolve) => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -391,6 +407,21 @@ export default function CustomerMyBookingsPage() {
     setReviewOpen(true);
   }
 
+  function goToReport(b) {
+    const artistName = b.artist?.name || artistMap[b.artistUid]?.name || "Artist";
+
+    navigate("/customer/report", {
+      state: {
+        bookingId: b._id,
+        reportedUid: b.artistUid,
+        reportedName: artistName,
+        reportedRole: "artist",
+        bookingDate: b.date,
+        slotType: b.slotType,
+      },
+    });
+  }
+
   function closeReview() {
     setReviewOpen(false);
     setReviewBooking(null);
@@ -604,10 +635,14 @@ export default function CustomerMyBookingsPage() {
                 b.status === "ACCEPTED" &&
                 (b.paymentStatus === "UNPAID" || !b.paymentStatus);
 
+              const bookingPassed = isPastBookingDate(b.date);
+
               const reviewAllowed =
                 (b.paymentStatus === "PAID" || b.status === "CONFIRMED") &&
                 b.status !== "CANCELLED" &&
                 b.status !== "REJECTED";
+
+              const reportAllowed = reviewAllowed && bookingPassed;
 
               return (
                 <div className="cmbCard" key={b._id}>
@@ -671,7 +706,17 @@ export default function CustomerMyBookingsPage() {
                           className="cmbBtn cmbBtn--secondary"
                           onClick={() => openReview(b)}
                         >
-                          WRITE REVIEW
+                          REVIEW
+                        </button>
+                      )}
+
+                      {reportAllowed && (
+                        <button
+                          type="button"
+                          className="cmbBtn cmbBtn--report"
+                          onClick={() => goToReport(b)}
+                        >
+                          REPORT
                         </button>
                       )}
                     </div>

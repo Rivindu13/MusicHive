@@ -1,0 +1,215 @@
+.customerReportPage .reportHeader {
+  margin-top: 34px;
+}
+
+.customerReportPage .reportBackBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.86);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.customerReportPage .reportTitle {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.customerReportPage .reportSub {
+  margin: 10px 0 0;
+  color: rgba(255,255,255,.62);
+  font-weight: 700;
+}
+
+.customerReportPage .reportCard {
+  margin-top: 24px;
+  max-width: 800px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  padding: 22px;
+}
+
+.customerReportPage .reportBookingBox,
+.customerReportPage .reportTargetBox {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.16);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.customerReportPage .reportBookingBox {
+  border-color: rgba(34,211,201,.25);
+  background: rgba(34,211,201,.08);
+}
+
+.customerReportPage .reportTargetLabel {
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.customerReportPage .reportBookingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.customerReportPage .reportBookingGrid div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.customerReportPage .reportBookingGrid span {
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(255,255,255,.52);
+  text-transform: uppercase;
+}
+
+.customerReportPage .reportBookingGrid b {
+  font-size: 13px;
+  color: rgba(255,255,255,.92);
+  word-break: break-word;
+}
+
+.customerReportPage .reportTargetName {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.customerReportPage .reportTargetMeta {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.62);
+}
+
+.customerReportPage .reportState {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.82);
+  font-weight: 800;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customerReportPage .reportState--error {
+  border-color: rgba(255, 87, 87, .25);
+  background: rgba(255, 87, 87, .08);
+}
+
+.customerReportPage .reportState--success {
+  border-color: rgba(34,211,201,.25);
+  background: rgba(34,211,201,.10);
+}
+
+.customerReportPage .reportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.customerReportPage .reportField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(255,255,255,.86);
+}
+
+.customerReportPage .reportField select,
+.customerReportPage .reportField textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.90);
+  color: #000;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-weight: 700;
+  outline: none;
+}
+
+.customerReportPage .reportField textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+.customerReportPage .reportUpload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 16px;
+  border: 1px dashed rgba(34,211,201,.55);
+  background: rgba(34,211,201,.10);
+  padding: 16px;
+  cursor: pointer;
+  font-weight: 900;
+  color: rgba(255,255,255,.88);
+}
+
+.customerReportPage .reportUpload small {
+  color: rgba(255,255,255,.55);
+  font-weight: 700;
+}
+
+.customerReportPage .reportFiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.customerReportPage .reportFile {
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.75);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.customerReportPage .reportSubmitBtn {
+  margin-top: 6px;
+  border: 0;
+  border-radius: 14px;
+  padding: 13px 18px;
+  font-weight: 900;
+  cursor: pointer;
+  color: #062422;
+  background: rgba(34,211,201,.90);
+}
+
+.customerReportPage .reportSubmitBtn:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .customerReportPage .reportBookingGrid {
+    grid-template-columns: 1fr;
+  }
+}
