@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import NotificationBell from "../../components/NotificationBell";;
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import NotificationBell from "../../components/NotificationBell";
 
 import "../Artist/styles/ArtistDashboard.css";
 import "./Styles/CustomerBookingArtists.css";
 
 import {
-  FiBell,
   FiHome,
   FiCalendar,
   FiMusic,
