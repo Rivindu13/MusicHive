@@ -1,41 +1,20 @@
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-
-const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
+const API_BASE_URL = "http://localhost:5000/api";
 
 const adminAxios = axios.create({
-  baseURL: cleanBaseUrl,
-  timeout: 15000,
+  baseURL: API_BASE_URL,
 });
 
-adminAxios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("adminToken");
+adminAxios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("adminToken");
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-adminAxios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (!error.response) {
-      console.error(
-        "Network error. Check backend URL, CORS, or server deployment:",
-        error.message
-      );
-    }
-
-    return Promise.reject(error);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+
+  return config;
+});
 
 export const adminLogin = async (email, password) => {
   const response = await adminAxios.post("/admin/auth/login", {
@@ -97,11 +76,9 @@ export const getBookings = async () => {
 };
 
 export const updateBookingStatus = async (bookingId, status) => {
-  const response = await adminAxios.patch(
-    `/admin/bookings/${bookingId}/status`,
-    { status }
-  );
-
+  const response = await adminAxios.patch(`/admin/bookings/${bookingId}/status`, {
+    status,
+  });
   return response.data;
 };
 
@@ -110,7 +87,6 @@ export const updateBookingPaymentStatus = async (bookingId, paymentStatus) => {
     `/admin/bookings/${bookingId}/payment-status`,
     { paymentStatus }
   );
-
   return response.data;
 };
 
@@ -159,7 +135,6 @@ export const updatePaymentStatus = async (bookingId, paymentStatus) => {
     `/admin/payments/${bookingId}/status`,
     { paymentStatus }
   );
-
   return response.data;
 };
 
