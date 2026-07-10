@@ -6,13 +6,13 @@ import {
 } from "../controllers/adminReviewController.js";
 import {
   protectAdmin,
-  authorizeAdminOnly,
+  authorizeAdminOrManager,
 } from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", protectAdmin, authorizeAdminOnly, getAllReviews);
-router.get("/:id", protectAdmin, authorizeAdminOnly, getSingleReview);
-router.delete("/:id", protectAdmin, authorizeAdminOnly, deleteReview);
+router.get("/", protectAdmin, authorizeAdminOrManager, getAllReviews);
+router.get("/:id", protectAdmin, authorizeAdminOrManager, getSingleReview);
+router.delete("/:id", protectAdmin, authorizeAdminOrManager, deleteReview);
 
 export default router;

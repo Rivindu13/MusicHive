@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Artists from "./pages/Artists";
 import Bookings from "./pages/Bookings";
+import Payments from "./pages/Payments";
 import Chords from "./pages/Chords";
 import Reviews from "./pages/Reviews";
 import Settings from "./pages/Settings";
@@ -18,8 +19,15 @@ function App() {
   const savedAdmin = localStorage.getItem("adminUser");
   const adminUser = savedAdmin ? JSON.parse(savedAdmin) : null;
 
-  const defaultRedirect =
-    adminUser?.role === "manager" ? "/bookings" : "/dashboard";
+  let defaultRedirect = "/dashboard";
+
+  if (adminUser?.role === "manager") {
+    defaultRedirect = "/bookings";
+  }
+
+  if (adminUser?.role === "accountant") {
+    defaultRedirect = "/payments";
+  }
 
   return (
     <BrowserRouter>
@@ -73,9 +81,18 @@ function App() {
           />
 
           <Route
+            path="payments"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin", "accountant"]}>
+                <Payments />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
             path="chords"
             element={
-              <RoleProtectedRoute allowedRoles={["admin"]}>
+              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
                 <Chords />
               </RoleProtectedRoute>
             }
@@ -84,7 +101,7 @@ function App() {
           <Route
             path="reviews"
             element={
-              <RoleProtectedRoute allowedRoles={["admin"]}>
+              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
                 <Reviews />
               </RoleProtectedRoute>
             }
@@ -93,7 +110,9 @@ function App() {
           <Route
             path="settings"
             element={
-              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
+              <RoleProtectedRoute
+                allowedRoles={["admin", "manager", "accountant"]}
+              >
                 <Settings />
               </RoleProtectedRoute>
             }

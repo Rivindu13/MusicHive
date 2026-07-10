@@ -7,6 +7,7 @@ import {
   Music,
   Star,
   Settings,
+  CreditCard,
 } from "lucide-react";
 
 const menuItems = [
@@ -35,30 +36,35 @@ const menuItems = [
     roles: ["admin", "manager"],
   },
   {
+    name: "Payments",
+    path: "/payments",
+    icon: CreditCard,
+    roles: ["admin", "accountant"],
+  },
+  {
     name: "Chords",
     path: "/chords",
     icon: Music,
-    roles: ["admin"],
+    roles: ["admin", "manager"],
   },
   {
     name: "Reviews",
     path: "/reviews",
     icon: Star,
-    roles: ["admin"],
+    roles: ["admin", "manager"],
   },
   {
     name: "Settings",
     path: "/settings",
     icon: Settings,
-    roles: ["admin", "manager"],
+    roles: ["admin", "manager", "accountant"],
   },
 ];
 
 const Sidebar = () => {
   const savedAdmin = localStorage.getItem("adminUser");
   const adminUser = savedAdmin ? JSON.parse(savedAdmin) : null;
-
-  const role = adminUser?.role || "manager";
+  const role = adminUser?.role || "admin";
 
   const allowedMenuItems = menuItems.filter((item) =>
     item.roles.includes(role)
@@ -78,7 +84,11 @@ const Sidebar = () => {
         <div>
           <span className="admin-brand-title">MusicHive</span>
           <p className="admin-brand-subtitle">
-            {role === "manager" ? "Manager Panel" : "Admin Panel"}
+            {role === "manager"
+              ? "Manager Panel"
+              : role === "accountant"
+              ? "Accountant Panel"
+              : "Admin Panel"}
           </p>
         </div>
       </div>

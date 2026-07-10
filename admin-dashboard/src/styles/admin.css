@@ -1188,3 +1188,42 @@ select {
   color: #55c878 !important;
   box-shadow: none !important;
 }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-btn {
+  background: linear-gradient(135deg, #55c878, #4f8cff) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 18px !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  box-shadow: 0 12px 28px rgba(79, 140, 255, 0.22) !important;
+  transition: 0.2s ease !important;
+}
+
+.report-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 35px rgba(79, 140, 255, 0.3) !important;
+}
+
+@media (max-width: 760px) {
+  .topbar-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .report-btn,
+  .logout-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

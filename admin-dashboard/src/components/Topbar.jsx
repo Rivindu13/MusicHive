@@ -1,4 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { Download } from "lucide-react";
+import { downloadRoleBasedReport } from "../utils/adminReportPdf";
 
 const pageDetails = {
   "/dashboard": {
@@ -20,6 +22,11 @@ const pageDetails = {
     title: "Booking Management",
     subtitle: "Track booking requests, payments, and event status",
     badge: "Reservations",
+  },
+  "/payments": {
+    title: "Payment Management",
+    subtitle: "Track paid, unpaid, refunded, and PayHere payment records",
+    badge: "Finance",
   },
   "/chords": {
     title: "Chord Management",
@@ -51,6 +58,7 @@ const Topbar = () => {
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("adminUser");
+    localStorage.removeItem("rememberAdmin");
     navigate("/login");
   };
 
@@ -65,9 +73,16 @@ const Topbar = () => {
         <span className="topbar-badge">{currentPage.badge}</span>
       </div>
 
-      <button className="logout-btn" onClick={handleLogout}>
-        Logout
-      </button>
+      <div className="topbar-actions">
+        <button className="report-btn" onClick={downloadRoleBasedReport}>
+          <Download size={16} />
+          Download PDF
+        </button>
+
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
     </header>
   );
 };
