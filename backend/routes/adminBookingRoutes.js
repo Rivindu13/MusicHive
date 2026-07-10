@@ -9,6 +9,7 @@ import {
 import {
   protectAdmin,
   authorizeAdminOrManager,
+  authorizeAdminOrAccountant,
 } from "../middleware/adminAuthMiddleware.js";
 
 const router = express.Router();
@@ -26,7 +27,7 @@ router.patch(
 router.patch(
   "/:id/payment-status",
   protectAdmin,
-  authorizeAdminOrManager,
+  authorizeAdminOrAccountant,
   updatePaymentStatus
 );
 

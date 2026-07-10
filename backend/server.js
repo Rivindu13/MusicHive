@@ -26,6 +26,7 @@ import adminArtistRoutes from "./routes/adminArtistRoutes.js";
 import adminBookingRoutes from "./routes/adminBookingRoutes.js";
 import adminChordRoutes from "./routes/adminChordRoutes.js";
 import adminReviewRoutes from "./routes/adminReviewRoutes.js";
+import adminPaymentRoutes from "./routes/adminPaymentRoutes.js";
 
 
 startHoldExpiryJob();
@@ -57,6 +58,7 @@ app.use("/api/admin/artists", adminArtistRoutes);
 app.use("/api/admin/bookings", adminBookingRoutes);
 app.use("/api/admin/chords", adminChordRoutes);
 app.use("/api/admin/reviews", adminReviewRoutes);
+app.use("/api/admin/payments", adminPaymentRoutes);
 
 
 app.listen(5000, () => console.log("Backend running on port 5000"));

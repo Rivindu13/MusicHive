@@ -6,12 +6,26 @@ import {
   deleteBooking,
 } from "../services/adminApi";
 
+const getLoggedAdminRole = () => {
+  try {
+    const savedAdmin = localStorage.getItem("adminUser");
+    const adminUser = savedAdmin ? JSON.parse(savedAdmin) : null;
+    return adminUser?.role || "";
+  } catch (error) {
+    return "";
+  }
+};
+
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const role = getLoggedAdminRole();
+  const canManagePayment = role === "admin";
+  const canManageBooking = role === "admin" || role === "manager";
 
   const loadBookings = async () => {
     try {
@@ -20,6 +34,7 @@ const Bookings = () => {
       setBookings(data);
     } catch (error) {
       console.error("Bookings error:", error.message);
+      alert("Failed to load bookings. Please check backend connection.");
     } finally {
       setLoading(false);
     }
@@ -30,24 +45,47 @@ const Bookings = () => {
   }, []);
 
   const handleStatusChange = async (bookingId, status) => {
+    if (!canManageBooking) {
+      alert("You do not have permission to update booking status.");
+      return;
+    }
+
     try {
       await updateBookingStatus(bookingId, status);
       await loadBookings();
     } catch (error) {
-      alert(error.message);
+      alert(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to update booking status."
+      );
     }
   };
 
   const handlePaymentStatusChange = async (bookingId, paymentStatus) => {
+    if (!canManagePayment) {
+      alert("Only admin/accountant can manage payment status.");
+      return;
+    }
+
     try {
       await updateBookingPaymentStatus(bookingId, paymentStatus);
       await loadBookings();
     } catch (error) {
-      alert(error.message);
+      alert(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to update payment status."
+      );
     }
   };
 
   const handleDelete = async (bookingId) => {
+    if (!canManageBooking) {
+      alert("You do not have permission to delete bookings.");
+      return;
+    }
+
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this booking?"
     );
@@ -58,7 +96,11 @@ const Bookings = () => {
       await deleteBooking(bookingId);
       await loadBookings();
     } catch (error) {
-      alert(error.message);
+      alert(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to delete booking."
+      );
     }
   };
 
@@ -82,7 +124,11 @@ const Bookings = () => {
       .toLowerCase();
 
     const matchesSearch = searchableText.includes(search.toLowerCase());
-    const matchesStatus = statusFilter ? booking.status === statusFilter : true;
+
+    const matchesStatus = statusFilter
+      ? booking.status === statusFilter
+      : true;
+
     const matchesPayment = paymentFilter
       ? booking.paymentStatus === paymentFilter
       : true;
@@ -95,7 +141,8 @@ const Bookings = () => {
       <div className="page-header">
         <h1 className="admin-page-title">Booking Management</h1>
         <p className="admin-page-subtitle">
-          View and manage artist booking requests, payments, and statuses.
+          View and manage artist booking requests, booking statuses, and payment
+          visibility.
         </p>
       </div>
 
@@ -182,6 +229,7 @@ const Bookings = () => {
                       </td>
 
                       <td>{booking.date || "N/A"}</td>
+
                       <td>{booking.slotType || "N/A"}</td>
 
                       <td>
@@ -192,7 +240,7 @@ const Bookings = () => {
 
                       <td>
                         <span className={`status-badge ${booking.status}`}>
-                          {booking.status}
+                          {booking.status || "N/A"}
                         </span>
                       </td>
 
@@ -200,7 +248,7 @@ const Bookings = () => {
                         <span
                           className={`status-badge ${booking.paymentStatus}`}
                         >
-                          {booking.paymentStatus}
+                          {booking.paymentStatus || "N/A"}
                         </span>
                       </td>
 
@@ -212,42 +260,52 @@ const Bookings = () => {
 
                       <td>
                         <div className="action-buttons">
-                          <select
-                            className="small-select"
-                            value={booking.status}
-                            onChange={(e) =>
-                              handleStatusChange(booking._id, e.target.value)
-                            }
-                          >
-                            <option value="PENDING">Pending</option>
-                            <option value="ACCEPTED">Accepted</option>
-                            <option value="REJECTED">Rejected</option>
-                            <option value="CONFIRMED">Confirmed</option>
-                            <option value="CANCELLED">Cancelled</option>
-                            <option value="EXPIRED">Expired</option>
-                          </select>
+                          {canManageBooking && (
+                            <select
+                              className="small-select"
+                              value={booking.status || "PENDING"}
+                              onChange={(e) =>
+                                handleStatusChange(booking._id, e.target.value)
+                              }
+                            >
+                              <option value="PENDING">Pending</option>
+                              <option value="ACCEPTED">Accepted</option>
+                              <option value="REJECTED">Rejected</option>
+                              <option value="CONFIRMED">Confirmed</option>
+                              <option value="CANCELLED">Cancelled</option>
+                              <option value="EXPIRED">Expired</option>
+                            </select>
+                          )}
 
-                          <select
-                            className="small-select"
-                            value={booking.paymentStatus}
-                            onChange={(e) =>
-                              handlePaymentStatusChange(
-                                booking._id,
-                                e.target.value
-                              )
-                            }
-                          >
-                            <option value="UNPAID">Unpaid</option>
-                            <option value="PAID">Paid</option>
-                            <option value="REFUNDED">Refunded</option>
-                          </select>
+                          {canManagePayment ? (
+                            <select
+                              className="small-select"
+                              value={booking.paymentStatus || "UNPAID"}
+                              onChange={(e) =>
+                                handlePaymentStatusChange(
+                                  booking._id,
+                                  e.target.value
+                                )
+                              }
+                            >
+                              <option value="UNPAID">Unpaid</option>
+                              <option value="PAID">Paid</option>
+                              <option value="REFUNDED">Refunded</option>
+                            </select>
+                          ) : (
+                            <span className="muted-small">
+                              Payment read-only
+                            </span>
+                          )}
 
-                          <button
-                            className="small-btn danger"
-                            onClick={() => handleDelete(booking._id)}
-                          >
-                            Delete
-                          </button>
+                          {canManageBooking && (
+                            <button
+                              className="small-btn danger"
+                              onClick={() => handleDelete(booking._id)}
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

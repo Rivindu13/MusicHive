@@ -38,7 +38,6 @@ export const protectAdmin = async (req, res, next) => {
     }
 
     req.admin = adminUser;
-
     next();
   } catch (error) {
     return res.status(401).json({
@@ -69,6 +68,18 @@ export const authorizeRoles = (...allowedRoles) => {
   };
 };
 
+// Role groups
 export const authorizeAdminOnly = authorizeRoles("admin");
 
 export const authorizeAdminOrManager = authorizeRoles("admin", "manager");
+
+export const authorizeAdminOrAccountant = authorizeRoles(
+  "admin",
+  "accountant"
+);
+
+export const authorizeAllAdminRoles = authorizeRoles(
+  "admin",
+  "manager",
+  "accountant"
+);

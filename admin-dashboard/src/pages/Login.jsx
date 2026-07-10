@@ -49,7 +49,13 @@ const Login = () => {
       localStorage.setItem("adminUser", JSON.stringify(response.admin));
       localStorage.setItem("rememberAdmin", rememberMe ? "true" : "false");
 
-      navigate("/dashboard");
+      if (response.admin.role === "manager") {
+        navigate("/bookings");
+      } else if (response.admin.role === "accountant") {
+        navigate("/payments");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(
         err?.response?.data?.message ||

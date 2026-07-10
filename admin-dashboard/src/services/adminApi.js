@@ -120,4 +120,22 @@ export const getAdminProfile = async () => {
   return response.data.admin;
 };
 
+export const getPaymentSummary = async () => {
+  const response = await adminAxios.get("/admin/payments/summary");
+  return response.data.data;
+};
+
+export const getPayments = async () => {
+  const response = await adminAxios.get("/admin/payments");
+  return response.data.data;
+};
+
+export const updatePaymentStatus = async (bookingId, paymentStatus) => {
+  const response = await adminAxios.patch(
+    `/admin/payments/${bookingId}/status`,
+    { paymentStatus }
+  );
+  return response.data;
+};
+
 export default adminAxios;
