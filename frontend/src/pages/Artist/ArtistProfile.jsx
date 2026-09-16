@@ -26,6 +26,9 @@ import { auth } from "../../firebase";
 import { storage } from "../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
+const GENRE_OPTIONS = ["Pop", "Rock", "Jazz", "Classical", "Hip Hop", "Electronic", "Reggae", "R&B", "Folk", "Metal"];
+const INSTRUMENT_OPTIONS = ["Vocals", "Guitar", "Bass", "Piano", "Keyboard", "Drums", "Violin", "Saxophone", "Flute", "DJ"];
+
 export default function ArtistProfile() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -103,6 +106,14 @@ export default function ArtistProfile() {
       ...prev,
       socials: { ...prev.socials, [key]: value },
     }));
+  };
+
+  const toggleProfileOption = (key, option) => {
+    const values = form[key].split(",").map((value) => value.trim()).filter(Boolean);
+    const nextValues = values.includes(option)
+      ? values.filter((value) => value !== option)
+      : [...values, option];
+    setArtistProfileField(key, nextValues.join(", "));
   };
 
   // ✅ OPTIONAL photo upload (Firebase Storage)
@@ -422,21 +433,35 @@ export default function ArtistProfile() {
               </div>
 
               <div className="profileField">
-                <label>Genres (comma separated)</label>
-                <input
-                  value={form.genres}
-                  onChange={(e) => setArtistProfileField("genres", e.target.value)}
-                  placeholder="Pop, Rock, Jazz..."
-                />
+                <label>Genres</label>
+                <div className="profileOptionGrid">
+                  {GENRE_OPTIONS.map((option) => (
+                    <label className="profileOption" key={option}>
+                      <input
+                        type="checkbox"
+                        checked={form.genres.split(",").map((v) => v.trim()).includes(option)}
+                        onChange={() => toggleProfileOption("genres", option)}
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="profileField">
-                <label>{isBand ? "Instruments / Setup" : "Instruments"} (comma separated)</label>
-                <input
-                  value={form.instruments}
-                  onChange={(e) => setArtistProfileField("instruments", e.target.value)}
-                  placeholder="Guitar, Piano, Vocals..."
-                />
+                <label>{isBand ? "Instruments / Setup" : "Instruments"}</label>
+                <div className="profileOptionGrid">
+                  {INSTRUMENT_OPTIONS.map((option) => (
+                    <label className="profileOption" key={option}>
+                      <input
+                        type="checkbox"
+                        checked={form.instruments.split(",").map((v) => v.trim()).includes(option)}
+                        onChange={() => toggleProfileOption("instruments", option)}
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Band Members only for band */}

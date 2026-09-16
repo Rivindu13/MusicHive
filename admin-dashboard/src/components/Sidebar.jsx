@@ -8,9 +8,16 @@ import {
   Star,
   Settings,
   CreditCard,
+  Flag,
 } from "lucide-react";
 
 const menuItems = [
+  {
+    name: "Reports",
+    path: "/reports",
+    icon: Flag,
+    roles: ["admin", "manager"],
+  },
   {
     name: "Dashboard",
     path: "/dashboard",

@@ -9,7 +9,7 @@ import {
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [subscriptionFilter, setSubscriptionFilter] = useState("");
   const [loading, setLoading] = useState(true);
 
   const loadUsers = async () => {
@@ -68,16 +68,16 @@ const Users = () => {
   const filteredUsers = users.filter((user) => {
     const name = user.name || "";
     const email = user.email || "";
-    const role = user.role || "";
 
     const matchesSearch =
       name.toLowerCase().includes(search.toLowerCase()) ||
-      email.toLowerCase().includes(search.toLowerCase()) ||
-      role.toLowerCase().includes(search.toLowerCase());
+      email.toLowerCase().includes(search.toLowerCase());
 
-    const matchesRole = roleFilter ? role === roleFilter : true;
+    const matchesSubscription = subscriptionFilter
+      ? user.subscriptionStatus === subscriptionFilter
+      : true;
 
-    return matchesSearch && matchesRole;
+    return matchesSearch && matchesSubscription;
   });
 
   return (
@@ -86,7 +86,7 @@ const Users = () => {
         <div>
           <h1 className="admin-page-title">User Management</h1>
           <p className="admin-page-subtitle">
-            View, search, block, unblock, and remove MusicHive users.
+            View and manage event organizers and their subscription status.
           </p>
         </div>
       </div>
@@ -95,19 +95,18 @@ const Users = () => {
         <div className="table-toolbar">
           <input
             type="text"
-            placeholder="Search by name, email, or role..."
+            placeholder="Search organizers by name or email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
 
           <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            value={subscriptionFilter}
+            onChange={(e) => setSubscriptionFilter(e.target.value)}
           >
-            <option value="">All roles</option>
-            <option value="artist">Artist</option>
-            <option value="band">Band</option>
-            <option value="organizer">Organizer</option>
+            <option value="">All subscription statuses</option>
+            <option value="SUBSCRIBED">Subscribed</option>
+            <option value="NOT_SUBSCRIBED">Not subscribed</option>
           </select>
 
           <button className="refresh-btn" onClick={loadUsers}>
@@ -124,7 +123,7 @@ const Users = () => {
                 <tr>
                   <th>User</th>
                   <th>Email</th>
-                  <th>Role</th>
+                  <th>Subscription</th>
                   <th>Status</th>
                   <th>Joined Date</th>
                   <th>Actions</th>
@@ -156,7 +155,23 @@ const Users = () => {
                       </td>
 
                       <td>{user.email || "N/A"}</td>
-                      <td>{user.role || "N/A"}</td>
+                      <td>
+                        <span
+                          className={
+                            user.subscriptionStatus === "SUBSCRIBED"
+                              ? "status-badge active"
+                              : "status-badge not-subscribed"
+                          }
+                        >
+                          {user.subscriptionStatus === "SUBSCRIBED"
+                            ? `Subscribed${
+                                user.subscription?.plan
+                                  ? ` (${user.subscription.plan})`
+                                  : ""
+                              }`
+                            : "Not subscribed"}
+                        </span>
+                      </td>
 
                       <td>
                         <span

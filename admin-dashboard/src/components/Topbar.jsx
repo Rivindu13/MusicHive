@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, Moon, Sun } from "lucide-react";
 import { downloadRoleBasedReport } from "../utils/adminReportPdf";
 
 const pageDetails = {
@@ -38,6 +38,11 @@ const pageDetails = {
     subtitle: "Moderate ratings and user feedback",
     badge: "Moderation",
   },
+  "/reports": {
+    title: "Reports & Disputes",
+    subtitle: "Review submitted reports and manage dispute statuses",
+    badge: "Moderation",
+  },
   "/settings": {
     title: "Admin Settings",
     subtitle: "System information, security, and dashboard preferences",
@@ -45,7 +50,7 @@ const pageDetails = {
   },
 };
 
-const Topbar = () => {
+const Topbar = ({ theme, onThemeChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -74,6 +79,15 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-actions">
+        <button
+          className="theme-toggle"
+          onClick={() => onThemeChange(theme === "dark" ? "light" : "dark")}
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+        >
+          {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          <span>{theme === "dark" ? "Light" : "Dark"}</span>
+        </button>
         <button className="report-btn" onClick={downloadRoleBasedReport}>
           <Download size={16} />
           Download PDF

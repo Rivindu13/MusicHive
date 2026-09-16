@@ -84,9 +84,12 @@ export default function CustomerMyChords() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadGenre, setUploadGenre] = useState("Pop");
+  const [uploadPrice, setUploadPrice] = useState("0");
 
   const [previewChord, setPreviewChord] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [purchasedChordIds, setPurchasedChordIds] = useState([]);
+  const [purchasingId, setPurchasingId] = useState(null);
 
   const genres = ["All Genres", "Pop", "Rock", "Classical", "Jazz"];
 
@@ -165,6 +168,22 @@ export default function CustomerMyChords() {
   }, [uid]);
 
   useEffect(() => {
+    if (!uid || !auth.currentUser) return;
+
+    auth.currentUser.getIdToken().then(async (idToken) => {
+      const res = await fetch(`${API_BASE}/api/chords/purchased/${uid}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPurchasedChordIds(Array.isArray(data.data) ? data.data : []);
+      }
+    }).catch((err) => {
+      console.error("Failed to load purchased chords:", err);
+    });
+  }, [uid]);
+
+  useEffect(() => {
     fetchAllChords();
     // eslint-disable-next-line
   }, [exploreSearch, exploreGenre]);
@@ -184,6 +203,7 @@ export default function CustomerMyChords() {
     setUploadFile(null);
     setUploadTitle("");
     setUploadGenre("Pop");
+    setUploadPrice("0");
     setIsUploadOpen(true);
   };
 
@@ -228,6 +248,7 @@ export default function CustomerMyChords() {
           role: "CUSTOMER",
           title: uploadTitle.trim(),
           genre: uploadGenre,
+          price: uploadPrice,
           imageUrl,
         }),
       });
@@ -249,6 +270,59 @@ export default function CustomerMyChords() {
 
   const openPreview = (chord) => setPreviewChord(chord);
   const closePreview = () => setPreviewChord(null);
+
+  const isPurchased = (chord) =>
+    chord?.uid === uid || Number(chord?.price || 0) === 0 ||
+    purchasedChordIds.includes(String(chord?._id));
+
+  const handlePurchase = async (chord) => {
+    if (!auth.currentUser) {
+      alert("Please log in again to purchase this chord.");
+      return;
+    }
+
+    setPurchasingId(chord._id);
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch(`${API_BASE}/api/chords/${chord._id}/init-payment`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to start payment");
+      }
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.data.checkoutUrl;
+      Object.entries(data.data.payment).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value ?? "";
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      alert(err.message || "Failed to purchase chord");
+    } finally {
+      setPurchasingId(null);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") !== "return") return;
+    fetchMyChords();
+    if (params.get("chordId")) {
+      setPurchasedChordIds((prev) => [
+        ...new Set([...prev, params.get("chordId")]),
+      ]);
+    }
+    window.history.replaceState({}, document.title, "/customer/chords");
+  }, []);
 
   const handleDeleteChord = async (chord) => {
     const ok = window.confirm(`Delete "${chord.title || "Untitled"}"?`);
@@ -647,6 +721,16 @@ export default function CustomerMyChords() {
                     <option>Jazz</option>
                   </select>
                 </div>
+
+                <div className="field">
+                  <label>Price (LKR, 0 for free)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={uploadPrice}
+                    onChange={(e) => setUploadPrice(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="modalFooter">
@@ -680,6 +764,11 @@ export default function CustomerMyChords() {
                   <div className="previewMeta">
                     <div className="previewTitle">{previewChord.title || "Untitled"}</div>
                     <div className="previewGenre">{previewChord.genre}</div>
+                    <div className="previewGenre">
+                      {Number(previewChord.price || 0) > 0
+                        ? `LKR ${Number(previewChord.price).toLocaleString()}`
+                        : "Free"}
+                    </div>
 
                     {(() => {
                       const avg = getAvgRating(previewChord);
@@ -705,13 +794,28 @@ export default function CustomerMyChords() {
                     })()}
 
                     <div className="previewActions">
-                      <button
-                        className="downloadChordBtn downloadChordBtn--large"
-                        onClick={() => handleDownloadChord(previewChord)}
-                      >
-                        <FiDownload />
-                        <span>Download Chord</span>
-                      </button>
+                      {isPurchased(previewChord) ? (
+                        <button
+                          className="downloadChordBtn downloadChordBtn--large"
+                          onClick={() => handleDownloadChord(previewChord)}
+                        >
+                          <FiDownload />
+                          <span>Download Chord</span>
+                        </button>
+                      ) : (
+                        <button
+                          className="downloadChordBtn downloadChordBtn--large"
+                          onClick={() => handlePurchase(previewChord)}
+                          disabled={purchasingId === previewChord._id}
+                        >
+                          <FiDownload />
+                          <span>
+                            {purchasingId === previewChord._id
+                              ? "Buying..."
+                              : `Buy for LKR ${Number(previewChord.price).toLocaleString()}`}
+                          </span>
+                        </button>
+                      )}
 
                       {previewChord.uid === uid && (
                         <button

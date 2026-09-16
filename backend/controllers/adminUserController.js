@@ -1,10 +1,13 @@
 import User from "../models/user.js";
+import Subscription from "../models/Subscription.js";
+
+const USER_ROLES = ["artist", "band", "organizer"];
 
 export const getAllUsers = async (req, res) => {
   try {
-    const { search = "", role = "", status = "" } = req.query;
+    const { search = "", subscriptionStatus = "", status = "" } = req.query;
 
-    const filter = {};
+    const filter = { role: "organizer" };
 
     if (search) {
       filter.$or = [
@@ -14,10 +17,6 @@ export const getAllUsers = async (req, res) => {
       ];
     }
 
-    if (role) {
-      filter.role = role;
-    }
-
     if (status) {
       filter.status = status;
     }
@@ -25,11 +24,41 @@ export const getAllUsers = async (req, res) => {
     const users = await User.find(filter)
       .select("-password")
       .sort({ createdAt: -1 });
+    const subscriptions = await Subscription.find({
+      organizerUid: { $in: users.map((user) => user.uid) },
+    })
+      .select("organizerUid plan status expiresAt")
+      .lean();
+    const now = new Date();
+    const subscriptionMap = new Map(
+      subscriptions.map((subscription) => [
+        subscription.organizerUid,
+        subscription,
+      ])
+    );
+
+    const data = users.map((user) => {
+      const subscription = subscriptionMap.get(user.uid);
+      const isSubscribed =
+        subscription?.status === "ACTIVE" &&
+        subscription.expiresAt &&
+        new Date(subscription.expiresAt) > now;
+
+      return {
+        ...user.toObject(),
+        subscription: subscription || null,
+        subscriptionStatus: isSubscribed ? "SUBSCRIBED" : "NOT_SUBSCRIBED",
+      };
+    });
+
+    const filteredData = subscriptionStatus
+      ? data.filter((user) => user.subscriptionStatus === subscriptionStatus)
+      : data;
 
     return res.status(200).json({
       success: true,
-      count: users.length,
-      data: users,
+      count: filteredData.length,
+      data: filteredData,
     });
   } catch (error) {
     return res.status(500).json({
@@ -59,6 +88,43 @@ export const getSingleUser = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to load user.",
+      error: error.message,
+    });
+  }
+};
+
+export const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+
+    if (!USER_ROLES.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid user role is required.",
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    user.role = role;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "User role updated successfully.",
+      data: user.toObject(),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update user role.",
       error: error.message,
     });
   }

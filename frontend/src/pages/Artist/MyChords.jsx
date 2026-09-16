@@ -82,6 +82,7 @@ export default function MyChords() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadGenre, setUploadGenre] = useState("Pop");
+  const [uploadPrice, setUploadPrice] = useState("0");
 
   const [previewChord, setPreviewChord] = useState(null);
 
@@ -190,6 +191,7 @@ export default function MyChords() {
     setUploadFile(null);
     setUploadTitle("");
     setUploadGenre("Pop");
+    setUploadPrice("0");
     setIsUploadOpen(true);
   };
 
@@ -233,6 +235,7 @@ export default function MyChords() {
           role: "ARTIST",
           title: uploadTitle.trim(),
           genre: uploadGenre,
+          price: uploadPrice,
           imageUrl,
         }),
       });
@@ -709,6 +712,16 @@ export default function MyChords() {
                     <option>Classical</option>
                     <option>Jazz</option>
                   </select>
+                </div>
+
+                <div className="field">
+                  <label>Price (LKR, 0 for free)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={uploadPrice}
+                    onChange={(e) => setUploadPrice(e.target.value)}
+                  />
                 </div>
               </div>
 

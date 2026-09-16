@@ -59,6 +59,7 @@ export default function CustomerProfile() {
       budgetRange: organizerProfile.budgetRange || "",
       instagram: organizerProfile.instagram || "",
       website: organizerProfile.website || "",
+      subscriptionPlan: organizerProfile.subscriptionPlan || "free",
     };
   }, [profile]);
 
@@ -69,6 +70,8 @@ export default function CustomerProfile() {
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   const firstName = (fullName || "Customer").split(" ")[0];
 
@@ -78,6 +81,79 @@ export default function CustomerProfile() {
       navigate("/", { replace: true });
     }
   }, [navigate]);
+
+  useEffect(() => {
+    const loadSubscription = async () => {
+      if (!auth.currentUser) return;
+
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch(`${API_BASE}/api/subscriptions/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setSubscriptionInfo(result.data);
+          setField("subscriptionPlan", result.data.subscription?.plan || "free");
+        }
+      } catch (error) {
+        console.error("Subscription load error:", error);
+      }
+    };
+
+    loadSubscription();
+  }, []);
+
+  useEffect(() => {
+    const paymentState = new URLSearchParams(location.search).get(
+      "subscription"
+    );
+
+    if (!paymentState || !auth.currentUser) return;
+
+    const verifySubscription = async () => {
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          const response = await fetch(`${API_BASE}/api/subscriptions/me`, {
+            headers: { Authorization: "Bearer " + token },
+          });
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            setSubscriptionInfo(result.data);
+            const activePremium =
+              result.data.subscription?.status === "ACTIVE" &&
+              result.data.subscription?.plan === "premium";
+            setField("subscriptionPlan", activePremium ? "premium" : "free");
+
+            if (activePremium) {
+              alert("Premium subscription activated successfully.");
+              window.history.replaceState(
+                {},
+                document.title,
+                "/customer/profile"
+              );
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Subscription verification error:", error);
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+
+      alert(
+        paymentState === "cancel"
+          ? "Subscription payment was cancelled."
+          : "Payment returned successfully, but subscription confirmation is still pending. Please refresh in a moment."
+      );
+      window.history.replaceState({}, document.title, "/customer/profile");
+    };
+
+    verifySubscription();
+  }, [location.search]);
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -119,6 +195,47 @@ export default function CustomerProfile() {
     }
   };
 
+  const startSubscriptionPayment = async (plan) => {
+        if (!auth.currentUser || plan === "free") return;
+
+        setSubscriptionLoading(true);
+
+        try {
+          const token = await auth.currentUser.getIdToken();
+          const response = await fetch(`${API_BASE}/api/subscriptions/init-payment`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ plan }),
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || "Could not start subscription payment");
+          }
+
+          const paymentForm = document.createElement("form");
+          paymentForm.method = "POST";
+          paymentForm.action = result.data.checkoutUrl;
+
+          Object.entries(result.data.payment).forEach(([key, value]) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = key;
+            input.value = value ?? "";
+            paymentForm.appendChild(input);
+          });
+
+          document.body.appendChild(paymentForm);
+          paymentForm.submit();
+        } catch (error) {
+          alert(error.message);
+          setSubscriptionLoading(false);
+        }
+      };
+
   const handleSave = async () => {
     if (!uid) return;
 
@@ -143,6 +260,8 @@ export default function CustomerProfile() {
           budgetRange: form.budgetRange,
           instagram: form.instagram,
           website: form.website,
+          subscriptionPlan:
+            form.subscriptionPlan === "free" ? "free" : undefined,
           isProfileComplete: true,
         },
       };
@@ -447,6 +566,76 @@ export default function CustomerProfile() {
                   onChange={(e) => setField("website", e.target.value)}
                   placeholder="https://yourwebsite.com"
                 />
+              </div>
+
+              <div className="customerProfileField customerProfileField--full">
+                <label>Subscription Plan</label>
+                <p className="customerProfileField__hint">
+                  Choose the plan that best fits your event-organizing needs.
+                  You can change it later.
+                </p>
+                <div className="subscriptionPlans">
+                  {[
+                    {
+                      value: "free",
+                      name: "Free",
+                      price: "LKR 0 / month",
+                      description: "Full core features for managing your events.",
+                    },
+                    {
+                      value: "premium",
+                      name: "Premium",
+                      price: "LKR 5,500 / month",
+                      description: "All features plus the performance discount program.",
+                    },
+                  ].map((plan) => (
+                    <label
+                      className={`subscriptionPlan ${
+                        form.subscriptionPlan === plan.value
+                          ? "subscriptionPlan--selected"
+                          : ""
+                      }`}
+                      key={plan.value}
+                    >
+                      <input
+                        type="radio"
+                        name="subscriptionPlan"
+                        value={plan.value}
+                        checked={form.subscriptionPlan === plan.value}
+                        onChange={(e) =>
+                          setField("subscriptionPlan", e.target.value)
+                        }
+                      />
+                      <span>
+                        <strong>{plan.name}</strong>
+                        <small>{plan.price}</small>
+                        <small>{plan.description}</small>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="subscriptionReward">
+                  Completed events:{" "}
+                  {subscriptionInfo?.completedEvents || 0} ·{" "}
+                  {subscriptionInfo?.subscription?.status === "ACTIVE" &&
+                  subscriptionInfo?.subscription?.plan === "premium"
+                    ? `Earned discount: ${
+                        subscriptionInfo?.discountPercent || 0
+                      }%`
+                    : "Discount program available with Premium"}
+                </p>
+                {form.subscriptionPlan === "premium" && (
+                  <button
+                    type="button"
+                    className="customerProfileBtn customerProfileBtn--subscribe"
+                    onClick={() => startSubscriptionPayment(form.subscriptionPlan)}
+                    disabled={subscriptionLoading}
+                  >
+                    {subscriptionLoading
+                      ? "Opening payment..."
+                      : `Subscribe to ${form.subscriptionPlan}`}
+                  </button>
+                )}
               </div>
             </div>
           </div>

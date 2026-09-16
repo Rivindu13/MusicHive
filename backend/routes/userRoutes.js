@@ -1,6 +1,7 @@
 import express from "express";
 import User from "../models/User.js";
 import { bucket } from "../config/firebaseAdmin.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 const router = express.Router();
 
@@ -51,11 +52,22 @@ router.post("/", async (req, res) => {
  */
 router.get("/artists", async (req, res) => {
   try {
-    const { genre, search, onlyComplete } = req.query;
+    const { genre, search, instrument, role, minPrice, maxPrice, onlyComplete } =
+      req.query;
 
     const query = {
       role: { $in: ["artist", "band"] },
     };
+
+    if (role && role !== "all") {
+      if (!["artist", "band"].includes(role)) {
+        return res.status(400).json({
+          success: false,
+          message: "role must be artist, band, or all",
+        });
+      }
+      query.role = role;
+    }
 
     if (onlyComplete === "true") {
       query["artistProfile.isProfileComplete"] = true;
@@ -65,8 +77,44 @@ router.get("/artists", async (req, res) => {
       query["artistProfile.genres"] = genre;
     }
 
+    if (instrument && instrument.trim()) {
+      const escapedInstrument = instrument.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query["artistProfile.instruments"] = {
+        $regex: `^${escapedInstrument}$`,
+        $options: "i",
+      };
+    }
+
+    const parsedMinPrice = minPrice === undefined ? null : Number(minPrice);
+    const parsedMaxPrice = maxPrice === undefined ? null : Number(maxPrice);
+
+    if (
+      (parsedMinPrice !== null &&
+        (!Number.isFinite(parsedMinPrice) || parsedMinPrice < 0)) ||
+      (parsedMaxPrice !== null &&
+        (!Number.isFinite(parsedMaxPrice) || parsedMaxPrice < 0)) ||
+      (parsedMinPrice !== null &&
+        parsedMaxPrice !== null &&
+        parsedMinPrice > parsedMaxPrice)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Price filters must be non-negative numbers with minPrice <= maxPrice",
+      });
+    }
+
+    if (parsedMinPrice !== null || parsedMaxPrice !== null) {
+      query["artistProfile.pricePerHour"] = {};
+      if (parsedMinPrice !== null) {
+        query["artistProfile.pricePerHour"].$gte = parsedMinPrice;
+      }
+      if (parsedMaxPrice !== null) {
+        query["artistProfile.pricePerHour"].$lte = parsedMaxPrice;
+      }
+    }
+
     if (search && search.trim()) {
-      const s = search.trim();
+      const s = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       query.$or = [
         { name: { $regex: s, $options: "i" } },
         { "artistProfile.location": { $regex: s, $options: "i" } },
@@ -92,8 +140,12 @@ router.get("/artists", async (req, res) => {
 /**
  * Get wishlist by user uid
  */
-router.get("/:uid/wishlist", async (req, res) => {
+router.get("/:uid/wishlist", requireAuth, async (req, res) => {
   try {
+    if (req.user.uid !== req.params.uid) {
+      return res.status(403).json({ success: false, message: "You can only access your own wishlist" });
+    }
+
     const user = await User.findOne({ uid: req.params.uid }).select(
       "uid role wishlist"
     );
@@ -122,7 +174,7 @@ router.get("/:uid/wishlist", async (req, res) => {
  * Toggle wishlist
  * POST /api/users/wishlist/toggle
  */
-router.post("/wishlist/toggle", async (req, res) => {
+router.post("/wishlist/toggle", requireAuth, async (req, res) => {
   try {
     const { uid, artistUid } = req.body;
 
@@ -131,6 +183,10 @@ router.post("/wishlist/toggle", async (req, res) => {
         success: false,
         message: "uid and artistUid are required",
       });
+    }
+
+    if (req.user.uid !== uid) {
+      return res.status(403).json({ success: false, message: "You can only update your own wishlist" });
     }
 
     const user = await User.findOne({ uid });
@@ -194,7 +250,7 @@ router.post("/wishlist/toggle", async (req, res) => {
  * Remove one artist from wishlist
  * POST /api/users/wishlist/remove
  */
-router.post("/wishlist/remove", async (req, res) => {
+router.post("/wishlist/remove", requireAuth, async (req, res) => {
   try {
     const { uid, artistUid } = req.body;
 
@@ -203,6 +259,10 @@ router.post("/wishlist/remove", async (req, res) => {
         success: false,
         message: "uid and artistUid are required",
       });
+    }
+
+    if (req.user.uid !== uid) {
+      return res.status(403).json({ success: false, message: "You can only update your own wishlist" });
     }
 
     const user = await User.findOne({ uid });
@@ -239,8 +299,12 @@ router.post("/wishlist/remove", async (req, res) => {
  * Get full artist objects for a user's wishlist
  * GET /api/users/:uid/wishlist/artists
  */
-router.get("/:uid/wishlist/artists", async (req, res) => {
+router.get("/:uid/wishlist/artists", requireAuth, async (req, res) => {
   try {
+    if (req.user.uid !== req.params.uid) {
+      return res.status(403).json({ success: false, message: "You can only access your own wishlist" });
+    }
+
     const user = await User.findOne({ uid: req.params.uid }).select("wishlist");
 
     if (!user) {
@@ -406,6 +470,17 @@ router.patch("/:uid/profile", async (req, res) => {
     }
 
     if (user.role === "organizer" && organizerProfile) {
+      if (
+        organizerProfile.subscriptionPlan !== undefined &&
+        !["free", "premium"].includes(
+          organizerProfile.subscriptionPlan
+        )
+      ) {
+        return res.status(400).json({
+          message: "Invalid subscription plan.",
+        });
+      }
+
       if (typeof organizerProfile.phone === "string") {
         user.organizerProfile.phone = organizerProfile.phone;
       }
@@ -443,6 +518,11 @@ router.patch("/:uid/profile", async (req, res) => {
 
       if (typeof organizerProfile.website === "string") {
         user.organizerProfile.website = organizerProfile.website;
+      }
+
+      if (organizerProfile.subscriptionPlan === "free") {
+        user.organizerProfile.subscriptionPlan =
+          organizerProfile.subscriptionPlan;
       }
 
       if (typeof organizerProfile.isProfileComplete === "boolean") {

@@ -175,12 +175,43 @@ function generatePayHereMd5Sig({
 router.post("/request", requireAuth, async (req, res) => {
   try {
     const customerUid = req.user.uid;
-    const { slotId, note } = req.body || {};
+    const { slotId, note, eventLocation, eventType } = req.body || {};
 
     if (!slotId) {
       return res.status(400).json({
         success: false,
         message: "slotId is required",
+      });
+    }
+
+    if (
+      (note !== undefined && typeof note !== "string") ||
+      (eventLocation !== undefined && typeof eventLocation !== "string") ||
+      (eventType !== undefined && typeof eventType !== "string")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking details must be strings",
+      });
+    }
+
+    const normalizedEventLocation = String(eventLocation || "").trim();
+    const normalizedEventType = String(eventType || "").trim();
+    if (!normalizedEventLocation || !normalizedEventType) {
+      return res.status(400).json({
+        success: false,
+        message: "Event location and event type are required",
+      });
+    }
+
+    if (
+      normalizedEventLocation.length > 300 ||
+      normalizedEventType.length > 120 ||
+      String(note || "").trim().length > 1000
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking details exceed the allowed length",
       });
     }
 
@@ -304,7 +335,9 @@ router.post("/request", requireAuth, async (req, res) => {
       date: reservedSlot.date,
       slotType: reservedSlot.slotType,
       status: "PENDING",
-      note: note || "",
+      note: String(note || "").trim(),
+      eventLocation: normalizedEventLocation,
+      eventType: normalizedEventType,
       price: artistPrice,
       expiresAt,
     });
@@ -860,6 +893,91 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
     success: false,
     message: "Direct markPaid is disabled. Use PayHere payment flow.",
   });
+});
+
+/**
+ * PATCH /api/bookings/:id/note
+ * Customers can update booking details before payment confirmation.
+ */
+router.patch("/:id/note", requireAuth, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    if (booking.customerUid !== req.user.uid) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
+    }
+
+    if (
+      !["PENDING", "ACCEPTED"].includes(booking.status) ||
+      booking.paymentStatus === "PAID"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking details can no longer be edited",
+      });
+    }
+
+    const { note, eventLocation, eventType } = req.body || {};
+
+    if (
+      (note !== undefined && typeof note !== "string") ||
+      typeof eventLocation !== "string" ||
+      typeof eventType !== "string"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Note, event location, and event type must be strings",
+      });
+    }
+
+    const normalizedNote = String(note || "").trim();
+    const normalizedEventLocation = eventLocation.trim();
+    const normalizedEventType = eventType.trim();
+
+    if (!normalizedEventLocation || !normalizedEventType) {
+      return res.status(400).json({
+        success: false,
+        message: "Event location and event type are required",
+      });
+    }
+
+    if (
+      normalizedNote.length > 1000 ||
+      normalizedEventLocation.length > 300 ||
+      normalizedEventType.length > 120
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking details exceed the allowed length",
+      });
+    }
+
+    booking.note = normalizedNote;
+    booking.eventLocation = normalizedEventLocation;
+    booking.eventType = normalizedEventType;
+    await booking.save();
+
+    return res.json({
+      success: true,
+      message: "Booking details updated successfully",
+      data: booking,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
 });
 
 /**

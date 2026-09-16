@@ -152,6 +152,32 @@
   text-overflow: ellipsis;
 }
 
+.customerMyBookingsPage .cmbNotePreview{
+  max-width: 420px;
+}
+
+.customerMyBookingsPage .cmbCharacterCount{
+  text-align: right;
+  color: rgba(255,255,255,.55);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.customerMyBookingsPage .cmbInput{
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,.07);
+  color: inherit;
+  outline: none;
+}
+
+.customerMyBookingsPage .cmbInput:focus{
+  border-color: rgba(34,211,201,.65);
+}
+
 .customerMyBookingsPage .cmbDot{
   margin: 0 8px;
   opacity: .7;

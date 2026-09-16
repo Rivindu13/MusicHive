@@ -564,6 +564,30 @@
   font-weight: 800;
 }
 
+.upcomingRowCard__detailsBtn{
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.9);
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.upcomingRowCard__details{
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.78);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .upcomingRowCard__uid{
   color: rgba(255,255,255,.82);
   font-weight: 900;

@@ -126,6 +126,7 @@ export default function ArtistBookings() {
 
   const [loadingUpcoming, setLoadingUpcoming] = useState(false);
   const [upcoming, setUpcoming] = useState([]);
+  const [selectedUpcomingId, setSelectedUpcomingId] = useState(null);
 
   const [reviewTarget, setReviewTarget] = useState(null);
   const [reviewRating, setReviewRating] = useState(5);
@@ -923,6 +924,58 @@ export default function ArtistBookings() {
                               {b.status}
                             </span>
                           </div>
+
+                          <button
+                            type="button"
+                            className="upcomingRowCard__detailsBtn"
+                            onClick={() =>
+                              setSelectedUpcomingId((prev) =>
+                                prev === b._id ? null : b._id
+                              )
+                            }
+                          >
+                            {selectedUpcomingId === b._id
+                              ? "HIDE DETAILS"
+                              : "VIEW DETAILS"}
+                          </button>
+
+                          {selectedUpcomingId === b._id && (
+                            <div className="upcomingRowCard__details">
+                              <div>
+                                <b>Customer:</b>{" "}
+                                {safeText(b.customer?.name, b.customerUid)}
+                              </div>
+                              <div>
+                                <b>Email:</b>{" "}
+                                {safeText(b.customer?.email, "No email")}
+                              </div>
+                              <div>
+                                <b>Event location:</b>{" "}
+                                {safeText(
+                                  b.eventLocation ||
+                                    b.customer?.organizerProfile?.location,
+                                  "Not provided"
+                                )}
+                              </div>
+                              <div>
+                                <b>Event type:</b>{" "}
+                                {safeText(
+                                  b.eventType || b.customer?.organizerProfile?.eventType,
+                                  "Not provided"
+                                )}
+                              </div>
+                              <div>
+                                <b>Booking note:</b>{" "}
+                                {safeText(b.note, "No note provided")}
+                              </div>
+                              <div>
+                                <b>Price:</b>{" "}
+                                {typeof b.price === "number"
+                                  ? `LKR ${b.price.toLocaleString()}`
+                                  : "Not set"}
+                              </div>
+                            </div>
+                          )}
 
                           {(b.canReviewOrganizer || reportAllowed) && (
                             <div className="upcomingRowCard__actions">

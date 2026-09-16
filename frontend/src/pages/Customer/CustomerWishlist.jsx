@@ -111,7 +111,12 @@ export default function CustomerWishlist() {
     setError("");
 
     try {
-      const res = await fetch(`${API_BASE}/api/users/${uid}/wishlist/artists`);
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("You are not logged in.");
+      const token = await currentUser.getIdToken();
+      const res = await fetch(`${API_BASE}/api/users/${uid}/wishlist/artists`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
 
       if (!res.ok || !data.success) {
@@ -133,10 +138,14 @@ export default function CustomerWishlist() {
 
     setBusyUid(artistUid);
     try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("You are not logged in.");
+      const token = await currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/api/users/wishlist/remove`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           uid: currentUid,

@@ -45,6 +45,13 @@ export const unblockUser = async (userId) => {
   return response.data;
 };
 
+export const updateUserRole = async (userId, role) => {
+  const response = await adminAxios.patch(`/admin/users/${userId}/role`, {
+    role,
+  });
+  return response.data;
+};
+
 export const deleteUser = async (userId) => {
   const response = await adminAxios.delete(`/admin/users/${userId}`);
   return response.data;
@@ -108,6 +115,16 @@ export const deleteChord = async (chordId) => {
 export const getReviews = async () => {
   const response = await adminAxios.get("/admin/reviews");
   return response.data.data;
+};
+
+export const getReports = async () => {
+  const response = await adminAxios.get("/admin/reports");
+  return response.data.data;
+};
+
+export const updateReportStatus = async (reportId, status) => {
+  const response = await adminAxios.patch(`/admin/reports/${reportId}/status`, { status });
+  return response.data;
 };
 
 export const deleteReview = async (reviewId) => {

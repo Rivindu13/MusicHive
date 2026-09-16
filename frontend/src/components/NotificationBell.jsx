@@ -95,13 +95,45 @@ export default function NotificationBell({ uid, buttonClassName = "artistDash__i
       }
 
       setNotifications(Array.isArray(data) ? data : []);
-      setNotificationCount(0);
       setShowNotifications(true);
     } catch (err) {
       console.error("Notification fetch error:", err);
       setNotifications([]);
       setShowNotifications(true);
     }
+  };
+
+  const markAllRead = async () => {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/notifications/${uid}/read-all`, {
+        method: "PATCH",
+        headers,
+      });
+      if (!res.ok) throw new Error("Failed to mark notifications as read");
+      setNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
+      setNotificationCount(0);
+    } catch (err) {
+      console.error("Mark notifications read error:", err);
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(`${API_BASE}/api/notifications/${notification._id}/read`, {
+        method: "PATCH",
+        headers,
+      });
+      setNotifications((current) => current.map((item) =>
+        item._id === notification._id ? { ...item, read: true } : item
+      ));
+      setNotificationCount((current) => Math.max(0, current - (notification.read ? 0 : 1)));
+    } catch (err) {
+      console.error("Mark notification read error:", err);
+    }
+    setShowNotifications(false);
+    if (notification.link) navigate(notification.link);
   };
 
   return (
@@ -124,9 +156,10 @@ export default function NotificationBell({ uid, buttonClassName = "artistDash__i
           <div className="notificationPopup__header">
             <h4>Notifications</h4>
 
-            <button type="button" onClick={() => setShowNotifications(false)}>
-              ×
-            </button>
+            <div>
+              <button type="button" onClick={markAllRead}>Mark all read</button>
+              <button type="button" onClick={() => setShowNotifications(false)}>×</button>
+            </div>
           </div>
 
           {notifications.length === 0 ? (
@@ -135,11 +168,8 @@ export default function NotificationBell({ uid, buttonClassName = "artistDash__i
             notifications.map((n) => (
               <div
                 key={n._id}
-                className="notificationPopup__item"
-                onClick={() => {
-                  setShowNotifications(false);
-                  if (n.link) navigate(n.link);
-                }}
+                onClick={() => handleNotificationClick(n)}
+                className={`notificationPopup__item ${n.read ? "" : "notificationPopup__item--unread"}`}
               >
                 <strong>{n.title}</strong>
                 <p>{n.message}</p>

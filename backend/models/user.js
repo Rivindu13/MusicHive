@@ -50,6 +50,17 @@ const userSchema = new mongoose.Schema({
     default: [],
   },
 
+  purchasedChords: {
+    type: [String], // chord IDs
+    default: [],
+  },
+
+  completedEventsCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+
   // =========================
   // Artist / Band profile
   // =========================
@@ -150,6 +161,12 @@ const userSchema = new mongoose.Schema({
     website: {
       type: String,
       default: "",
+    },
+
+    subscriptionPlan: {
+      type: String,
+      enum: ["free", "premium"],
+      default: "free",
     },
 
     isProfileComplete: {

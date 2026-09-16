@@ -730,6 +730,18 @@ button.artistDash__sideAction:focus-visible{
   cursor: pointer;
 }
 
+.notificationPopup__header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notificationPopup__header > div button:first-child {
+  font-size: 11px;
+  padding: 4px 7px;
+  color: #4f8cff;
+}
+
 .notificationPopup__empty {
   text-align: center;
   color: #aaa;
@@ -743,6 +755,11 @@ button.artistDash__sideAction:focus-visible{
   background: #1f1f1f;
   margin-bottom: 8px;
   cursor: pointer;
+}
+
+.notificationPopup__item--unread {
+  background: rgba(79, 140, 255, 0.1);
+  border-left: 3px solid #4f8cff;
 }
 
 .notificationPopup__item:hover {

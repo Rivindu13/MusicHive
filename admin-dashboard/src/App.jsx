@@ -10,6 +10,7 @@ import Payments from "./pages/Payments";
 import Chords from "./pages/Chords";
 import Reviews from "./pages/Reviews";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -103,6 +104,15 @@ function App() {
             element={
               <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
                 <Reviews />
+              </RoleProtectedRoute>
+            }
+          />
+
+          <Route
+            path="reports"
+            element={
+              <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
+                <Reports />
               </RoleProtectedRoute>
             }
           />

@@ -56,7 +56,7 @@ function decorateSlotsForUser(slots, currentUid) {
  * Body: { artistUid?: string, daysAhead?: number }
  * Creates missing slots (does not overwrite existing)
  */
-router.post("/ensure", async (req, res) => {
+router.post("/ensure", requireAuth, async (req, res) => {
   try {
     const { artistUid, daysAhead } = req.body || {};
     const horizon = Number(daysAhead || DAYS_AHEAD);

@@ -1038,6 +1038,11 @@ section {
 .forgot {
   color: #cbbdff;
   text-decoration: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
 }
 
 /* Button */

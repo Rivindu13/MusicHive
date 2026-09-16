@@ -167,6 +167,112 @@
   grid-column: 1 / -1;
 }
 
+.customerProfilePage .customerProfileField__hint{
+  margin: -2px 0 2px;
+  color: rgba(255,255,255,.58);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.customerProfilePage .subscriptionPlans{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.customerProfilePage .subscriptionPlan{
+  position: relative;
+  display: block;
+  min-height: 156px;
+  padding: 20px 18px 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.08), transparent 45%),
+    rgba(8, 6, 29, .48);
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease,
+    box-shadow .2s ease;
+}
+
+.customerProfilePage .subscriptionPlan:hover{
+  transform: translateY(-3px);
+  border-color: rgba(34,211,201,.55);
+  box-shadow: 0 14px 28px rgba(0,0,0,.2);
+}
+
+.customerProfilePage .subscriptionPlan--selected{
+  border-color: rgba(34,211,201,.9);
+  background:
+    linear-gradient(145deg, rgba(34,211,201,.19), rgba(124,58,237,.16)),
+    rgba(8, 6, 29, .52);
+  box-shadow: 0 0 0 1px rgba(34,211,201,.16), 0 16px 32px rgba(0,0,0,.24);
+}
+
+.customerProfilePage .subscriptionPlan input{
+  position: absolute;
+  top: 19px;
+  right: 18px;
+  width: 17px;
+  height: 17px;
+  accent-color: #22d3c9;
+}
+
+.customerProfilePage .subscriptionPlan span{
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-right: 28px;
+}
+
+.customerProfilePage .subscriptionPlan strong{
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: .1px;
+}
+
+.customerProfilePage .subscriptionPlan small{
+  color: rgba(255,255,255,.65);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.customerProfilePage .subscriptionPlan small:first-of-type{
+  color: #5eead4;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.customerProfilePage .subscriptionPlan--selected small:first-of-type{
+  color: #99f6e4;
+}
+
+.customerProfilePage .subscriptionReward{
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin: 16px 0 0;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.82);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.customerProfilePage .customerProfileBtn--subscribe{
+  width: fit-content;
+  margin-top: 16px;
+  padding: 12px 22px;
+  color: #fff;
+  background: linear-gradient(90deg, rgba(34,211,201,1), rgba(124,58,237,1));
+  box-shadow: 0 10px 22px rgba(34,211,201,.18);
+}
+
 @media (max-width: 1100px){
   .customerProfilePage .customerProfileHeader__row{
     flex-direction:column;
@@ -178,6 +284,10 @@
   }
 
   .customerProfilePage .customerProfileGrid{
+    grid-template-columns: 1fr;
+  }
+
+  .customerProfilePage .subscriptionPlans{
     grid-template-columns: 1fr;
   }
 

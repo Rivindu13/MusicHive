@@ -147,6 +147,12 @@ export default function CustomerBookingPage() {
   }, [slots]);
 
   const [note, setNote] = useState("");
+  const [eventLocation, setEventLocation] = useState(
+    profile?.organizerProfile?.location || ""
+  );
+  const [eventType, setEventType] = useState(
+    profile?.organizerProfile?.eventType || ""
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitErr, setSubmitErr] = useState("");
   const [success, setSuccess] = useState(null);
@@ -165,13 +171,16 @@ export default function CustomerBookingPage() {
     setSlotsErr("");
 
     try {
+      const idToken = await getIdTokenOrThrow();
       await fetch(`${API_BASE}/api/availability/ensure`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify({ artistUid, daysAhead: 14 }),
       });
 
-      const idToken = await getIdTokenOrThrow();
       const res = await fetch(
         `${API_BASE}/api/availability/artist/${artistUid}?from=${range.from}&to=${range.to}`,
         {
@@ -329,6 +338,11 @@ export default function CustomerBookingPage() {
       return;
     }
 
+    if (!eventLocation.trim() || !eventType.trim()) {
+      setSubmitErr("Event location and event type are required.");
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -343,6 +357,8 @@ export default function CustomerBookingPage() {
         body: JSON.stringify({
           slotId: heldSlotId,
           note: note || "",
+          eventLocation: eventLocation.trim(),
+          eventType: eventType.trim(),
         }),
       });
 
@@ -685,7 +701,37 @@ export default function CustomerBookingPage() {
         </section>
 
         <section className="cbpSection">
-          <div className="cbpSectionTitle">Booking Note</div>
+          <div className="cbpSectionTitle">Event Details</div>
+
+          <div className="cbpDetailFields">
+            <label className="cbpDetailField">
+              <span>Event location</span>
+              <input
+                className="cbpInput"
+                type="text"
+                maxLength={300}
+                required
+                value={eventLocation}
+                onChange={(e) => setEventLocation(e.target.value)}
+                placeholder="Where will the event take place?"
+              />
+            </label>
+
+            <label className="cbpDetailField">
+              <span>Event type</span>
+              <input
+                className="cbpInput"
+                type="text"
+                maxLength={120}
+                required
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value)}
+                placeholder="Wedding, birthday, corporate event..."
+              />
+            </label>
+          </div>
+
+          <div className="cbpSectionTitle cbpSectionTitle--note">Booking Note</div>
 
           <textarea
             className="cbpNote"

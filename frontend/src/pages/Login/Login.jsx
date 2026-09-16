@@ -5,7 +5,11 @@ import Reveal from "../../components/Reveal";
 import logo from "../../assets/logo.png";
 import { FiMail, FiLock } from "react-icons/fi";
 import { FaGoogle, FaSpotify, FaFacebook } from "react-icons/fa";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
 import { auth, googleProvider } from "../../firebase";
 import { useNavigate } from "react-router-dom";
 
@@ -106,6 +110,34 @@ const Login = () => {
     }
   };
 
+  const handlePasswordReset = async (event) => {
+    event.preventDefault();
+
+    const resetEmail = window.prompt(
+      "Enter the email address linked to your MusicHive account:",
+      email
+    );
+
+    if (resetEmail === null) return;
+
+    const normalizedEmail = resetEmail.trim();
+    if (!validateEmail(normalizedEmail)) return;
+
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      setEmail(normalizedEmail);
+      alert("Password reset email sent. Please check your inbox.");
+    } catch (err) {
+      if (err.code === "auth/user-not-found") {
+        alert("No MusicHive account was found for that email address.");
+      } else if (err.code === "auth/invalid-email") {
+        setEmailError("Enter a valid email address");
+      } else {
+        alert("Unable to send password reset email. Please try again.");
+      }
+    }
+  };
+
 
 
 
@@ -163,9 +195,9 @@ const Login = () => {
             <label className="remember">
               <input type="checkbox" /> Remember me
             </label>
-            <a href="#" className="forgot">
+            <button type="button" className="forgot" onClick={handlePasswordReset}>
               Forgot password?
-            </a>
+            </button>
           </div>
 
           <button className="login-btn" onClick={handleLogin}>Login</button>

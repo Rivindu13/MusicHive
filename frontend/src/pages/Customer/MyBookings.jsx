@@ -15,6 +15,7 @@ import {
   FiHeart,
   FiAlertTriangle,
   FiCheckCircle,
+  FiEdit2,
   FiX,
 } from "react-icons/fi";
 
@@ -145,6 +146,15 @@ export default function CustomerMyBookingsPage() {
 
   const [cancellingId, setCancellingId] = useState(null);
   const [cancelOk, setCancelOk] = useState("");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editBooking, setEditBooking] = useState(null);
+  const [editNote, setEditNote] = useState("");
+  const [editEventLocation, setEditEventLocation] = useState("");
+  const [editEventType, setEditEventType] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editErr, setEditErr] = useState("");
+  const [editOk, setEditOk] = useState("");
 
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState(null);
@@ -398,6 +408,79 @@ export default function CustomerMyBookingsPage() {
     }
   }
 
+  function openEdit(b) {
+    setEditBooking(b);
+    setEditNote(b.note || "");
+    setEditEventLocation(b.eventLocation || "");
+    setEditEventType(b.eventType || "");
+    setEditErr("");
+    setEditOk("");
+    setEditOpen(true);
+  }
+
+  function closeEdit() {
+    if (editSubmitting) return;
+    setEditOpen(false);
+    setEditBooking(null);
+    setEditNote("");
+    setEditEventLocation("");
+    setEditEventType("");
+    setEditErr("");
+  }
+
+  async function submitEdit() {
+    if (!editBooking) return;
+
+    setEditSubmitting(true);
+    setEditErr("");
+    setEditOk("");
+
+    try {
+      const idToken = await getIdTokenOrThrow();
+      const res = await fetch(`${API_BASE}/api/bookings/${editBooking._id}/note`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + idToken,
+        },
+        body: JSON.stringify({
+          note: editNote,
+          eventLocation: editEventLocation,
+          eventType: editEventType,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to update booking details");
+      }
+
+      setItems((prev) =>
+        prev.map((booking) =>
+          booking._id === editBooking._id
+            ? {
+                ...booking,
+                note: data.data.note,
+                eventLocation: data.data.eventLocation,
+                eventType: data.data.eventType,
+              }
+            : booking
+        )
+      );
+      setEditOk("Booking details updated successfully.");
+      setEditBooking((prev) => ({
+        ...prev,
+        note: data.data.note,
+        eventLocation: data.data.eventLocation,
+        eventType: data.data.eventType,
+      }));
+    } catch (e) {
+      setEditErr(e.message || "Failed to update booking details");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
   function openReview(b) {
     setReviewBooking(b);
     setRating(5);
@@ -643,6 +726,9 @@ export default function CustomerMyBookingsPage() {
                 b.status !== "REJECTED";
 
               const reportAllowed = reviewAllowed && bookingPassed;
+              const editAllowed =
+                ["PENDING", "ACCEPTED"].includes(b.status) &&
+                b.paymentStatus !== "PAID";
 
               return (
                 <div className="cmbCard" key={b._id}>
@@ -665,6 +751,11 @@ export default function CustomerMyBookingsPage() {
                           </>
                         ) : null}
                       </div>
+                      {b.note && (
+                        <div className="cmbMeta cmbNotePreview">
+                          Details: {b.note}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -678,6 +769,16 @@ export default function CustomerMyBookingsPage() {
                     </div>
 
                     <div className="cmbActions">
+                      {editAllowed && (
+                        <button
+                          type="button"
+                          className="cmbBtn cmbBtn--ghost"
+                          onClick={() => openEdit(b)}
+                        >
+                          <FiEdit2 /> EDIT
+                        </button>
+                      )}
+
                       {tab === "PENDING" && (
                         <button
                           type="button"
@@ -799,6 +900,101 @@ export default function CustomerMyBookingsPage() {
                     disabled={reviewSubmitting}
                   >
                     {reviewSubmitting ? "SUBMITTING..." : "SUBMIT REVIEW"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editOpen && (
+          <div
+            className="cmbModalOverlay"
+            onMouseDown={(e) => {
+              if (e.target.classList.contains("cmbModalOverlay")) closeEdit();
+            }}
+          >
+            <div className="cmbModal">
+              <div className="cmbModalTop">
+                <div className="cmbModalTitle">Edit Booking Details</div>
+                <button
+                  className="cmbModalClose"
+                  type="button"
+                  onClick={closeEdit}
+                  disabled={editSubmitting}
+                >
+                  <FiX />
+                </button>
+              </div>
+
+              <div className="cmbModalBody">
+                <div className="cmbModalRow">
+                  <div className="cmbLabel">Event location</div>
+                  <input
+                    className="cmbInput"
+                    type="text"
+                    maxLength={300}
+                    required
+                    value={editEventLocation}
+                    onChange={(e) => setEditEventLocation(e.target.value)}
+                    placeholder="Where will the event take place?"
+                  />
+                </div>
+
+                <div className="cmbModalRow">
+                  <div className="cmbLabel">Event type</div>
+                  <input
+                    className="cmbInput"
+                    type="text"
+                    maxLength={120}
+                    required
+                    value={editEventType}
+                    onChange={(e) => setEditEventType(e.target.value)}
+                    placeholder="Wedding, birthday, corporate event..."
+                  />
+                </div>
+
+                <div className="cmbModalRow">
+                  <div className="cmbLabel">Description / Note (optional)</div>
+                  <textarea
+                    className="cmbTextarea"
+                    rows={6}
+                    maxLength={1000}
+                    value={editNote}
+                    onChange={(e) => setEditNote(e.target.value)}
+                    placeholder="Describe your event requirements..."
+                  />
+                  <div className="cmbCharacterCount">{editNote.length}/1000</div>
+                </div>
+
+                {editErr && (
+                  <div className="cmbState cmbState--error">
+                    <FiAlertTriangle /> {editErr}
+                  </div>
+                )}
+
+                {editOk && (
+                  <div className="cmbState cmbState--success">
+                    <FiCheckCircle /> {editOk}
+                  </div>
+                )}
+
+                <div className="cmbModalActions">
+                  <button
+                    className="cmbBtn cmbBtn--ghost"
+                    type="button"
+                    onClick={closeEdit}
+                    disabled={editSubmitting}
+                  >
+                    Close
+                  </button>
+                  <button
+                    className="cmbBtn cmbBtn--primary"
+                    type="button"
+                    onClick={submitEdit}
+                    disabled={editSubmitting}
+                  >
+                    {editSubmitting ? "SAVING..." : "SAVE CHANGES"}
                   </button>
                 </div>
               </div>

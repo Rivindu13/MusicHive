@@ -24,6 +24,7 @@ const chordSchema = new mongoose.Schema(
     title: { type: String, default: "", trim: true },
     genre: { type: String, default: "", trim: true },
     imageUrl: { type: String, required: true },
+    price: { type: Number, default: 0, min: 0 },
 
     reviews: { type: [reviewSchema], default: [] },
   },

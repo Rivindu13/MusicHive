@@ -225,6 +225,44 @@
   resize: vertical;
 }
 
+.customerBookingPage .cbpDetailFields{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.customerBookingPage .cbpDetailField{
+  display:flex;
+  flex-direction:column;
+  gap: 6px;
+  color: rgba(255,255,255,.82);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.customerBookingPage .cbpInput{
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.12);
+  color: rgba(255,255,255,.90);
+  padding: 12px;
+  outline: none;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.customerBookingPage .cbpSectionTitle--note{
+  margin-top: 4px;
+}
+
+@media (max-width: 700px){
+  .customerBookingPage .cbpDetailFields{
+    grid-template-columns: 1fr;
+  }
+}
+
 .customerBookingPage .cbpSummaryRow{
   margin-top: 12px;
   display:flex;

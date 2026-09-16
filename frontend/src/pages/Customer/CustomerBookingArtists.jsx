@@ -126,6 +126,10 @@ export default function CustomerBookingArtists() {
 
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("All Genres");
+  const [instrument, setInstrument] = useState("");
+  const [artistType, setArtistType] = useState("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -194,7 +198,10 @@ export default function CustomerBookingArtists() {
     if (!uid) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/users/${uid}/wishlist`);
+      const token = await getIdTokenOrThrow();
+      const res = await fetch(`${API_BASE}/api/users/${uid}/wishlist`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
 
       if (!res.ok || !data.success) {
@@ -218,10 +225,12 @@ export default function CustomerBookingArtists() {
 
     setWishlistBusyUid(artistUid);
     try {
+      const token = await getIdTokenOrThrow();
       const res = await fetch(`${API_BASE}/api/users/wishlist/toggle`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           uid: currentUid,
@@ -275,6 +284,10 @@ export default function CustomerBookingArtists() {
         const params = new URLSearchParams();
         if (genre && genre !== "All Genres") params.set("genre", genre);
         if (search.trim()) params.set("search", search.trim());
+        if (instrument.trim()) params.set("instrument", instrument.trim());
+        if (artistType !== "all") params.set("role", artistType);
+        if (minPrice !== "") params.set("minPrice", minPrice);
+        if (maxPrice !== "") params.set("maxPrice", maxPrice);
         params.set("onlyComplete", "true");
 
         const res = await fetch(
@@ -299,7 +312,7 @@ export default function CustomerBookingArtists() {
     }, 300);
 
     return () => clearTimeout(debounce);
-  }, [search, genre]);
+  }, [search, genre, instrument, artistType, minPrice, maxPrice]);
 
   async function fetchMyHeldSlots() {
     try {
@@ -453,13 +466,16 @@ export default function CustomerBookingArtists() {
     setHoldErr("");
 
     try {
+      const idToken = await getIdTokenOrThrow();
       await fetch(`${API_BASE}/api/availability/ensure`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify({ artistUid: uid, daysAhead: 14 }),
       });
 
-      const idToken = await getIdTokenOrThrow();
       const res = await fetch(
         `${API_BASE}/api/availability/artist/${uid}?from=${availabilityRange.from}&to=${availabilityRange.to}`,
         {
@@ -735,6 +751,59 @@ export default function CustomerBookingArtists() {
                 <option>Classical</option>
               </select>
               <FiChevronDown className="cbaSelect__chev" />
+            </div>
+
+            <div className="cbaSelectWrap">
+              <select
+                className="cbaSelect"
+                value={instrument}
+                onChange={(e) => setInstrument(e.target.value)}
+                aria-label="Filter by instrument"
+              >
+                <option value="">All Instruments</option>
+                <option value="Vocals">Vocals</option>
+                <option value="Guitar">Guitar</option>
+                <option value="Piano">Piano</option>
+                <option value="Drums">Drums</option>
+                <option value="Bass">Bass</option>
+                <option value="Violin">Violin</option>
+                <option value="Saxophone">Saxophone</option>
+              </select>
+              <FiChevronDown className="cbaSelect__chev" />
+            </div>
+
+            <div className="cbaSelectWrap">
+              <select
+                className="cbaSelect"
+                value={artistType}
+                onChange={(e) => setArtistType(e.target.value)}
+                aria-label="Filter by artist type"
+              >
+                <option value="all">Bands &amp; Solo Artists</option>
+                <option value="artist">Solo Artists</option>
+                <option value="band">Bands</option>
+              </select>
+              <FiChevronDown className="cbaSelect__chev" />
+            </div>
+
+            <div className="cbaPriceFilters" aria-label="Filter by price per event">
+              <input
+                type="number"
+                min="0"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder="Min price"
+                aria-label="Minimum price"
+              />
+              <span>-</span>
+              <input
+                type="number"
+                min="0"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder="Max price"
+                aria-label="Maximum price"
+              />
             </div>
           </div>
         </section>

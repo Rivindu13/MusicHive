@@ -149,7 +149,10 @@ const Settings = () => {
             </div>
             <div>
               <h2>Theme</h2>
-              <p>Dashboard uses the same MusicHive purple-blue theme.</p>
+              <p>
+                Use the Dark/Light button in the top bar. Your preference is
+                saved on this device.
+              </p>
             </div>
           </div>
 

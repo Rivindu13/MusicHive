@@ -22,6 +22,8 @@ const BookingSchema = new mongoose.Schema(
     },
 
     note: { type: String, default: "" },
+    eventLocation: { type: String, required: true, trim: true, minlength: 1, maxlength: 300 },
+    eventType: { type: String, required: true, trim: true, minlength: 1, maxlength: 120 },
     price: { type: Number, default: null },
 
     paymentStatus: {

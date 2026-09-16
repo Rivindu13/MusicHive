@@ -3,7 +3,7 @@ import Chord from "../models/Chord.js";
 // Create chord
 export const createChord = async (req, res) => {
   try {
-    const { uid, role, title, genre, imageUrl } = req.body;
+    const { uid, role, title, genre, imageUrl, price } = req.body;
 
     if (!uid || !role || !imageUrl) {
       return res.status(400).json({
@@ -17,12 +17,18 @@ export const createChord = async (req, res) => {
       });
     }
 
+    const parsedPrice = price === undefined || price === "" ? 0 : Number(price);
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      return res.status(400).json({ message: "price must be a non-negative number" });
+    }
+
     const chord = await Chord.create({
       uid,
       role,
       title: title || "",
       genre: genre || "",
       imageUrl,
+      price: parsedPrice,
     });
 
     return res.status(201).json(chord);

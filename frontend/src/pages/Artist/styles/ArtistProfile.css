@@ -198,3 +198,26 @@
   .profileCard__top{ flex-direction:column; align-items:stretch; }
   .profileAvatar{ width:auto; flex: 0 0 auto; }
 }
+.profileOptionGrid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.profileOption{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 9px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.8);
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.profileOption input{
+  accent-color:#55c878;
+}

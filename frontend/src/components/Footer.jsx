@@ -66,6 +66,12 @@ const Footer = () => {
         <div className="footer-bottom-links">
           <a href="#">Terms</a>
           <a href="#">Privacy</a>
+          <a
+            href={process.env.REACT_APP_ADMIN_URL || "http://localhost:5173"}
+            className="footer-admin-link"
+          >
+            Admin
+          </a>
         </div>
       </div>
     </footer>
