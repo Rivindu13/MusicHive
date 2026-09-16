@@ -126,10 +126,9 @@ export default function CustomerBookingArtists() {
 
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("All Genres");
-  const [instrument, setInstrument] = useState("");
-  const [artistType, setArtistType] = useState("all");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
+  const [category, setCategory] = useState("all");
+  const [instrument, setInstrument] = useState("All Instruments");
+  const [priceRange, setPriceRange] = useState("all");
 
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -283,11 +282,17 @@ export default function CustomerBookingArtists() {
       try {
         const params = new URLSearchParams();
         if (genre && genre !== "All Genres") params.set("genre", genre);
+        if (instrument && instrument !== "All Instruments") params.set("instrument", instrument);
+        if (category && category !== "all") params.set("category", category);
+        if (priceRange === "under5000") {
+          params.set("maxPrice", "5000");
+        } else if (priceRange === "5000-15000") {
+          params.set("minPrice", "5000");
+          params.set("maxPrice", "15000");
+        } else if (priceRange === "above15000") {
+          params.set("minPrice", "15000");
+        }
         if (search.trim()) params.set("search", search.trim());
-        if (instrument.trim()) params.set("instrument", instrument.trim());
-        if (artistType !== "all") params.set("role", artistType);
-        if (minPrice !== "") params.set("minPrice", minPrice);
-        if (maxPrice !== "") params.set("maxPrice", maxPrice);
         params.set("onlyComplete", "true");
 
         const res = await fetch(
@@ -312,7 +317,7 @@ export default function CustomerBookingArtists() {
     }, 300);
 
     return () => clearTimeout(debounce);
-  }, [search, genre, instrument, artistType, minPrice, maxPrice]);
+  }, [search, genre, category, instrument, priceRange]);
 
   async function fetchMyHeldSlots() {
     try {
@@ -741,8 +746,23 @@ export default function CustomerBookingArtists() {
             <div className="cbaSelectWrap">
               <select
                 className="cbaSelect"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                aria-label="Filter by Category"
+              >
+                <option value="all">All Roles</option>
+                <option value="artist">Solo Musicians</option>
+                <option value="band">Bands</option>
+              </select>
+              <FiChevronDown className="cbaSelect__chev" />
+            </div>
+
+            <div className="cbaSelectWrap">
+              <select
+                className="cbaSelect"
                 value={genre}
                 onChange={(e) => setGenre(e.target.value)}
+                aria-label="Filter by Genre"
               >
                 <option>All Genres</option>
                 <option>Pop</option>
@@ -758,16 +778,18 @@ export default function CustomerBookingArtists() {
                 className="cbaSelect"
                 value={instrument}
                 onChange={(e) => setInstrument(e.target.value)}
-                aria-label="Filter by instrument"
+                aria-label="Filter by Instrument"
               >
-                <option value="">All Instruments</option>
-                <option value="Vocals">Vocals</option>
-                <option value="Guitar">Guitar</option>
-                <option value="Piano">Piano</option>
-                <option value="Drums">Drums</option>
-                <option value="Bass">Bass</option>
-                <option value="Violin">Violin</option>
-                <option value="Saxophone">Saxophone</option>
+                <option>All Instruments</option>
+                <option>Guitar</option>
+                <option>Drums</option>
+                <option>Piano / Keyboard</option>
+                <option>Vocals</option>
+                <option>Bass</option>
+                <option>Violin</option>
+                <option>Saxophone</option>
+                <option>Flute</option>
+                <option>Traditional</option>
               </select>
               <FiChevronDown className="cbaSelect__chev" />
             </div>
@@ -775,35 +797,16 @@ export default function CustomerBookingArtists() {
             <div className="cbaSelectWrap">
               <select
                 className="cbaSelect"
-                value={artistType}
-                onChange={(e) => setArtistType(e.target.value)}
-                aria-label="Filter by artist type"
+                value={priceRange}
+                onChange={(e) => setPriceRange(e.target.value)}
+                aria-label="Filter by Price"
               >
-                <option value="all">Bands &amp; Solo Artists</option>
-                <option value="artist">Solo Artists</option>
-                <option value="band">Bands</option>
+                <option value="all">All Prices</option>
+                <option value="under5000">Under Rs. 5,000</option>
+                <option value="5000-15000">Rs. 5,000 - 15,000</option>
+                <option value="above15000">Above Rs. 15,000</option>
               </select>
               <FiChevronDown className="cbaSelect__chev" />
-            </div>
-
-            <div className="cbaPriceFilters" aria-label="Filter by price per event">
-              <input
-                type="number"
-                min="0"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="Min price"
-                aria-label="Minimum price"
-              />
-              <span>-</span>
-              <input
-                type="number"
-                min="0"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="Max price"
-                aria-label="Maximum price"
-              />
             </div>
           </div>
         </section>

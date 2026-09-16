@@ -19,6 +19,12 @@ const Login = () => {
   const [pw, setPw] = useState("");
   const [emailError, setEmailError] = useState("");
 
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
+  const [resetErr, setResetErr] = useState("");
+
   const navigate = useNavigate();
 
   const validateEmail = (value) => {

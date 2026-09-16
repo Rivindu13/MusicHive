@@ -173,6 +173,12 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: false,
     },
+
+    subscriptionStatus: {
+      type: String,
+      enum: ["Free", "Pro", "Premium"],
+      default: "Free",
+    },
   },
 
   createdAt: { 

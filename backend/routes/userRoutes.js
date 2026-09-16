@@ -52,12 +52,23 @@ router.post("/", async (req, res) => {
  */
 router.get("/artists", async (req, res) => {
   try {
-    const { genre, search, instrument, role, minPrice, maxPrice, onlyComplete } =
-      req.query;
+    const {
+      genre,
+      search,
+      onlyComplete,
+      instrument,
+      category,
+      minPrice,
+      maxPrice,
+    } = req.query;
 
-    const query = {
-      role: { $in: ["artist", "band"] },
-    };
+    const query = {};
+
+    if (category && (category === "artist" || category === "band")) {
+      query.role = category;
+    } else {
+      query.role = { $in: ["artist", "band"] };
+    }
 
     if (role && role !== "all") {
       if (!["artist", "band"].includes(role)) {
@@ -536,6 +547,44 @@ router.patch("/:uid/profile", async (req, res) => {
   } catch (err) {
     console.error("PATCH /users/:uid/profile error:", err);
     return res.status(500).json({ message: "Server error" });
+  }
+});
+
+/**
+ * PATCH /api/users/:uid/subscription
+ * Update organizer subscription tier (Free, Pro, Premium)
+ */
+router.patch("/:uid/subscription", async (req, res) => {
+  try {
+    const { subscriptionStatus } = req.body;
+    if (!["Free", "Pro", "Premium"].includes(subscriptionStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid subscriptionStatus. Must be Free, Pro, or Premium.",
+      });
+    }
+
+    const user = await User.findOne({ uid: req.params.uid });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (!user.organizerProfile) {
+      user.organizerProfile = {};
+    }
+
+    user.organizerProfile.subscriptionStatus = subscriptionStatus;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: `Subscription successfully updated to ${subscriptionStatus}`,
+      subscriptionStatus: user.organizerProfile.subscriptionStatus,
+      user,
+    });
+  } catch (err) {
+    console.error("PATCH /users/:uid/subscription error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
