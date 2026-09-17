@@ -17,6 +17,7 @@ import {
   FiCheckCircle,
   FiEdit2,
   FiX,
+  FiInfo,
 } from "react-icons/fi";
 
 import { signOut, onAuthStateChanged } from "firebase/auth";
@@ -94,6 +95,25 @@ export default function CustomerMyBookingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Cancel Confirmation Modal State
+  const [bookingToCancelId, setBookingToCancelId] = useState(null);
+
   const profile = useMemo(() => {
     return JSON.parse(localStorage.getItem("profile")) || null;
   }, []);
@@ -141,11 +161,7 @@ export default function CustomerMyBookingsPage() {
 
   const [artistMap, setArtistMap] = useState({});
   const [payingId, setPayingId] = useState(null);
-  const [payErr, setPayErr] = useState("");
-  const [payOk, setPayOk] = useState("");
-
   const [cancellingId, setCancellingId] = useState(null);
-  const [cancelOk, setCancelOk] = useState("");
 
   const [editOpen, setEditOpen] = useState(false);
   const [editBooking, setEditBooking] = useState(null);
@@ -153,16 +169,12 @@ export default function CustomerMyBookingsPage() {
   const [editEventLocation, setEditEventLocation] = useState("");
   const [editEventType, setEditEventType] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
-  const [editErr, setEditErr] = useState("");
-  const [editOk, setEditOk] = useState("");
 
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBooking, setReviewBooking] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewErr, setReviewErr] = useState("");
-  const [reviewOk, setReviewOk] = useState("");
 
   async function fetchArtistIfMissing(uid) {
     if (!uid) return;
@@ -223,6 +235,7 @@ export default function CustomerMyBookingsPage() {
     } catch (e) {
       setItems([]);
       setErr(e.message || "Failed to load bookings");
+      triggerToast(e.message || "Failed to load bookings", "error");
     } finally {
       setLoading(false);
     }
@@ -261,23 +274,20 @@ export default function CustomerMyBookingsPage() {
         const info = data.data;
 
         if (info.paymentStatus === "PAID") {
-          setPayOk("Payment successful. Booking is now confirmed.");
-          setPayErr("");
+          triggerToast("Payment successful. Booking is now confirmed.", "success");
           setTab("PAID");
         } else if (payment === "cancel") {
-          setPayErr("Payment unsuccessful.");
-          setPayOk("");
+          triggerToast("Payment was cancelled.", "info");
           setTab("ACCEPTED");
         } else {
-          setPayErr(info.paymentMessage || "Payment unsuccessful.");
-          setPayOk("");
+          triggerToast(info.paymentMessage || "Payment unsuccessful.", "error");
           setTab("ACCEPTED");
         }
 
         await loadCustomerBookings();
         window.history.replaceState({}, document.title, "/customer/my-bookings");
       } catch (e) {
-        setPayErr(e.message || "Failed to verify payment result");
+        triggerToast(e.message || "Failed to verify payment result", "error");
       } finally {
         setPayingId(null);
       }
@@ -313,23 +323,9 @@ export default function CustomerMyBookingsPage() {
 
   function handleTabChange(nextTab) {
     setTab(nextTab);
-
-    if (nextTab !== "PAID") {
-      setPayOk("");
-    }
-
-    if (nextTab !== "ACCEPTED") {
-      setPayErr("");
-    }
-
-    if (nextTab !== "PENDING") {
-      setCancelOk("");
-    }
   }
 
   async function payNow(bookingId) {
-    setPayErr("");
-    setPayOk("");
     setPayingId(bookingId);
 
     try {
@@ -365,17 +361,17 @@ export default function CustomerMyBookingsPage() {
       document.body.appendChild(form);
       form.submit();
     } catch (e) {
-      setPayErr(e.message || "Failed to start payment");
+      triggerToast(e.message || "Failed to start payment", "error");
       setPayingId(null);
     }
   }
 
-  async function cancelBooking(bookingId) {
-    const confirmCancel = window.confirm("Are you sure you want to cancel this booking?");
-    if (!confirmCancel) return;
+  async function confirmAndCancelBooking() {
+    const bookingId = bookingToCancelId;
+    setBookingToCancelId(null);
+    if (!bookingId) return;
 
     setErr("");
-    setCancelOk("");
     setCancellingId(bookingId);
 
     try {
@@ -400,9 +396,9 @@ export default function CustomerMyBookingsPage() {
         )
       );
 
-      setCancelOk("Booking cancelled successfully.");
+      triggerToast("Booking cancelled successfully.", "success");
     } catch (e) {
-      setErr(e.message || "Cancel failed");
+      triggerToast(e.message || "Cancel failed", "error");
     } finally {
       setCancellingId(null);
     }
@@ -410,7 +406,7 @@ export default function CustomerMyBookingsPage() {
 
   function openEdit(b) {
     if (b.status !== "PENDING") {
-      setErr("Booking details cannot be edited after the artist accepts the request.");
+      triggerToast("Booking details cannot be edited after the artist accepts the request.", "warning");
       return;
     }
 
@@ -418,8 +414,6 @@ export default function CustomerMyBookingsPage() {
     setEditNote(b.note || "");
     setEditEventLocation(b.eventLocation || "");
     setEditEventType(b.eventType || "");
-    setEditErr("");
-    setEditOk("");
     setEditOpen(true);
   }
 
@@ -430,15 +424,12 @@ export default function CustomerMyBookingsPage() {
     setEditNote("");
     setEditEventLocation("");
     setEditEventType("");
-    setEditErr("");
   }
 
   async function submitEdit() {
     if (!editBooking) return;
 
     setEditSubmitting(true);
-    setEditErr("");
-    setEditOk("");
 
     try {
       const idToken = await getIdTokenOrThrow();
@@ -472,15 +463,10 @@ export default function CustomerMyBookingsPage() {
             : booking
         )
       );
-      setEditOk("Booking details updated successfully.");
-      setEditBooking((prev) => ({
-        ...prev,
-        note: data.data.note,
-        eventLocation: data.data.eventLocation,
-        eventType: data.data.eventType,
-      }));
+      triggerToast("Booking details updated successfully.", "success");
+      closeEdit();
     } catch (e) {
-      setEditErr(e.message || "Failed to update booking details");
+      triggerToast(e.message || "Failed to update booking details", "error");
     } finally {
       setEditSubmitting(false);
     }
@@ -490,8 +476,6 @@ export default function CustomerMyBookingsPage() {
     setReviewBooking(b);
     setRating(5);
     setComment("");
-    setReviewErr("");
-    setReviewOk("");
     setReviewOpen(true);
   }
 
@@ -515,14 +499,10 @@ export default function CustomerMyBookingsPage() {
     setReviewBooking(null);
     setRating(5);
     setComment("");
-    setReviewErr("");
-    setReviewOk("");
     setReviewSubmitting(false);
   }
 
   async function submitReview() {
-    setReviewErr("");
-    setReviewOk("");
     if (!reviewBooking?._id) return;
 
     try {
@@ -547,9 +527,10 @@ export default function CustomerMyBookingsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Review failed");
 
-      setReviewOk("Review submitted!");
+      triggerToast("Review submitted successfully!", "success");
+      closeReview();
     } catch (e) {
-      setReviewErr(e.message || "Review failed");
+      triggerToast(e.message || "Review failed", "error");
     } finally {
       setReviewSubmitting(false);
     }
@@ -567,6 +548,64 @@ export default function CustomerMyBookingsPage() {
 
   return (
     <div className="artistDash customerMyBookingsPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertTriangle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertTriangle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Cancel Confirmation Modal (replaces window.confirm) */}
+      {bookingToCancelId && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setBookingToCancelId(null)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Booking</h3>
+            <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setBookingToCancelId(null)}
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                className="deleteChordBtn--danger"
+                onClick={confirmAndCancelBooking}
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -624,7 +663,7 @@ export default function CustomerMyBookingsPage() {
             type="button"
             onClick={() => navigate("/customer/wishlist")}
             title="Wishlist"
-            >
+          >
             <FiHeart />
           </button>
 
@@ -682,24 +721,6 @@ export default function CustomerMyBookingsPage() {
         {err && (
           <div className="cmbState cmbState--error">
             <FiAlertTriangle /> {err}
-          </div>
-        )}
-
-        {payErr && (
-          <div className="cmbState cmbState--error">
-            <FiAlertTriangle /> {payErr}
-          </div>
-        )}
-
-        {payOk && (
-          <div className="cmbState cmbState--success">
-            <FiCheckCircle /> {payOk}
-          </div>
-        )}
-
-        {cancelOk && (
-          <div className="cmbState cmbState--success">
-            <FiCheckCircle /> {cancelOk}
           </div>
         )}
 
@@ -787,7 +808,7 @@ export default function CustomerMyBookingsPage() {
                         <button
                           type="button"
                           className="cmbBtn cmbBtn--danger"
-                          onClick={() => cancelBooking(b._id)}
+                          onClick={() => setBookingToCancelId(b._id)}
                           disabled={cancellingId === b._id}
                         >
                           {cancellingId === b._id ? "CANCELLING..." : "CANCEL"}
@@ -911,18 +932,6 @@ export default function CustomerMyBookingsPage() {
                   />
                 </div>
 
-                {reviewErr && (
-                  <div className="cmbState cmbState--error">
-                    <FiAlertTriangle /> {reviewErr}
-                  </div>
-                )}
-
-                {reviewOk && (
-                  <div className="cmbState cmbState--success">
-                    <FiCheckCircle /> {reviewOk}
-                  </div>
-                )}
-
                 <div className="cmbModalActions">
                   <button
                     className="cmbBtn cmbBtn--ghost"
@@ -1005,18 +1014,6 @@ export default function CustomerMyBookingsPage() {
                   <div className="cmbCharacterCount">{editNote.length}/1000</div>
                 </div>
 
-                {editErr && (
-                  <div className="cmbState cmbState--error">
-                    <FiAlertTriangle /> {editErr}
-                  </div>
-                )}
-
-                {editOk && (
-                  <div className="cmbState cmbState--success">
-                    <FiCheckCircle /> {editOk}
-                  </div>
-                )}
-
                 <div className="cmbModalActions">
                   <button
                     className="cmbBtn cmbBtn--ghost"
@@ -1041,7 +1038,7 @@ export default function CustomerMyBookingsPage() {
         )}
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="mailto:hello@musichive.lk?subject=MusicHive%20Terms">
               Terms

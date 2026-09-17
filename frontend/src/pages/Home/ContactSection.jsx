@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Reveal from "../../components/Reveal";
 import { useNavigate } from "react-router-dom";
 import emailjs from "@emailjs/browser";
+import { FiCheckCircle, FiAlertCircle, FiInfo, FiX } from "react-icons/fi";
 
 const ContactSection = () => {
   const navigate = useNavigate();
@@ -17,6 +18,22 @@ const ContactSection = () => {
     email: "",
     message: "",
   });
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const validateForm = () => {
     let valid = true;
@@ -91,7 +108,8 @@ const ContactSection = () => {
         "Y5XL7B74-K3IIuVvg"
       );
 
-      alert("Message sent successfully!");
+      // Replaced alert() with success toast
+      triggerToast("Message sent successfully!", "success");
 
       setFormData({
         name: "",
@@ -105,12 +123,39 @@ const ContactSection = () => {
         message: "",
       });
     } catch (err) {
-      alert("Failed to send message");
+      // Replaced alert() with error toast
+      triggerToast("Failed to send message. Please try again.", "error");
     }
   };
 
   return (
     <section className="contact" id="contact">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       <Reveal>
         <div className="contact-inner">
           <div className="contact-form">

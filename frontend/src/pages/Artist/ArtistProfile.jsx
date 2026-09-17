@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NotificationBell from "../../components/NotificationBell";
 import "./styles/ArtistDashboard.css"; // keep your dashboard layout styles
-import "./styles/ArtistProfile.css";   // NEW profile styles
+import "./styles/ArtistProfile.css";   // profile styles
 
 import {
   FiBell,
@@ -16,13 +16,16 @@ import {
   FiPlus,
   FiTrash2,
   FiCamera,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 
-/* ✅ OPTIONAL: Firebase Storage upload (only if you already use it)
-   If you don't export storage, comment this block + upload function. */
+/* Firebase Storage upload */
 import { storage } from "../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -33,12 +36,28 @@ export default function ArtistProfile() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const storedProfile =
     location.state?.profile ||
     JSON.parse(localStorage.getItem("profile")) ||
     null;
 
-  // ✅ Guard
+  // Guard
   useEffect(() => {
     if (!storedProfile) navigate("/", { replace: true });
   }, [navigate, storedProfile]);
@@ -80,7 +99,7 @@ export default function ArtistProfile() {
 
   const firstName = (fullName || "Artist").split(" ")[0];
 
-  // ✅ Logout
+  // Logout
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -91,10 +110,6 @@ export default function ArtistProfile() {
       localStorage.clear();
       navigate("/", { replace: true });
     }
-  };
-
-  const handleNav = (path) => {
-    navigate(path, { state: { profile: JSON.parse(localStorage.getItem("profile")) } });
   };
 
   const setArtistProfileField = (key, value) => {
@@ -116,7 +131,7 @@ export default function ArtistProfile() {
     setArtistProfileField(key, nextValues.join(", "));
   };
 
-  // ✅ OPTIONAL photo upload (Firebase Storage)
+  // Photo upload (Firebase Storage)
   const uploadProfilePhoto = async (file) => {
     if (!file || !uid) return null;
 
@@ -126,10 +141,11 @@ export default function ArtistProfile() {
       await uploadBytes(fileRef, file);
       const url = await getDownloadURL(fileRef);
       setPhotoURL(url);
+      triggerToast("Profile photo updated!", "success");
       return url;
     } catch (e) {
       console.error("Upload error:", e);
-      alert("Photo upload failed");
+      triggerToast("Photo upload failed. Please try again.", "error");
       return null;
     } finally {
       setUploading(false);
@@ -159,7 +175,7 @@ export default function ArtistProfile() {
     }));
   };
 
-  // ✅ Save to DB
+  // Save to DB
   const handleSave = async () => {
     if (!uid) return;
 
@@ -211,24 +227,22 @@ export default function ArtistProfile() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        });
-
+      });
 
       const updated = await res.json().catch(() => null);
 
       if (!res.ok) {
         console.log("Save failed:", updated);
-        alert(updated?.message || "Could not save profile");
+        triggerToast(updated?.message || "Could not save profile", "error");
         return;
       }
 
-      // ✅ keep local storage updated for all pages
+      // keep local storage updated for all pages
       localStorage.setItem("profile", JSON.stringify(updated));
-
-      alert("Profile saved!");
+      triggerToast("Profile saved successfully!", "success");
     } catch (err) {
       console.error(err);
-      alert("Something went wrong while saving");
+      triggerToast("Something went wrong while saving", "error");
     } finally {
       setSaving(false);
     }
@@ -236,65 +250,89 @@ export default function ArtistProfile() {
 
   return (
     <div className="artistDash">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar */}
-        <aside className="artistDash__sidebar">
+      <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
-            <span className="artistDash__brandIcon">♫</span>
-            <span className="artistDash__brandText">MusicHive</span>
+          <span className="artistDash__brandIcon">♫</span>
+          <span className="artistDash__brandText">MusicHive</span>
         </div>
 
         <nav className="artistDash__nav">
-            <a className="artistDash__navItem" href="/artist/dashboard">
+          <a className="artistDash__navItem" href="/artist/dashboard">
             <span className="artistDash__navIcon">
-                <FiHome />
+              <FiHome />
             </span>
             <span>Overview</span>
-            </a>
+          </a>
 
-            <a className="artistDash__navItem" href="/artist/bookings">
+          <a className="artistDash__navItem" href="/artist/bookings">
             <span className="artistDash__navIcon">
-                <FiCalendar />
+              <FiCalendar />
             </span>
             <span>Bookings</span>
-            </a>
+          </a>
 
-            <a className="artistDash__navItem" href="/artist/chords">
+          <a className="artistDash__navItem" href="/artist/chords">
             <span className="artistDash__navIcon">
-                <FiMusic />
+              <FiMusic />
             </span>
             <span>Chord Library</span>
-            </a>
+          </a>
 
-            <a className="artistDash__navItem" href="/artist/reviews">
+          <a className="artistDash__navItem" href="/artist/reviews">
             <span className="artistDash__navIcon">
-                <FiStar />
+              <FiStar />
             </span>
             <span>Reviews</span>
-            </a>
+          </a>
         </nav>
 
         <div className="artistDash__sideBottom">
-            {/* ✅ active here */}
-            <a className="artistDash__sideAction artistDash__navItem--active" href="/artist/profile">
+          <a className="artistDash__sideAction artistDash__navItem--active" href="/artist/profile">
             <span className="artistDash__navIcon">
-                <FiUser />
+              <FiUser />
             </span>
             <span>Profile</span>
-            </a>
+          </a>
 
-            <button
+          <button
             type="button"
             className="artistDash__sideAction"
             onClick={handleLogout}
-            >
+          >
             <span className="artistDash__navIcon">
-                <FiLogOut />
+              <FiLogOut />
             </span>
             <span>Log out</span>
-            </button>
+          </button>
         </div>
-        </aside>
-
+      </aside>
 
       {/* Main */}
       <main className="artistDash__main">
@@ -537,7 +575,7 @@ export default function ArtistProfile() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>

@@ -14,6 +14,10 @@ import {
   FiUser,
   FiLogOut,
   FiHeart,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
@@ -109,7 +113,25 @@ export default function CustomerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState("");
-  const [cancelMessage, setCancelMessage] = useState("");
+
+  // Confirmation Modal state (replaces window.confirm)
+  const [confirmCancelId, setConfirmCancelId] = useState(null);
+
+  // Toast notification state (replaces window.alert)
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const profilePic = profile?.photoURL || null;
   const fullName =
@@ -125,16 +147,6 @@ export default function CustomerDashboardPage() {
     const stored = localStorage.getItem("profile");
     if (!stored) navigate("/", { replace: true });
   }, [navigate]);
-
-  useEffect(() => {
-    if (!cancelMessage) return;
-
-    const timer = setTimeout(() => {
-      setCancelMessage("");
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [cancelMessage]);
 
   const getAuthHeaders = useCallback(async () => {
     const currentUser = auth.currentUser;
@@ -187,7 +199,7 @@ export default function CustomerDashboardPage() {
       }
 
       const bookingsData = Array.isArray(bookingsJson.data) ? bookingsJson.data : [];
-      const chordsData = Array.isArray(chordsJson) // if your controller returns raw array
+      const chordsData = Array.isArray(chordsJson)
         ? chordsJson
         : Array.isArray(chordsJson.data)
         ? chordsJson.data
@@ -219,9 +231,10 @@ export default function CustomerDashboardPage() {
     }
   };
 
-  const handleCancelBooking = async (bookingId) => {
-    const confirmed = window.confirm("Are you sure you want to cancel this booking?");
-    if (!confirmed) return;
+  const confirmAndProceedCancel = async () => {
+    const bookingId = confirmCancelId;
+    setConfirmCancelId(null);
+    if (!bookingId) return;
 
     try {
       setActionLoadingId(bookingId);
@@ -247,10 +260,10 @@ export default function CustomerDashboardPage() {
         )
       );
 
-      setCancelMessage("Booking cancelled successfully");
+      triggerToast("Booking cancelled successfully", "success");
     } catch (err) {
       console.error("Cancel booking error:", err);
-      alert(err.message || "Failed to cancel booking");
+      triggerToast(err.message || "Failed to cancel booking", "error");
     } finally {
       setActionLoadingId("");
     }
@@ -283,6 +296,65 @@ export default function CustomerDashboardPage() {
 
   return (
     <div className="artistDash customerDashPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Confirmation Modal (replacing window.confirm) */}
+      {confirmCancelId && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setConfirmCancelId(null)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Booking</h3>
+            <p>Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setConfirmCancelId(null)}
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                className="custCancelBtn"
+                style={{ padding: "8px 16px", borderRadius: "8px" }}
+                onClick={confirmAndProceedCancel}
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -338,7 +410,7 @@ export default function CustomerDashboardPage() {
             type="button"
             onClick={() => navigate("/customer/wishlist")}
             title="Wishlist"
-            >
+          >
             <FiHeart />
           </button>
 
@@ -361,10 +433,6 @@ export default function CustomerDashboardPage() {
           </div>
           <p className="custHero__sub">Here&apos;s what&apos;s happening with your music today</p>
         </section>
-
-        {cancelMessage ? (
-          <div className="custAlert custAlert--success">{cancelMessage}</div>
-        ) : null}
 
         {pageError ? (
           <div className="custAlert custAlert--error">{pageError}</div>
@@ -443,7 +511,7 @@ export default function CustomerDashboardPage() {
                         <button
                           type="button"
                           className="custCancelBtn"
-                          onClick={() => handleCancelBooking(b._id)}
+                          onClick={() => setConfirmCancelId(b._id)}
                           disabled={!canCancel || actionLoadingId === b._id}
                         >
                           {actionLoadingId === b._id ? "Cancelling..." : "Cancel"}
@@ -458,7 +526,7 @@ export default function CustomerDashboardPage() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="/">Terms</a>
             <a href="/">Privacy</a>

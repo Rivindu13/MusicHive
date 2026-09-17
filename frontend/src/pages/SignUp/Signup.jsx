@@ -1,4 +1,4 @@
-// Signup.jsx (FULL FILE — only additions, nothing removed)
+// Signup.jsx (FULL FILE — alerts replaced with side popups/toasts)
 import React, { useState } from "react";
 import "../../App.css";
 import Reveal from "../../components/Reveal";
@@ -8,10 +8,9 @@ import artistImg from "../../assets/signup/artist.png";
 import bandImg from "../../assets/signup/band.png";
 import organizerImg from "../../assets/signup/organizer.png";
 
-import { FiMail, FiLock, FiUser } from "react-icons/fi";
+import { FiMail, FiLock, FiUser, FiCheckCircle, FiAlertCircle, FiInfo, FiX } from "react-icons/fi";
 import { auth } from "../../firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { googleProvider } from "../../firebase";
 import { FaGoogle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -21,13 +20,30 @@ const Signup = () => {
   const [step, setStep] = useState(1);
   const [selected, setSelected] = useState(null);
 
-  // ✅ NEW: solo/band selection for artists
+  // solo/band selection for artists
   const [artistType, setArtistType] = useState(null); // "solo" | "band"
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  // Helper function to trigger side popup toast
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const roles = [
     {
@@ -61,7 +77,7 @@ const Signup = () => {
     }
   };
 
-  // ✅ NEW: final role mapping (band should become role)
+  // final role mapping (band should become role)
   const getFinalRole = () => {
     if (selected === "artist") {
       return artistType === "band" ? "band" : "artist";
@@ -71,14 +87,14 @@ const Signup = () => {
 
   const handleSignup = async () => {
     if (!name || !email || !password) {
-      alert("Please fill all fields");
+      triggerToast("Please fill all fields", "warning");
       return;
     }
     if (!validateEmail(email)) return;
 
-    // ✅ NEW: require solo/band if artist selected
+    // require solo/band if artist selected
     if (selected === "artist" && !artistType) {
-      alert("Please select whether you are a solo artist or a band");
+      triggerToast("Please select whether you are a solo artist or a band", "warning");
       return;
     }
 
@@ -91,7 +107,7 @@ const Signup = () => {
 
       const user = userCredential.user;
 
-      // ✅ NEW: compute role BEFORE saving
+      // compute role BEFORE saving
       const finalRole = getFinalRole();
 
       const res = await fetch("http://localhost:5000/api/users", {
@@ -110,37 +126,39 @@ const Signup = () => {
 
       if (!res.ok) {
         console.log("Mongo save failed:", saved);
-        alert(saved?.message || "Could not save user profile to database");
+        triggerToast(saved?.message || "Could not save user profile to database", "error");
         return;
       }
 
-      alert("Signup successful!");
-      navigate("/login");
+      triggerToast("Signup successful! Redirecting to login...", "success");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
     } catch (err) {
       console.log(err);
 
       if (err.code === "auth/email-already-in-use") {
-        alert("This email is already registered. Redirecting to login...");
+        triggerToast("This email is already registered. Redirecting to login...", "warning");
 
         // Redirect after 1.5s delay
         setTimeout(() => {
           navigate("/login");
         }, 1500);
       } else {
-        alert(err.message);
+        triggerToast(err.message, "error");
       }
     }
   };
 
   const handleGoogleSignup = async () => {
     if (!selected) {
-      alert("Please select your role first.");
+      triggerToast("Please select your role first.", "warning");
       return;
     }
 
-    // ✅ NEW: require solo/band if artist selected
+    // require solo/band if artist selected
     if (selected === "artist" && !artistType) {
-      alert("Please select whether you are a solo artist or a band");
+      triggerToast("Please select whether you are a solo artist or a band", "warning");
       return;
     }
 
@@ -156,8 +174,9 @@ const Signup = () => {
 
       if (existingUser && existingUser.uid) {
         // Already exists → redirect to login
-        alert(
-          "This Google account is already registered. Redirecting to login…"
+        triggerToast(
+          "This Google account is already registered. Redirecting to login…",
+          "warning"
         );
         setTimeout(() => {
           navigate("/login");
@@ -165,7 +184,7 @@ const Signup = () => {
         return;
       }
 
-      // ✅ NEW: compute role BEFORE saving
+      // compute role BEFORE saving
       const finalRole = getFinalRole();
 
       const googleName =
@@ -190,20 +209,48 @@ const Signup = () => {
 
       if (!res.ok) {
         console.log("Mongo save failed:", saved);
-        alert(saved?.message || "Could not save user profile to database");
+        triggerToast(saved?.message || "Could not save user profile to database", "error");
         return;
       }
 
-      alert("Signup successful!");
-      navigate("/login");
+      triggerToast("Signup successful! Redirecting to login...", "success");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
     } catch (error) {
       console.log(error);
-      alert(error.message);
+      triggerToast(error.message, "error");
     }
   };
 
   return (
     <div className="signup-page">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       {/* LOGO */}
       <Reveal>
         <div className="signup-logo">
@@ -228,7 +275,6 @@ const Signup = () => {
                 }`}
                 onClick={() => {
                   setSelected(r.id);
-                  // ✅ NEW: reset artistType if they switch roles
                   if (r.id !== "artist") setArtistType(null);
                 }}
                 style={{ borderColor: r.border }}
@@ -257,7 +303,6 @@ const Signup = () => {
 
       {/* ================================
           STEP 2 — USER DETAILS FORM
-          (same layout as login page)
       ================================= */}
       {step === 2 && (
         <Reveal>
@@ -267,7 +312,7 @@ const Signup = () => {
               <h2>Create Your Account</h2>
               <p className="login-sub">Almost there! Fill your details.</p>
 
-              {/* ✅ NEW: Solo artist vs Band (ONLY if role is artist) */}
+              {/* Solo artist vs Band (ONLY if role is artist) */}
               {selected === "artist" && (
                 <div className="artist-type-block">
                   <p className="artist-type-title">Artist type</p>

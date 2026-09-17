@@ -16,6 +16,8 @@ import {
   FiArrowLeft,
   FiCheckCircle,
   FiAlertTriangle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut, onAuthStateChanged } from "firebase/auth";
@@ -69,6 +71,22 @@ function formatMMSS(ms) {
 export default function CustomerBookingPage() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const profile = useMemo(() => {
     return (
@@ -251,6 +269,7 @@ export default function CustomerBookingPage() {
     } catch (e) {
       setSlots([]);
       setSlotsErr(e.message || "Failed to load availability");
+      triggerToast(e.message || "Failed to load availability", "error");
     } finally {
       setSlotsLoading(false);
     }
@@ -276,6 +295,7 @@ export default function CustomerBookingPage() {
       setHoldLeftMs(left);
 
       if (left <= 0) {
+        triggerToast("Your slot hold has expired. Please select again.", "warning");
         setHeldSlotId(null);
         setHeldUntil(null);
         setSelectedDate(null);
@@ -300,6 +320,7 @@ export default function CustomerBookingPage() {
           Authorization: `Bearer ${idToken}`,
         },
       });
+      triggerToast("Slot hold released.", "info");
     } catch {}
 
     setHeldSlotId(null);
@@ -352,10 +373,12 @@ export default function CustomerBookingPage() {
       setSelectedSlotType(updated.slotType);
 
       setShowSlots(false);
+      triggerToast("Slot held for 10 minutes!", "success");
 
       await refreshAvailability();
     } catch (e) {
       setHoldErr(e.message || "Could not hold slot");
+      triggerToast(e.message || "Could not hold slot", "error");
       await refreshAvailability();
     } finally {
       setHolding(false);
@@ -369,14 +392,18 @@ export default function CustomerBookingPage() {
     if (!artistUid) return;
 
     if (!heldSlotId || !heldUntil || holdLeftMs <= 0) {
-      setSubmitErr("Your hold expired. Please select a slot again.");
+      const msg = "Your hold expired. Please select a slot again.";
+      setSubmitErr(msg);
+      triggerToast(msg, "warning");
       setShowSlots(true);
       await refreshAvailability();
       return;
     }
 
     if (!eventLocation.trim() || !eventType.trim()) {
-      setSubmitErr("Event location and event type are required.");
+      const msg = "Event location and event type are required.";
+      setSubmitErr(msg);
+      triggerToast(msg, "warning");
       return;
     }
 
@@ -412,13 +439,17 @@ export default function CustomerBookingPage() {
         price: booking?.price,
       });
 
+      triggerToast("Booking request sent successfully!", "success");
+
       setHeldSlotId(null);
       setHeldUntil(null);
       setHoldLeftMs(0);
 
       await refreshAvailability();
     } catch (e) {
-      setSubmitErr(e.message || "Booking failed");
+      const msg = e.message || "Booking failed";
+      setSubmitErr(msg);
+      triggerToast(msg, "error");
       await refreshAvailability();
     } finally {
       setSubmitting(false);
@@ -455,6 +486,32 @@ export default function CustomerBookingPage() {
 
   return (
     <div className="artistDash customerBookingPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertTriangle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertTriangle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -861,7 +918,7 @@ export default function CustomerBookingPage() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>

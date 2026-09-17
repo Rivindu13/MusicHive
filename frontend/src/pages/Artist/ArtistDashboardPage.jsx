@@ -12,6 +12,8 @@ import {
   FiLogOut,
   FiAlertTriangle,
   FiCheckCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut, onAuthStateChanged } from "firebase/auth";
@@ -85,6 +87,25 @@ function getBookingTitle(booking) {
 export default function ArtistDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Rejection confirmation dialog state
+  const [bookingToRejectId, setBookingToRejectId] = useState(null);
 
   const profile =
     location.state?.profile ||
@@ -199,6 +220,7 @@ export default function ArtistDashboard() {
     } catch (e) {
       setItems([]);
       setErr(e.message || "Failed to load artist bookings");
+      triggerToast(e.message || "Failed to load bookings", "error");
     } finally {
       setLoading(false);
     }
@@ -237,19 +259,21 @@ export default function ArtistDashboard() {
         )
       );
 
+      triggerToast("Booking accepted successfully.", "success");
       setSuccessMsg("Booking accepted successfully.");
     } catch (e) {
-      setErr(e.message || "Failed to accept booking");
+      const msg = e.message || "Failed to accept booking";
+      setErr(msg);
+      triggerToast(msg, "error");
     } finally {
       setActionLoadingId("");
     }
   }
 
-  async function rejectBooking(bookingId) {
-    const confirmed = window.confirm(
-      "Are you sure you want to decline this booking?"
-    );
-    if (!confirmed) return;
+  async function confirmRejectBooking() {
+    const bookingId = bookingToRejectId;
+    setBookingToRejectId(null);
+    if (!bookingId) return;
 
     try {
       setActionLoadingId(bookingId);
@@ -277,9 +301,12 @@ export default function ArtistDashboard() {
         )
       );
 
+      triggerToast("Booking declined successfully.", "info");
       setSuccessMsg("Booking declined successfully.");
     } catch (e) {
-      setErr(e.message || "Failed to reject booking");
+      const msg = e.message || "Failed to reject booking";
+      setErr(msg);
+      triggerToast(msg, "error");
     } finally {
       setActionLoadingId("");
     }
@@ -306,6 +333,64 @@ export default function ArtistDashboard() {
 
   return (
     <div className="artistDash">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertTriangle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertTriangle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Decline Confirmation Modal (replaces window.confirm) */}
+      {bookingToRejectId && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setBookingToRejectId(null)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Decline Booking</h3>
+            <p>Are you sure you want to decline this booking request?</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setBookingToRejectId(null)}
+              >
+                Keep Request
+              </button>
+              <button
+                type="button"
+                className="deleteChordBtn--danger"
+                onClick={confirmRejectBooking}
+              >
+                Yes, Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -522,7 +607,7 @@ export default function ArtistDashboard() {
                           <button
                             className="btn btn--decline"
                             type="button"
-                            onClick={() => rejectBooking(r._id)}
+                            onClick={() => setBookingToRejectId(r._id)}
                             disabled={actionLoadingId === r._id}
                           >
                             {actionLoadingId === r._id
@@ -609,7 +694,7 @@ export default function ArtistDashboard() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="/">Terms</a>
             <a href="/">Privacy</a>

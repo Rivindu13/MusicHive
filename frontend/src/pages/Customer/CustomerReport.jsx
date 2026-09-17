@@ -13,8 +13,10 @@ import {
   FiLogOut,
   FiUpload,
   FiArrowLeft,
-  FiAlertTriangle,
   FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
@@ -52,6 +54,22 @@ export default function CustomerReport() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const bookingData = location.state || {};
 
   const profile = useMemo(() => {
@@ -76,8 +94,6 @@ export default function CustomerReport() {
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState("");
-  const [ok, setOk] = useState("");
 
   const profilePic = profile?.photoURL || null;
   const fullName =
@@ -126,31 +142,29 @@ export default function CustomerReport() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErr("");
-    setOk("");
 
     if (!reporterUid) {
-      setErr("Please login again.");
+      triggerToast("Please login again.", "error");
       return;
     }
 
     if (!bookingData?.bookingId) {
-      setErr("Booking details are missing. Please open Report from the booking page.");
+      triggerToast("Booking details are missing. Please open Report from the booking page.", "warning");
       return;
     }
 
     if (!reportedUser?.uid) {
-      setErr("Reported user not found.");
+      triggerToast("Reported user not found.", "error");
       return;
     }
 
     if (!reason) {
-      setErr("Please select a report reason.");
+      triggerToast("Please select a report reason.", "warning");
       return;
     }
 
     if (description.trim().length < 10) {
-      setErr("Please enter at least 10 characters in description.");
+      triggerToast("Please enter at least 10 characters in description.", "warning");
       return;
     }
 
@@ -171,15 +185,12 @@ export default function CustomerReport() {
         },
         body: JSON.stringify({
           bookingId: bookingData.bookingId,
-
           reporterUid,
           reporterName: fullName,
           reporterRole,
-
           reportedUid: reportedUser.uid,
           reportedName: reportedUser.name || reportedLabel,
           reportedRole,
-
           reason,
           description,
           evidenceUrls,
@@ -192,16 +203,16 @@ export default function CustomerReport() {
         throw new Error(data.message || "Failed to submit report");
       }
 
-      setOk("Report submitted successfully.");
+      triggerToast("Report submitted successfully.", "success");
       setReason("");
       setDescription("");
       setFiles([]);
 
       setTimeout(() => {
         navigate(backPath);
-      }, 900);
+      }, 1200);
     } catch (err) {
-      setErr(err.message || "Failed to submit report");
+      triggerToast(err.message || "Failed to submit report", "error");
     } finally {
       setSubmitting(false);
     }
@@ -209,6 +220,32 @@ export default function CustomerReport() {
 
   return (
     <div className="artistDash customerReportPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -336,18 +373,6 @@ export default function CustomerReport() {
             </div>
           </div>
 
-          {err && (
-            <div className="reportState reportState--error">
-              <FiAlertTriangle /> {err}
-            </div>
-          )}
-
-          {ok && (
-            <div className="reportState reportState--success">
-              <FiCheckCircle /> {ok}
-            </div>
-          )}
-
           <form className="reportForm" onSubmit={handleSubmit}>
             <label className="reportField">
               Reason
@@ -418,7 +443,7 @@ export default function CustomerReport() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>

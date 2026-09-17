@@ -11,6 +11,10 @@ import {
   FiUser,
   FiLogOut,
   FiHeart,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
@@ -49,6 +53,22 @@ function formatDate(iso) {
 export default function OrganizerReviews() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const profile =
     location.state?.profile ||
@@ -105,12 +125,17 @@ export default function OrganizerReviews() {
 
         const data = await res.json();
 
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to load reviews");
+        }
+
         setSummary(data.summary || { avgRating: 0, totalReviews: 0 });
         setReviews(Array.isArray(data.reviews) ? data.reviews : []);
       } catch (err) {
         console.error("Failed to load organizer reviews:", err);
         setSummary({ avgRating: 0, totalReviews: 0 });
         setReviews([]);
+        triggerToast(err.message || "Failed to load reviews", "error");
       } finally {
         setLoading(false);
       }
@@ -121,6 +146,32 @@ export default function OrganizerReviews() {
 
   return (
     <div className="artistDash organizerReviewsPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -296,7 +347,7 @@ export default function OrganizerReviews() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>

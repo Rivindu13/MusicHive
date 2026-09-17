@@ -15,6 +15,10 @@ import {
   FiHeart,
   FiSave,
   FiCamera,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut, onAuthStateChanged } from "firebase/auth";
@@ -26,6 +30,25 @@ const API_BASE = "http://localhost:5000";
 export default function CustomerProfile() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Subscription Cancellation Modal state
+  const [showCancelSubModal, setShowCancelSubModal] = useState(false);
 
   const profile =
     location.state?.profile ||
@@ -134,10 +157,8 @@ export default function CustomerProfile() {
     if (!paymentState) return;
 
     if (paymentState === "cancel") {
-      alert("Subscription payment was cancelled.");
-
+      triggerToast("Subscription payment was cancelled.", "info");
       window.history.replaceState({}, document.title, "/customer/profile");
-
       return;
     }
 
@@ -173,7 +194,7 @@ export default function CustomerProfile() {
                 subscriptionPlan: "premium",
               }));
 
-              alert("Premium subscription activated successfully.");
+              triggerToast("Premium subscription activated successfully.", "success");
 
               window.history.replaceState(
                 {},
@@ -191,8 +212,9 @@ export default function CustomerProfile() {
         await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
-      alert(
-        "Payment returned successfully, but subscription confirmation is still pending. Please refresh in a moment."
+      triggerToast(
+        "Payment returned successfully, but subscription confirmation is still pending. Please refresh in a moment.",
+        "warning"
       );
 
       window.history.replaceState({}, document.title, "/customer/profile");
@@ -231,10 +253,11 @@ export default function CustomerProfile() {
       await uploadBytes(fileRef, file);
       const url = await getDownloadURL(fileRef);
       setPhotoURL(url);
+      triggerToast("Profile photo updated!", "success");
       return url;
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Photo upload failed");
+      triggerToast("Photo upload failed. Please try again.", "error");
       return null;
     } finally {
       setUploading(false);
@@ -279,17 +302,14 @@ export default function CustomerProfile() {
       document.body.appendChild(paymentForm);
       paymentForm.submit();
     } catch (error) {
-      alert(error.message);
+      triggerToast(error.message || "Payment initiation failed", "error");
       setSubscriptionLoading(false);
     }
   };
 
-  const cancelSubscription = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel your Premium subscription?"
-    );
-
-    if (!confirmed || !auth.currentUser) return;
+  const confirmCancelSubscription = async () => {
+    setShowCancelSubModal(false);
+    if (!auth.currentUser) return;
 
     setSubscriptionLoading(true);
 
@@ -315,10 +335,10 @@ export default function CustomerProfile() {
       setSubscriptionInfo(result.data);
       setField("subscriptionPlan", "free");
 
-      alert("Subscription cancelled successfully.");
+      triggerToast("Subscription cancelled successfully.", "info");
     } catch (error) {
       console.error("Subscription cancellation error:", error);
-      alert(error.message || "Failed to cancel subscription");
+      triggerToast(error.message || "Failed to cancel subscription", "error");
     } finally {
       setSubscriptionLoading(false);
     }
@@ -365,15 +385,15 @@ export default function CustomerProfile() {
       const updatedUser = await res.json().catch(() => null);
 
       if (!res.ok) {
-        alert(updatedUser?.message || "Could not save profile");
+        triggerToast(updatedUser?.message || "Could not save profile", "error");
         return;
       }
 
       localStorage.setItem("profile", JSON.stringify(updatedUser));
-      alert("Profile saved successfully!");
+      triggerToast("Profile saved successfully!", "success");
     } catch (err) {
       console.error("Profile save error:", err);
-      alert("Something went wrong while saving");
+      triggerToast("Something went wrong while saving", "error");
     } finally {
       setSaving(false);
     }
@@ -385,6 +405,66 @@ export default function CustomerProfile() {
 
   return (
     <div className="artistDash customerProfilePage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Cancel Subscription Confirmation Modal */}
+      {showCancelSubModal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowCancelSubModal(false)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Cancel Subscription</h3>
+            <p>
+              Are you sure you want to cancel your Premium subscription? You will lose access to member discounts.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setShowCancelSubModal(false)}
+              >
+                Keep Subscription
+              </button>
+              <button
+                type="button"
+                className="deleteChordBtn--danger"
+                onClick={confirmCancelSubscription}
+              >
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
@@ -730,7 +810,7 @@ export default function CustomerProfile() {
                     <button
                       type="button"
                       className="customerProfileBtn customerProfileBtn--cancelSubscription"
-                      onClick={cancelSubscription}
+                      onClick={() => setShowCancelSubModal(true)}
                       disabled={subscriptionLoading}
                     >
                       {subscriptionLoading
@@ -759,7 +839,7 @@ export default function CustomerProfile() {
 
         {/* Footer */}
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>

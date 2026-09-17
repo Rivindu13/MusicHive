@@ -24,6 +24,9 @@ import {
   FiTrash2,
   FiX,
   FiDownload,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
 } from "react-icons/fi";
 
 import "./styles/MyChords.css";
@@ -33,6 +36,26 @@ const API_BASE = "http://localhost:5000";
 export default function MyChords() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Modals state (replaces window.confirm)
+  const [chordToDelete, setChordToDelete] = useState(null);
+  const [reviewToDeleteId, setReviewToDeleteId] = useState(null);
 
   const profile =
     location.state?.profile || JSON.parse(localStorage.getItem("profile")) || null;
@@ -219,9 +242,18 @@ export default function MyChords() {
     });
 
   const handleSaveUpload = async () => {
-    if (!uid) return alert("User not found. Please login again.");
-    if (!uploadFile) return alert("Please select an image file.");
-    if (!uploadTitle.trim()) return alert("Please enter a title.");
+    if (!uid) {
+      triggerToast("User not found. Please login again.", "error");
+      return;
+    }
+    if (!uploadFile) {
+      triggerToast("Please select an image file.", "warning");
+      return;
+    }
+    if (!uploadTitle.trim()) {
+      triggerToast("Please enter a title.", "warning");
+      return;
+    }
 
     setUploading(true);
     try {
@@ -247,9 +279,9 @@ export default function MyChords() {
       await fetchAllChords();
 
       setIsUploadOpen(false);
-      alert("Chord uploaded successfully!");
+      triggerToast("Chord uploaded successfully!", "success");
     } catch (err) {
-      alert(err.message);
+      triggerToast(err.message || "Failed to upload chord", "error");
     } finally {
       setUploading(false);
     }
@@ -267,9 +299,10 @@ export default function MyChords() {
     setReviewText("");
   };
 
-  const handleDeleteChord = async (chord) => {
-    const ok = window.confirm(`Delete "${chord.title || "Untitled"}"?`);
-    if (!ok) return;
+  const confirmDeleteChord = async () => {
+    const chord = chordToDelete;
+    setChordToDelete(null);
+    if (!chord) return;
 
     setDeletingId(chord._id);
 
@@ -294,8 +327,9 @@ export default function MyChords() {
 
       await fetchMyChords();
       await fetchAllChords();
+      triggerToast("Chord deleted successfully", "success");
     } catch (err) {
-      alert(err.message);
+      triggerToast(err.message || "Failed to delete chord", "error");
     } finally {
       setDeletingId(null);
     }
@@ -326,7 +360,10 @@ export default function MyChords() {
 
   const handleAddReview = async () => {
     if (!previewChord?._id) return;
-    if (!uid) return alert("Please login again.");
+    if (!uid) {
+      triggerToast("Please login again.", "warning");
+      return;
+    }
 
     setReviewSubmitting(true);
     try {
@@ -351,19 +388,18 @@ export default function MyChords() {
 
       setReviewText("");
       setReviewRating(5);
-      alert("Review added successfully!");
+      triggerToast("Review added successfully!", "success");
     } catch (err) {
-      alert(err.message);
+      triggerToast(err.message || "Failed to add review", "error");
     } finally {
       setReviewSubmitting(false);
     }
   };
 
-  const handleDeleteReview = async (reviewId) => {
+  const confirmDeleteReview = async () => {
+    const reviewId = reviewToDeleteId;
+    setReviewToDeleteId(null);
     if (!previewChord?._id || !reviewId) return;
-
-    const ok = window.confirm("Delete your review?");
-    if (!ok) return;
 
     setReviewDeletingId(reviewId);
 
@@ -383,8 +419,9 @@ export default function MyChords() {
       setPreviewChord(data);
       await fetchMyChords();
       await fetchAllChords();
+      triggerToast("Review deleted successfully", "success");
     } catch (err) {
-      alert(err.message);
+      triggerToast(err.message || "Failed to delete review", "error");
     } finally {
       setReviewDeletingId(null);
     }
@@ -403,6 +440,86 @@ export default function MyChords() {
 
   return (
     <div className="chordsPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Delete Chord Confirmation Modal */}
+      {chordToDelete && (
+        <div className="modal-backdrop" onClick={() => setChordToDelete(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Chord</h3>
+            <p>
+              Are you sure you want to delete &ldquo;{chordToDelete.title || "Untitled"}&rdquo;? This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setChordToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="deleteChordBtn--danger"
+                onClick={confirmDeleteChord}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Review Confirmation Modal */}
+      {reviewToDeleteId && (
+        <div className="modal-backdrop" onClick={() => setReviewToDeleteId(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Review</h3>
+            <p>Are you sure you want to delete your review?</p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn-cancel"
+                onClick={() => setReviewToDeleteId(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="deleteChordBtn--danger"
+                onClick={confirmDeleteReview}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="chordsPage__sidebar">
         <div className="chordsPage__brand">
           <span className="chordsPage__brandIcon">♫</span>
@@ -594,7 +711,7 @@ export default function MyChords() {
                         className="deleteChordBtn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteChord(c);
+                          setChordToDelete(c);
                         }}
                         disabled={deletingId === c._id}
                         title="Delete chord"
@@ -663,7 +780,7 @@ export default function MyChords() {
         )}
 
         <footer className="chordsPage__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="chordsPage__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>
@@ -792,7 +909,7 @@ export default function MyChords() {
                       {previewChord.uid === uid && (
                         <button
                           className="deleteChordBtn deleteChordBtn--danger"
-                          onClick={() => handleDeleteChord(previewChord)}
+                          onClick={() => setChordToDelete(previewChord)}
                           disabled={deletingId === previewChord._id}
                         >
                           <FiTrash2 />
@@ -840,7 +957,7 @@ export default function MyChords() {
                                 {String(r.uid) === String(uid) && (
                                   <button
                                     className="reviewDeleteBtn"
-                                    onClick={() => handleDeleteReview(r._id)}
+                                    onClick={() => setReviewToDeleteId(r._id)}
                                     disabled={reviewDeletingId === r._id}
                                   >
                                     {reviewDeletingId === r._id ? "Deleting..." : "Delete my review"}

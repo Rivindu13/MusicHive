@@ -16,6 +16,9 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiX,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
@@ -94,10 +97,25 @@ function isPastBookingDate(ymdStr) {
   return bookingDay < localToday;
 }
 
-
 export default function ArtistBookings() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const profile =
     location.state?.profile ||
@@ -139,11 +157,6 @@ export default function ArtistBookings() {
   }, [navigate]);
 
   useEffect(() => {
-    console.log("profile:", profile);
-    console.log("artistUid:", artistUid);
-  }, [profile, artistUid]);
-
-  useEffect(() => {
     if (activeTab !== "REQUESTS") {
       setSelectedRequestId(null);
     }
@@ -182,10 +195,7 @@ export default function ArtistBookings() {
   }, [slots]);
 
   async function ensureSlots() {
-    if (!artistUid) {
-      console.error("No artistUid found in profile");
-      return;
-    }
+    if (!artistUid) return;
 
     setEnsuring(true);
     try {
@@ -196,8 +206,6 @@ export default function ArtistBookings() {
       });
 
       const data = await res.json();
-      console.log("ensureSlots response:", data);
-
       if (!res.ok) {
         throw new Error(data.message || "Ensure slots failed");
       }
@@ -209,10 +217,7 @@ export default function ArtistBookings() {
   }
 
   async function loadSlots() {
-    if (!artistUid) {
-      console.error("No artistUid found in profile");
-      return;
-    }
+    if (!artistUid) return;
 
     setLoadingSlots(true);
     try {
@@ -221,8 +226,6 @@ export default function ArtistBookings() {
       );
 
       const data = await res.json();
-      console.log("loadSlots response:", data);
-
       if (!res.ok) {
         throw new Error(data.message || "Load slots failed");
       }
@@ -304,10 +307,7 @@ export default function ArtistBookings() {
   }
 
   useEffect(() => {
-    if (!artistUid) {
-      console.error("artistUid is missing from profile");
-      return;
-    }
+    if (!artistUid) return;
 
     (async () => {
       await ensureSlots();
@@ -348,10 +348,11 @@ export default function ArtistBookings() {
       }
 
       setSlots((old) => old.map((s) => (s._id === slot._id ? data.data : s)));
+      triggerToast(`Slot set to ${nextStatus.toLowerCase()}`, "info");
     } catch (e) {
       console.error(e);
       setSlots(prevSlots);
-      alert(e.message || "Failed to toggle slot");
+      triggerToast(e.message || "Failed to toggle slot", "error");
     }
   }
 
@@ -376,9 +377,10 @@ export default function ArtistBookings() {
 
       loadSlots();
       loadUpcoming();
+      triggerToast("Booking accepted successfully!", "success");
     } catch (e) {
       console.error(e);
-      alert(e.message || "Failed to accept booking");
+      triggerToast(e.message || "Failed to accept booking", "error");
     }
   }
 
@@ -402,9 +404,10 @@ export default function ArtistBookings() {
       }
 
       loadSlots();
+      triggerToast("Booking rejected", "info");
     } catch (e) {
       console.error(e);
-      alert(e.message || "Failed to reject booking");
+      triggerToast(e.message || "Failed to reject booking", "error");
     }
   }
 
@@ -472,10 +475,10 @@ export default function ArtistBookings() {
 
       closeReviewModal();
       loadUpcoming();
-      alert("Review submitted successfully");
+      triggerToast("Review submitted successfully", "success");
     } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to submit review");
+      triggerToast(err.message || "Failed to submit review", "error");
     } finally {
       setSubmittingReview(false);
     }
@@ -483,6 +486,32 @@ export default function ArtistBookings() {
 
   return (
     <div className="artistDash artistBookingsPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
           <span className="artistDash__brandIcon">♫</span>
@@ -905,120 +934,120 @@ export default function ArtistBookings() {
                       (b.isPastEvent || isPastBookingDate(b.date));
 
                     return (
-                    <div className="upcomingRowCard" key={b._id}>
-                      <div className="upcomingRowCard__left">
-                        <div className="upcomingRowCard__icon">✓</div>
-                        <div className="upcomingRowCard__body">
-                          <div className="upcomingRowCard__title">
-                            {humanDate(b.date)} • {slotLabel(b.slotType)}
-                          </div>
+                      <div className="upcomingRowCard" key={b._id}>
+                        <div className="upcomingRowCard__left">
+                          <div className="upcomingRowCard__icon">✓</div>
+                          <div className="upcomingRowCard__body">
+                            <div className="upcomingRowCard__title">
+                              {humanDate(b.date)} • {slotLabel(b.slotType)}
+                            </div>
 
-                          <div className="upcomingRowCard__meta">
-                            Customer:{" "}
-                            <span className="upcomingRowCard__uid">
-                              {safeText(b.customer?.name, b.customerUid)}
-                            </span>
-                            <span className="upcomingRowCard__dot">•</span>
-                            Status:{" "}
-                            <span className="upcomingRowCard__status">
-                              {b.status}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            className="upcomingRowCard__detailsBtn"
-                            onClick={() =>
-                              setSelectedUpcomingId((prev) =>
-                                prev === b._id ? null : b._id
-                              )
-                            }
-                          >
-                            {selectedUpcomingId === b._id
-                              ? "HIDE DETAILS"
-                              : "VIEW DETAILS"}
-                          </button>
-
-                          {selectedUpcomingId === b._id && (
-                            <div className="upcomingRowCard__details">
-                              <div>
-                                <b>Customer:</b>{" "}
+                            <div className="upcomingRowCard__meta">
+                              Customer:{" "}
+                              <span className="upcomingRowCard__uid">
                                 {safeText(b.customer?.name, b.customerUid)}
+                              </span>
+                              <span className="upcomingRowCard__dot">•</span>
+                              Status:{" "}
+                              <span className="upcomingRowCard__status">
+                                {b.status}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              className="upcomingRowCard__detailsBtn"
+                              onClick={() =>
+                                setSelectedUpcomingId((prev) =>
+                                  prev === b._id ? null : b._id
+                                )
+                              }
+                            >
+                              {selectedUpcomingId === b._id
+                                ? "HIDE DETAILS"
+                                : "VIEW DETAILS"}
+                            </button>
+
+                            {selectedUpcomingId === b._id && (
+                              <div className="upcomingRowCard__details">
+                                <div>
+                                  <b>Customer:</b>{" "}
+                                  {safeText(b.customer?.name, b.customerUid)}
+                                </div>
+                                <div>
+                                  <b>Email:</b>{" "}
+                                  {safeText(b.customer?.email, "No email")}
+                                </div>
+                                <div>
+                                  <b>Event location:</b>{" "}
+                                  {safeText(
+                                    b.eventLocation ||
+                                      b.customer?.organizerProfile?.location,
+                                    "Not provided"
+                                  )}
+                                </div>
+                                <div>
+                                  <b>Event type:</b>{" "}
+                                  {safeText(
+                                    b.eventType || b.customer?.organizerProfile?.eventType,
+                                    "Not provided"
+                                  )}
+                                </div>
+                                <div>
+                                  <b>Booking note:</b>{" "}
+                                  {safeText(b.note, "No note provided")}
+                                </div>
+                                <div>
+                                  <b>Price:</b>{" "}
+                                  {typeof b.price === "number"
+                                    ? `LKR ${b.price.toLocaleString()}`
+                                    : "Not set"}
+                                </div>
                               </div>
-                              <div>
-                                <b>Email:</b>{" "}
-                                {safeText(b.customer?.email, "No email")}
-                              </div>
-                              <div>
-                                <b>Event location:</b>{" "}
-                                {safeText(
-                                  b.eventLocation ||
-                                    b.customer?.organizerProfile?.location,
-                                  "Not provided"
+                            )}
+
+                            {(b.canReviewOrganizer || reportAllowed) && (
+                              <div className="upcomingRowCard__actions">
+                                {b.canReviewOrganizer && (
+                                  <button
+                                    type="button"
+                                    className="reviewBtn"
+                                    onClick={() => openReviewModal(b)}
+                                  >
+                                    REVIEW
+                                  </button>
+                                )}
+
+                                {reportAllowed && (
+                                  <button
+                                    type="button"
+                                    className="reportBtn"
+                                    onClick={() => openReportPage(b)}
+                                  >
+                                    REPORT
+                                  </button>
                                 )}
                               </div>
-                              <div>
-                                <b>Event type:</b>{" "}
-                                {safeText(
-                                  b.eventType || b.customer?.organizerProfile?.eventType,
-                                  "Not provided"
-                                )}
-                              </div>
-                              <div>
-                                <b>Booking note:</b>{" "}
-                                {safeText(b.note, "No note provided")}
-                              </div>
-                              <div>
-                                <b>Price:</b>{" "}
-                                {typeof b.price === "number"
-                                  ? `LKR ${b.price.toLocaleString()}`
-                                  : "Not set"}
-                              </div>
-                            </div>
-                          )}
+                            )}
 
-                          {(b.canReviewOrganizer || reportAllowed) && (
-                            <div className="upcomingRowCard__actions">
-                              {b.canReviewOrganizer && (
-                                <button
-                                  type="button"
-                                  className="reviewBtn"
-                                  onClick={() => openReviewModal(b)}
-                                >
-                                  REVIEW
-                                </button>
-                              )}
+                            {b.artistReviewGiven && (
+                              <div className="upcomingRowCard__reviewDone">
+                                Review already submitted
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                              {reportAllowed && (
-                                <button
-                                  type="button"
-                                  className="reportBtn"
-                                  onClick={() => openReportPage(b)}
-                                >
-                                  REPORT
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          {b.artistReviewGiven && (
-                            <div className="upcomingRowCard__reviewDone">
-                              Review already submitted
-                            </div>
-                          )}
+                        <div className="upcomingRowCard__right">
+                          <span
+                            className={`statusPill statusPill--${String(
+                              b.status
+                            ).toLowerCase()}`}
+                          >
+                            {b.status}
+                          </span>
                         </div>
                       </div>
-
-                      <div className="upcomingRowCard__right">
-                        <span
-                          className={`statusPill statusPill--${String(
-                            b.status
-                          ).toLowerCase()}`}
-                        >
-                          {b.status}
-                        </span>
-                      </div>
-                    </div>
                     );
                   })}
                 </div>
@@ -1028,7 +1057,7 @@ export default function ArtistBookings() {
         </section>
 
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>
@@ -1036,9 +1065,10 @@ export default function ArtistBookings() {
         </footer>
       </main>
 
+      {/* Review Organizer Modal */}
       {reviewTarget && (
-        <div className="reviewModalOverlay" onClick={closeReviewModal}>
-          <div className="reviewModal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop" onClick={closeReviewModal}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="reviewModal__header">
               <div>
                 <h3 className="reviewModal__title">Review Organizer</h3>
@@ -1085,10 +1115,10 @@ export default function ArtistBookings() {
               </label>
             </div>
 
-            <div className="reviewModal__actions">
+            <div className="modal-actions">
               <button
                 type="button"
-                className="actionBtn actionBtn--reject"
+                className="modal-btn-cancel"
                 onClick={closeReviewModal}
                 disabled={submittingReview}
               >

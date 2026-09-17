@@ -11,10 +11,14 @@ import {
   FiStar,
   FiUser,
   FiLogOut,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiInfo,
+  FiX,
 } from "react-icons/fi";
 
 import { signOut } from "firebase/auth";
-import { auth } from "../../firebase"; // ✅ correct path for your structure
+import { auth } from "../../firebase";
 
 function Stars({ value = 0 }) {
   const full = Math.round(value);
@@ -49,6 +53,22 @@ export default function ArtistReviews() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const triggerToast = (message, type = "info", duration = 3500) => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type, duration }]);
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, duration);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const profile =
     location.state?.profile ||
     JSON.parse(localStorage.getItem("profile")) ||
@@ -69,7 +89,7 @@ export default function ArtistReviews() {
   const [summary, setSummary] = useState({ avgRating: 0, totalReviews: 0 });
   const [reviews, setReviews] = useState([]);
 
-  // ✅ Route guard: block access if logged out
+  // Route guard: block access if logged out
   useEffect(() => {
     const stored = localStorage.getItem("profile");
     if (!stored) {
@@ -77,7 +97,7 @@ export default function ArtistReviews() {
     }
   }, [navigate]);
 
-  // ✅ Logout handler
+  // Logout handler
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -85,7 +105,6 @@ export default function ArtistReviews() {
       console.error("Firebase logout error:", err);
     } finally {
       localStorage.removeItem("profile");
-      // optional: localStorage.clear();
       navigate("/", { replace: true });
     }
   };
@@ -106,11 +125,17 @@ export default function ArtistReviews() {
         );
 
         const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to load reviews");
+        }
+
         setSummary(data.summary || { avgRating: 0, totalReviews: 0 });
         setReviews(Array.isArray(data.reviews) ? data.reviews : []);
       } catch (e) {
         setSummary({ avgRating: 0, totalReviews: 0 });
         setReviews([]);
+        triggerToast(e.message || "Failed to load reviews", "error");
       } finally {
         setLoading(false);
       }
@@ -120,6 +145,32 @@ export default function ArtistReviews() {
 
   return (
     <div className="artistDash artistReviewsPage">
+      {/* Toast Notification Container */}
+      <div className="toast-portal-container">
+        {toasts.map((toast) => (
+          <div key={toast.id} className={`toast-card toast-${toast.type}`}>
+            <div className="toast-icon-wrapper">
+              {toast.type === "success" && <FiCheckCircle className="toast-icon" />}
+              {toast.type === "error" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "warning" && <FiAlertCircle className="toast-icon" />}
+              {toast.type === "info" && <FiInfo className="toast-icon" />}
+            </div>
+            <div className="toast-message-content">{toast.message}</div>
+            <button
+              className="toast-dismiss-btn"
+              onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
+            >
+              <FiX />
+            </button>
+            <div
+              className="toast-expiry-bar"
+              style={{ animationDuration: `${toast.duration}ms` }}
+            />
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar */}
       <aside className="artistDash__sidebar">
         <div className="artistDash__brand">
@@ -168,7 +219,6 @@ export default function ArtistReviews() {
             <span>Profile</span>
           </a>
 
-          {/* ✅ Logout button */}
           <button
             type="button"
             className="artistDash__sideAction"
@@ -273,7 +323,7 @@ export default function ArtistReviews() {
 
         {/* Footer */}
         <footer className="artistDash__footer">
-          <div>© 2025 MusicHive. All rights reserved.</div>
+          <div>© 2026 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
             <a href="#">Terms</a>
             <a href="#">Privacy</a>
