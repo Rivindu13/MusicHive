@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { FiMail, FiPhone, FiMapPin } from "react-icons/fi";
 import { FaFacebook, FaInstagram, FaTwitter } from "react-icons/fa";
 import logo from "../assets/logo.png";
@@ -15,24 +16,16 @@ const Footer = () => {
             <img src={logo} alt="MusicHive Logo" className="footer-logo-img" />
           </div>
           <p>
-            Connecting Sri Lanka&apos;s music talent with opportunities since 2025.
+            Connecting Sri Lanka&apos;s music talent with opportunities since 2026.
           </p>
         </div>
 
         {/* PLATFORM LINKS */}
         <div className="footer-col">
           <h4>Platform</h4>
-          <a href="#">Find Artists</a>
-          <a href="#">Pricing</a>
-          <a href="#">About</a>
-        </div>
-
-        {/* SUPPORT LINKS */}
-        <div className="footer-col">
-          <h4>Support</h4>
-          <a href="#">Support</a>
-          <a href="#">Help Center</a>
-          <a href="#">Safety</a>
+          <Link to="/" state={{ scrollTo: "home" }}>Home</Link>
+          <Link to="/" state={{ scrollTo: "about" }}>About</Link>
+          <Link to="/" state={{ scrollTo: "contact" }}>Contact</Link>
         </div>
 
         {/* CONTACT SECTION */}
@@ -61,11 +54,15 @@ const Footer = () => {
       </div>
 
       <div className="footer-bottom">
-        <span>© 2025 MusicHive. All rights reserved.</span>
+        <span>© 2026 MusicHive. All rights reserved.</span>
 
         <div className="footer-bottom-links">
-          <a href="#">Terms</a>
-          <a href="#">Privacy</a>
+          <a href="mailto:hello@musichive.lk?subject=MusicHive%20Terms">
+            Terms
+          </a>
+          <a href="mailto:hello@musichive.lk?subject=MusicHive%20Privacy">
+            Privacy
+          </a>
           <a
             href={process.env.REACT_APP_ADMIN_URL || "http://localhost:5173"}
             className="footer-admin-link"

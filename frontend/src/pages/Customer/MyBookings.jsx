@@ -409,6 +409,11 @@ export default function CustomerMyBookingsPage() {
   }
 
   function openEdit(b) {
+    if (b.status !== "PENDING") {
+      setErr("Booking details cannot be edited after the artist accepts the request.");
+      return;
+    }
+
     setEditBooking(b);
     setEditNote(b.note || "");
     setEditEventLocation(b.eventLocation || "");
@@ -727,8 +732,7 @@ export default function CustomerMyBookingsPage() {
 
               const reportAllowed = reviewAllowed && bookingPassed;
               const editAllowed =
-                ["PENDING", "ACCEPTED"].includes(b.status) &&
-                b.paymentStatus !== "PAID";
+                b.status === "PENDING" && b.paymentStatus !== "PAID";
 
               return (
                 <div className="cmbCard" key={b._id}>
@@ -1005,8 +1009,12 @@ export default function CustomerMyBookingsPage() {
         <footer className="artistDash__footer">
           <div>© 2025 MusicHive. All rights reserved.</div>
           <div className="artistDash__footerLinks">
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
+            <a href="mailto:hello@musichive.lk?subject=MusicHive%20Terms">
+              Terms
+            </a>
+            <a href="mailto:hello@musichive.lk?subject=MusicHive%20Privacy">
+              Privacy
+            </a>
           </div>
         </footer>
       </main>

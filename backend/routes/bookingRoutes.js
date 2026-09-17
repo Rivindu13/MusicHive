@@ -897,7 +897,8 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
 
 /**
  * PATCH /api/bookings/:id/note
- * Customers can update booking details before payment confirmation.
+ * Customers can update booking details while the artist is still reviewing
+ * the request. Accepted bookings are immutable.
  */
 router.patch("/:id/note", requireAuth, async (req, res) => {
   try {
@@ -917,13 +918,10 @@ router.patch("/:id/note", requireAuth, async (req, res) => {
       });
     }
 
-    if (
-      !["PENDING", "ACCEPTED"].includes(booking.status) ||
-      booking.paymentStatus === "PAID"
-    ) {
+    if (booking.status !== "PENDING" || booking.paymentStatus === "PAID") {
       return res.status(400).json({
         success: false,
-        message: "Booking details can no longer be edited",
+        message: "Booking details cannot be edited after the artist accepts the request",
       });
     }
 

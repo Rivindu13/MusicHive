@@ -493,7 +493,7 @@ section {
 
 .footer-top {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1.3fr 1fr 1.2fr;
   gap: 40px;
   margin-bottom: 40px;
 }
@@ -537,10 +537,16 @@ section {
   color: white;
 }
 
+.footer-col.contact-col {
+  justify-self: end;
+  text-align: right;
+}
+
 /* Contact Icons */
 .footer-contact-item {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   margin-bottom: 10px;
   font-size: 14px;
@@ -554,6 +560,7 @@ section {
 /* Social Icons */
 .footer-social {
   display: flex;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 14px;
 }
@@ -604,6 +611,16 @@ section {
   .contact-inner,
   .footer-top {
     flex-direction: column;
+  }
+
+  .footer-col.contact-col {
+    justify-self: start;
+    text-align: left;
+  }
+
+  .footer-contact-item,
+  .footer-social {
+    justify-content: flex-start;
   }
 
   .security-grid {

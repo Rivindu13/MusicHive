@@ -70,16 +70,6 @@ router.get("/artists", async (req, res) => {
       query.role = { $in: ["artist", "band"] };
     }
 
-    if (role && role !== "all") {
-      if (!["artist", "band"].includes(role)) {
-        return res.status(400).json({
-          success: false,
-          message: "role must be artist, band, or all",
-        });
-      }
-      query.role = role;
-    }
-
     if (onlyComplete === "true") {
       query["artistProfile.isProfileComplete"] = true;
     }
