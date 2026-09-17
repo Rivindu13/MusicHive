@@ -4,8 +4,9 @@ const router = express.Router();
 
 import AvailabilitySlot from "../models/AvailabilitySlots.js";
 import Booking from "../models/Booking.js";
-import User from "../models/User.js";
+import User from "../models/user.js";
 import Review from "../models/review.js";
+import Subscription from "../models/Subscription.js";
 
 import { BOOKING_PENDING_HOURS } from "../config/bookingConstants.js";
 import { tomorrowYMD } from "../utils/date.js";
@@ -14,6 +15,21 @@ import { createNotification } from "../controllers/notificationController.js";
 
 function isValidYMD(s) {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+function getSubscriptionDiscount(completedEventsCount, subscription) {
+  if (
+    !subscription ||
+    subscription.plan !== "premium" ||
+    subscription.status !== "ACTIVE"
+  ) {
+    return 0;
+  }
+
+  if (completedEventsCount >= 11) return 15;
+  if (completedEventsCount >= 6) return 10;
+  if (completedEventsCount >= 3) return 5;
+  return 0;
 }
 
 function mapCustomer(user) {
@@ -297,6 +313,21 @@ router.post("/request", requireAuth, async (req, res) => {
       });
     }
 
+    const customerUser = await User.findOne({
+      uid: customerUid,
+    }).lean();
+
+    if (!customerUser) {
+      reservedSlot.status = "OPEN";
+      reservedSlot.bookingId = null;
+      await reservedSlot.save();
+
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found",
+      });
+    }
+
     const artistUser = await User.findOne({
       uid: reservedSlot.artistUid,
     }).lean();
@@ -325,6 +356,31 @@ router.post("/request", requireAuth, async (req, res) => {
       });
     }
 
+    const subscription = await Subscription.findOne({
+      organizerUid: customerUid,
+    });
+
+    if (
+      subscription?.status === "ACTIVE" &&
+      subscription.expiresAt &&
+      new Date(subscription.expiresAt) <= now
+    ) {
+      subscription.status = "EXPIRED";
+      await subscription.save();
+    }
+
+    const completedEvents = Number(customerUser.completedEventsCount || 0);
+    const discountPercent = getSubscriptionDiscount(
+      completedEvents,
+      subscription
+    );
+    const discountAmount = Number(
+      ((artistPrice * discountPercent) / 100).toFixed(2)
+    );
+    const bookingPrice = Number(
+      Math.max(0, artistPrice - discountAmount).toFixed(2)
+    );
+
     const expiresAt = new Date(
       now.getTime() + BOOKING_PENDING_HOURS * 60 * 60 * 1000
     );
@@ -338,7 +394,7 @@ router.post("/request", requireAuth, async (req, res) => {
       note: String(note || "").trim(),
       eventLocation: normalizedEventLocation,
       eventType: normalizedEventType,
-      price: artistPrice,
+      price: bookingPrice,
       expiresAt,
     });
 
@@ -357,7 +413,16 @@ router.post("/request", requireAuth, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      data: { booking, slot: reservedSlot },
+      data: {
+        booking,
+        slot: reservedSlot,
+        pricing: {
+          originalPrice: artistPrice,
+          discountPercent,
+          discountAmount,
+          bookingPrice,
+        },
+      },
     });
   } catch (err) {
     return res.status(500).json({
@@ -897,8 +962,6 @@ router.patch("/:id/markPaid", requireAuth, async (req, res) => {
 
 /**
  * PATCH /api/bookings/:id/note
- * Customers can update booking details while the artist is still reviewing
- * the request. Accepted bookings are immutable.
  */
 router.patch("/:id/note", requireAuth, async (req, res) => {
   try {

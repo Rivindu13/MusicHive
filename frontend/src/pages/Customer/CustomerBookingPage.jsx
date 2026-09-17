@@ -18,7 +18,7 @@ import {
   FiAlertTriangle,
 } from "react-icons/fi";
 
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebase";
 
 const API_BASE = "http://localhost:5000";
@@ -156,6 +156,43 @@ export default function CustomerBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitErr, setSubmitErr] = useState("");
   const [success, setSuccess] = useState(null);
+
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setSubscriptionInfo(null);
+        setSubscriptionLoading(false);
+        return;
+      }
+
+      try {
+        setSubscriptionLoading(true);
+        const token = await user.getIdToken();
+        const response = await fetch(`${API_BASE}/api/subscriptions/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          setSubscriptionInfo(result.data);
+        } else {
+          setSubscriptionInfo(null);
+        }
+      } catch (error) {
+        console.error("Subscription load error:", error);
+        setSubscriptionInfo(null);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   async function getIdTokenOrThrow() {
     const user = auth.currentUser;
@@ -372,6 +409,7 @@ export default function CustomerBookingPage() {
       setSuccess({
         bookingId: booking?._id,
         status: booking?.status || "PENDING",
+        price: booking?.price,
       });
 
       setHeldSlotId(null);
@@ -387,9 +425,32 @@ export default function CustomerBookingPage() {
     }
   }
 
-  const priceText =
+  const artistPrice =
     typeof artist?.artistProfile?.pricePerHour === "number"
-      ? `LKR ${artist.artistProfile.pricePerHour.toLocaleString()} per event`
+      ? artist.artistProfile.pricePerHour
+      : null;
+
+  const isPremiumActive =
+    subscriptionInfo?.subscription?.status === "ACTIVE" &&
+    subscriptionInfo?.subscription?.plan === "premium";
+
+  const discountPercent = isPremiumActive
+    ? Number(subscriptionInfo?.discountPercent || 0)
+    : 0;
+
+  const discountAmount =
+    artistPrice !== null
+      ? Math.round((artistPrice * discountPercent) / 100)
+      : 0;
+
+  const bookingPrice =
+    artistPrice !== null
+      ? Math.max(0, artistPrice - discountAmount)
+      : null;
+
+  const priceText =
+    artistPrice !== null
+      ? `LKR ${artistPrice.toLocaleString()} per event`
       : "Price not set";
 
   return (
@@ -503,6 +564,15 @@ export default function CustomerBookingPage() {
                 : "No genres"}
             </div>
             <div className="cbpArtistPrice">{priceText}</div>
+
+            {!subscriptionLoading && isPremiumActive && (
+              <div className="cbpArtistMeta">
+                Premium discount: {discountPercent}%
+                {bookingPrice !== null && discountPercent > 0
+                  ? ` • Your price: LKR ${bookingPrice.toLocaleString()}`
+                  : ""}
+              </div>
+            )}
           </div>
         </section>
 
@@ -751,6 +821,16 @@ export default function CustomerBookingPage() {
               </div>
             </div>
 
+            <div className="cbpChosen">
+              <div className="cbpChosenLabel">Booking Price</div>
+              <div className="cbpChosenValue">
+                {bookingPrice !== null
+                  ? `LKR ${bookingPrice.toLocaleString()}`
+                  : "Price not set"}
+                {discountPercent > 0 ? ` (${discountPercent}% Premium discount)` : ""}
+              </div>
+            </div>
+
             <button
               type="button"
               className="cbpSubmit"
@@ -771,6 +851,11 @@ export default function CustomerBookingPage() {
             <div className="cbpState cbpState--success">
               <FiCheckCircle /> Booking created: <b>{success.bookingId}</b> • Status:{" "}
               <b>{success.status}</b>
+              {typeof success.price === "number" && (
+                <>
+                  {" "}• Booking price: <b>LKR {success.price.toLocaleString()}</b>
+                </>
+              )}
             </div>
           )}
         </section>

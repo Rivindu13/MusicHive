@@ -860,7 +860,7 @@ export default function ArtistBookings() {
 
                             <div className="requestDetailsActions">
                               <button
-                                className="reqbtn reqbtn--accept"
+                                className="actionBtn actionBtn--accept"
                                 type="button"
                                 onClick={() => acceptBooking(b._id)}
                               >

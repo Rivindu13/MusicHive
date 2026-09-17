@@ -270,4 +270,85 @@ router.post("/payhere/notify", async (req, res) => {
   }
 });
 
+
+router.patch("/cancel", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({
+      uid: req.user.uid,
+    });
+
+    if (!user || user.role !== "organizer") {
+      return res.status(403).json({
+        success: false,
+        message: "Only event organizers can manage subscriptions.",
+      });
+    }
+
+    const subscription = await Subscription.findOne({
+      organizerUid: req.user.uid,
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found.",
+      });
+    }
+
+    if (subscription.status === "CANCELLED") {
+      return res.json({
+        success: true,
+        message: "Subscription is already cancelled.",
+        data: {
+          subscription,
+          completedEvents: user.completedEventsCount || 0,
+          discountPercent: 0,
+          plans: {
+            free: {
+              amount: 0,
+              label: "Free",
+            },
+            ...PLANS,
+          },
+        },
+      });
+    }
+
+    subscription.status = "CANCELLED";
+    subscription.paymentMessage = "Subscription cancelled by user";
+
+    await subscription.save();
+
+    user.organizerProfile = user.organizerProfile || {};
+    user.organizerProfile.subscriptionPlan = "free";
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Subscription cancelled successfully.",
+      data: {
+        subscription,
+        completedEvents: user.completedEventsCount || 0,
+        discountPercent: 0,
+        plans: {
+          free: {
+            amount: 0,
+            label: "Free",
+          },
+          ...PLANS,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Cancel subscription error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to cancel subscription.",
+      error: error.message,
+    });
+  }
+});
+
 export default router;

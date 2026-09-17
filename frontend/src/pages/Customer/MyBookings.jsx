@@ -853,17 +853,51 @@ export default function CustomerMyBookingsPage() {
               <div className="cmbModalBody">
                 <div className="cmbModalRow">
                   <div className="cmbLabel">Rating</div>
-                  <select
-                    className="cmbSelect"
-                    value={rating}
-                    onChange={(e) => setRating(Number(e.target.value))}
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginTop: "8px",
+                    }}
                   >
-                    <option value={5}>5 - Excellent</option>
-                    <option value={4}>4 - Good</option>
-                    <option value={3}>3 - Okay</option>
-                    <option value={2}>2 - Bad</option>
-                    <option value={1}>1 - Very Bad</option>
-                  </select>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          padding: "0",
+                          cursor: "pointer",
+                          fontSize: "36px",
+                          color: star <= rating ? "#ffae00" : "#555564",
+                        }}
+                      >
+                        ★
+                      </button>
+                    ))}
+
+                    <span
+                      style={{
+                        marginLeft: "10px",
+                        color: "#b8b8c5",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {rating === 5
+                        ? "Excellent"
+                        : rating === 4
+                        ? "Good"
+                        : rating === 3
+                        ? "Okay"
+                        : rating === 2
+                        ? "Bad"
+                        : "Very Bad"}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="cmbModalRow">

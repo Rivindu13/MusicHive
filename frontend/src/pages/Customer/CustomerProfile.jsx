@@ -17,7 +17,7 @@ import {
   FiCamera,
 } from "react-icons/fi";
 
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth, storage } from "../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -72,6 +72,7 @@ export default function CustomerProfile() {
   const [uploading, setUploading] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   const firstName = (fullName || "Customer").split(" ")[0];
 
@@ -83,57 +84,103 @@ export default function CustomerProfile() {
   }, [navigate]);
 
   useEffect(() => {
-    const loadSubscription = async () => {
-      if (!auth.currentUser) return;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setAuthReady(true);
+
+      if (!user) {
+        return;
+      }
 
       try {
-        const token = await auth.currentUser.getIdToken();
+        const token = await user.getIdToken();
+
         const response = await fetch(`${API_BASE}/api/subscriptions/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
+
         const result = await response.json();
+
+        console.log("SUBSCRIPTION INFO:", result);
+
         if (response.ok && result.success) {
           setSubscriptionInfo(result.data);
-          setField("subscriptionPlan", result.data.subscription?.plan || "free");
+
+          const activePremium =
+            result.data?.subscription?.status === "ACTIVE" &&
+            result.data?.subscription?.plan === "premium";
+
+          setForm((prev) => ({
+            ...prev,
+            subscriptionPlan: activePremium ? "premium" : "free",
+          }));
         }
       } catch (error) {
         console.error("Subscription load error:", error);
       }
-    };
+    });
 
-    loadSubscription();
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
+    if (!authReady) return;
+
     const paymentState = new URLSearchParams(location.search).get(
       "subscription"
     );
 
-    if (!paymentState || !auth.currentUser) return;
+    if (!paymentState) return;
+
+    if (paymentState === "cancel") {
+      alert("Subscription payment was cancelled.");
+
+      window.history.replaceState({}, document.title, "/customer/profile");
+
+      return;
+    }
 
     const verifySubscription = async () => {
       for (let attempt = 0; attempt < 8; attempt += 1) {
         try {
-          const token = await auth.currentUser.getIdToken();
+          const user = auth.currentUser;
+
+          if (!user) return;
+
+          const token = await user.getIdToken();
+
           const response = await fetch(`${API_BASE}/api/subscriptions/me`, {
-            headers: { Authorization: "Bearer " + token },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           });
+
           const result = await response.json();
 
+          console.log("VERIFY SUBSCRIPTION:", result);
+
           if (response.ok && result.success) {
-            setSubscriptionInfo(result.data);
             const activePremium =
-              result.data.subscription?.status === "ACTIVE" &&
-              result.data.subscription?.plan === "premium";
-            setField("subscriptionPlan", activePremium ? "premium" : "free");
+              result.data?.subscription?.status === "ACTIVE" &&
+              result.data?.subscription?.plan === "premium";
 
             if (activePremium) {
+              setSubscriptionInfo(result.data);
+
+              setForm((prev) => ({
+                ...prev,
+                subscriptionPlan: "premium",
+              }));
+
               alert("Premium subscription activated successfully.");
+
               window.history.replaceState(
                 {},
                 document.title,
                 "/customer/profile"
               );
+
               return;
             }
           }
@@ -145,15 +192,14 @@ export default function CustomerProfile() {
       }
 
       alert(
-        paymentState === "cancel"
-          ? "Subscription payment was cancelled."
-          : "Payment returned successfully, but subscription confirmation is still pending. Please refresh in a moment."
+        "Payment returned successfully, but subscription confirmation is still pending. Please refresh in a moment."
       );
+
       window.history.replaceState({}, document.title, "/customer/profile");
     };
 
     verifySubscription();
-  }, [location.search]);
+  }, [authReady, location.search]);
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -196,45 +242,87 @@ export default function CustomerProfile() {
   };
 
   const startSubscriptionPayment = async (plan) => {
-        if (!auth.currentUser || plan === "free") return;
+    if (!auth.currentUser || plan === "free") return;
 
-        setSubscriptionLoading(true);
+    setSubscriptionLoading(true);
 
-        try {
-          const token = await auth.currentUser.getIdToken();
-          const response = await fetch(`${API_BASE}/api/subscriptions/init-payment`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ plan }),
-          });
-          const result = await response.json();
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`${API_BASE}/api/subscriptions/init-payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan }),
+      });
+      const result = await response.json();
 
-          if (!response.ok || !result.success) {
-            throw new Error(result.message || "Could not start subscription payment");
-          }
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Could not start subscription payment"
+        );
+      }
 
-          const paymentForm = document.createElement("form");
-          paymentForm.method = "POST";
-          paymentForm.action = result.data.checkoutUrl;
+      const paymentForm = document.createElement("form");
+      paymentForm.method = "POST";
+      paymentForm.action = result.data.checkoutUrl;
 
-          Object.entries(result.data.payment).forEach(([key, value]) => {
-            const input = document.createElement("input");
-            input.type = "hidden";
-            input.name = key;
-            input.value = value ?? "";
-            paymentForm.appendChild(input);
-          });
+      Object.entries(result.data.payment).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value ?? "";
+        paymentForm.appendChild(input);
+      });
 
-          document.body.appendChild(paymentForm);
-          paymentForm.submit();
-        } catch (error) {
-          alert(error.message);
-          setSubscriptionLoading(false);
-        }
-      };
+      document.body.appendChild(paymentForm);
+      paymentForm.submit();
+    } catch (error) {
+      alert(error.message);
+      setSubscriptionLoading(false);
+    }
+  };
+
+  const cancelSubscription = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel your Premium subscription?"
+    );
+
+    if (!confirmed || !auth.currentUser) return;
+
+    setSubscriptionLoading(true);
+
+    try {
+      const token = await auth.currentUser.getIdToken();
+
+      const response = await fetch(`${API_BASE}/api/subscriptions/cancel`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Could not cancel subscription"
+        );
+      }
+
+      setSubscriptionInfo(result.data);
+      setField("subscriptionPlan", "free");
+
+      alert("Subscription cancelled successfully.");
+    } catch (error) {
+      console.error("Subscription cancellation error:", error);
+      alert(error.message || "Failed to cancel subscription");
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!uid) return;
@@ -290,6 +378,10 @@ export default function CustomerProfile() {
       setSaving(false);
     }
   };
+
+  const isPremiumSubscribed =
+    subscriptionInfo?.subscription?.status === "ACTIVE" &&
+    subscriptionInfo?.subscription?.plan === "premium";
 
   return (
     <div className="artistDash customerProfilePage">
@@ -372,7 +464,7 @@ export default function CustomerProfile() {
             type="button"
             onClick={() => navigate("/customer/wishlist")}
             title="Wishlist"
-            >
+          >
             <FiHeart />
           </button>
 
@@ -624,18 +716,42 @@ export default function CustomerProfile() {
                       }%`
                     : "Discount program available with Premium"}
                 </p>
-                {form.subscriptionPlan === "premium" && (
+
+                {isPremiumSubscribed ? (
+                  <div className="subscriptionActiveBox">
+                    <div className="subscriptionActiveStatus">
+                      ✓ SUBSCRIBED
+                    </div>
+
+                    <p className="subscriptionActiveText">
+                      Your Premium subscription is currently active.
+                    </p>
+
+                    <button
+                      type="button"
+                      className="customerProfileBtn customerProfileBtn--cancelSubscription"
+                      onClick={cancelSubscription}
+                      disabled={subscriptionLoading}
+                    >
+                      {subscriptionLoading
+                        ? "Cancelling..."
+                        : "Cancel Subscription"}
+                    </button>
+                  </div>
+                ) : form.subscriptionPlan === "premium" ? (
                   <button
                     type="button"
                     className="customerProfileBtn customerProfileBtn--subscribe"
-                    onClick={() => startSubscriptionPayment(form.subscriptionPlan)}
+                    onClick={() =>
+                      startSubscriptionPayment("premium")
+                    }
                     disabled={subscriptionLoading}
                   >
                     {subscriptionLoading
                       ? "Opening payment..."
-                      : `Subscribe to ${form.subscriptionPlan}`}
+                      : "Subscribe to Premium"}
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

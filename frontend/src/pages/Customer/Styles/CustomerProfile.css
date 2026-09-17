@@ -301,3 +301,90 @@
     flex: 0 0 auto;
   }
 }
+
+.subscriptionReward {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #d7d7e5;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.subscriptionActiveBox {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 224, 255, 0.08),
+    rgba(123, 92, 255, 0.08)
+  );
+  border: 1px solid rgba(0, 224, 255, 0.28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.subscriptionActiveStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(0, 224, 255, 0.12);
+  border: 1px solid rgba(0, 224, 255, 0.35);
+  color: #59f3ff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.subscriptionActiveText {
+  margin: 14px 0 18px;
+  color: #f1f2ff;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.customerProfileBtn--cancelSubscription {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 190px;
+  height: 46px;
+  padding: 0 22px;
+  border: 1px solid rgba(255, 99, 132, 0.45);
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 88, 120, 0.18),
+    rgba(255, 88, 120, 0.08)
+  );
+  color: #ffd8df;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.customerProfileBtn--cancelSubscription:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 88, 120, 0.28),
+    rgba(255, 88, 120, 0.14)
+  );
+  border-color: rgba(255, 99, 132, 0.7);
+  transform: translateY(-1px);
+}
+
+.customerProfileBtn--cancelSubscription:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.customerProfileBtn--subscribe {
+  margin-top: 16px;
+}
